@@ -255,9 +255,8 @@ export default {
 		
 		// 底部导航事件
 		handleHomeClick() {
-			uni.showToast({
-				title: '首页',
-				icon: 'none'
+			uni.switchTab({
+				url: '/pages/index/index'
 			});
 		},
 		
