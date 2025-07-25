@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>后端API直接测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .data-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .data-item h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .data-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .data-label {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 后端API直接测试</h1>
+    
+    <div class="container">
+        <h3>📋 测试参数</h3>
+        <div class="form-group">
+            <label for="adminId">管理员ID:</label>
+            <input type="text" id="adminId" value="admin123" placeholder="输入管理员ID">
+        </div>
+        <div class="form-group">
+            <label for="lockerPointId">网点ID:</label>
+            <input type="text" id="lockerPointId" value="1" placeholder="输入网点ID">
+        </div>
+        <button onclick="testApi()">🚀 测试API</button>
+        <button onclick="clearResult()">🗑️ 清空</button>
+    </div>
+
+    <div class="container">
+        <h3>📊 API响应结果</h3>
+        <div id="apiResult" class="result"></div>
+    </div>
+
+    <div class="container">
+        <h3>📈 数据展示</h3>
+        <div id="dataDisplay"></div>
+    </div>
+
+    <script>
+        function testApi() {
+            const adminId = document.getElementById('adminId').value;
+            const lockerPointId = document.getElementById('lockerPointId').value;
+            
+            const requestData = {
+                admin_id: adminId,
+                locker_point_id: lockerPointId
+            };
+
+            document.getElementById('apiResult').innerHTML = '🔄 正在请求...';
+            document.getElementById('apiResult').className = 'result';
+
+            fetch('http://localhost:8000/admin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams(requestData)
+            })
+            .then(response => {
+                console.log('HTTP响应:', response);
+                return response.json();
+            })
+            .then(data => {
+                console.log('API返回数据:', data);
+                displayResult(data);
+                displayData(data);
+            })
+            .catch(error => {
+                console.error('请求失败:', error);
+                document.getElementById('apiResult').innerHTML = 
+                    `❌ 请求失败:\n${error.message}\n\n` +
+                    `可能的原因:\n` +
+                    `1. 后端服务未启动 (http://localhost:8000)\n` +
+                    `2. 跨域问题 (CORS)\n` +
+                    `3. 网络连接问题\n` +
+                    `4. API地址错误`;
+                document.getElementById('apiResult').className = 'result error';
+            });
+        }
+
+        function displayResult(data) {
+            const resultDiv = document.getElementById('apiResult');
+            resultDiv.className = 'result success';
+            
+            resultDiv.innerHTML = 
+                `✅ API请求成功!\n\n` +
+                `📊 响应状态: ${data.code || 'N/A'}\n` +
+                `💬 响应消息: ${data.msg || 'N/A'}\n\n` +
+                `📋 原始JSON数据:\n${JSON.stringify(data, null, 2)}`;
+        }
+
+        function displayData(data) {
+            const displayDiv = document.getElementById('dataDisplay');
+            
+            const fields = [
+                { key: 'pointNum', label: '网点总数', prefix: '' },
+                { key: 'lastOrderNum', label: '今日订单', prefix: '' },
+                { key: 'yesterdayOrderNum', label: '昨日订单', prefix: '' },
+                { key: 'lastOrderPrice', label: '昨日收益', prefix: '¥' },
+                { key: 'mouthPrice', label: '本月收益', prefix: '¥' },
+                { key: 'monthNum', label: '本月订单', prefix: '' }
+            ];
+
+            let html = '<div class="data-grid">';
+            
+            fields.forEach(field => {
+                const value = data[field.key] || 0;
+                html += `
+                    <div class="data-item">
+                        <h4>${field.label}</h4>
+                        <div class="data-value">${field.prefix}${value}</div>
+                        <div class="data-label">字段名: ${field.key}</div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            displayDiv.innerHTML = html;
+        }
+
+        function clearResult() {
+            document.getElementById('apiResult').innerHTML = '';
+            document.getElementById('dataDisplay').innerHTML = '';
+        }
+    </script>
+</body>
+</html> 

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>简单API测试</title>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { margin: 20px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+    </style>
+</head>
+<body>
+    <h1>管理员数据API测试</h1>
+    <button onclick="testAPI()" style="padding: 10px 20px; font-size: 16px;">测试API调用</button>
+    <div id="result"></div>
+
+    <script>
+        function testAPI() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="result">正在测试API...</div>';
+            
+            const requestData = {
+                admin_id: "1",
+                locker_point_id: "2"
+            };
+            
+            console.log('发送请求参数:', requestData);
+            
+            fetch('http://localhost:8000/admin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams(requestData)
+            })
+            .then(response => {
+                console.log('响应状态:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('API响应数据:', data);
+                
+                if (data && data.code === "200") {
+                    resultDiv.innerHTML = `
+                        <div class="result success">
+                            <h3>✅ API测试成功!</h3>
+                            <p><strong>网点数量:</strong> ${data.pointNum}</p>
+                            <p><strong>今日订单:</strong> ${data.lastorderNum}</p>
+                            <p><strong>昨日订单:</strong> ${data.yesterdayordernum}</p>
+                            <p><strong>昨日收益:</strong> ¥${data.lastorderPrice}</p>
+                            <p><strong>本月收益:</strong> ¥${data.mouthPrice}</p>
+                            <p><strong>本月订单:</strong> ${data.monthNum}</p>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="result error">
+                            <h3>❌ API调用失败</h3>
+                            <p>错误信息: ${data?.msg || '未知错误'}</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('API调用错误:', error);
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <h3>❌ 网络错误</h3>
+                        <p>错误信息: ${error.message}</p>
+                        <p>请确保后端服务在 http://localhost:8000 运行</p>
+                    </div>
+                `;
+            });
+        }
+    </script>
+</body>
+</html> 
