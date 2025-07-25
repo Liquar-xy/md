@@ -322,9 +322,8 @@ export default {
 		},
 		
 		handleOrdersClick() {
-			uni.showToast({
-				title: '订单页面',
-				icon: 'none'
+			uni.navigateTo({
+				url: '/pages/orders/orders'
 			});
 		},
 		

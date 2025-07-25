@@ -112,7 +112,7 @@ export default {
       // 获取订单列表
       this.loading = true;
       uni.request({
-        url: 'https://127.0.0.1:8000/v1/orders/list', // 替换为实际后端接口地址
+        url: 'http://127.0.0.1:8000/v1/orders/list', // 替换为实际后端接口地址
         method: 'POST',
         header: {
           'Content-Type': 'application/json'
