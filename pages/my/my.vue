@@ -152,9 +152,62 @@ export default {
 		
 		// 查看全部订单
 		handleViewAllOrders() {
-			uni.showToast({
-				title: '查看全部订单',
-				icon: 'none'
+			console.log('获取全部订单列表');
+			uni.showLoading({
+				title: '加载中...'
+			});
+			
+			// 获取用户数据
+			let userData = null;
+			try {
+				const userDataStr = uni.getStorageSync('userData');
+				if (userDataStr) {
+					userData = JSON.parse(userDataStr);
+				}
+			} catch (e) {
+				console.log('获取用户数据失败:', e);
+			}
+			
+			// 调用后端list接口
+			uni.request({
+				url: 'http://localhost:8000/list',
+				method: 'POST',
+				data: {
+					userId: userData?.userId || '1',
+					page: 1,
+					pageSize: 20
+				},
+				header: {
+					'Content-Type': 'application/x-www-form-urlencoded'
+				},
+				success: (res) => {
+					uni.hideLoading();
+					console.log('订单列表响应:', res.data);
+					
+					if (res.data && res.data.code === 200) {
+						// 跳转到订单列表页面，传递订单数据
+						uni.navigateTo({
+							url: '/pages/order-list/order-list',
+							success: () => {
+								// 通过事件总线传递数据
+								uni.$emit('orderListData', res.data.data || []);
+							}
+						});
+					} else {
+						uni.showToast({
+							title: res.data?.msg || '获取订单失败',
+							icon: 'none'
+						});
+					}
+				},
+				fail: (err) => {
+					uni.hideLoading();
+					console.log('获取订单列表失败:', err);
+					uni.showToast({
+						title: '网络错误，请重试',
+						icon: 'none'
+					});
+				}
 			});
 		},
 		
@@ -244,7 +297,15 @@ export default {
 						
 						uni.showToast({
 							title: '已退出登录',
-							icon: 'success'
+							icon: 'success',
+							success: () => {
+								// 延迟跳转到登录界面
+								setTimeout(() => {
+									uni.reLaunch({
+										url: '/pages/login/login'
+									});
+								}, 1500);
+							}
 						});
 					}
 				}
