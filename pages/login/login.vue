@@ -103,6 +103,7 @@ export default {
 		// 选择登录类型
 		selectLoginType(type) {
 			this.loginType = type;
+			console.log('切换到登录类型:', type);
 			// 根据登录类型清空输入框
 			this.account = '';
 			this.password = '';
@@ -139,14 +140,23 @@ export default {
 			// 立即开始倒计时
 			this.startCountdown();
 			
+			// 根据登录类型调用不同的发送短信接口
+			const smsData = {
+				mobile: this.account
+			};
+			
+			// 管理员登录需要特殊的source标识
+			if (this.loginType === 'admin') {
+				smsData.source = 'admin_login';
+			} else {
+				smsData.source = 'login';
+			}
+			
 			// 调用后端发送短信接口
 			uni.request({
 				url: 'http://localhost:8000/sendSms',
 				method: 'POST',
-				data: {
-					mobile: this.account,
-					source: 'login'
-				},
+				data: smsData,
 				header: {
 					'Content-Type': 'application/x-www-form-urlencoded'
 				},
@@ -225,22 +235,38 @@ export default {
 				return;
 			}
 			
-			// 调用后端登录接口（验证码从Redis中验证）
+			// 根据登录类型调用不同的登录接口
 			uni.showLoading({
 				title: '登录中...'
 			});
 			
-			const loginData = {
-				mobile: this.account,
-				password: this.password,
-				smsCode: this.verifyCode,
-				username: this.loginType === 'admin' ? 'admin' : 'user'
-			};
+			let loginUrl, loginData;
 			
+			if (this.loginType === 'admin') {
+				// 管理员登录接口
+				loginUrl = 'http://localhost:8000/adminLogin';
+				loginData = {
+					mobile: this.account,
+					password: this.password,
+					smsCode: this.verifyCode
+				};
+			} else {
+				// 用户登录接口
+				loginUrl = 'http://localhost:8000/login';
+				loginData = {
+					mobile: this.account,
+					password: this.password,
+					smsCode: this.verifyCode,
+					username: 'user'
+				};
+			}
+			
+			console.log('登录类型:', this.loginType);
+			console.log('登录接口:', loginUrl);
 			console.log('登录请求参数:', loginData);
 			
 			uni.request({
-				url: 'http://localhost:8000/login',
+				url: loginUrl,
 				method: 'POST',
 				data: loginData,
 				header: {
@@ -259,16 +285,34 @@ export default {
 						console.log('后端返回的完整数据:', res.data);
 						console.log('后端返回的id字段:', res.data.id);
 						console.log('当前账号:', this.account);
-						const loginData = {
-							username: this.loginType === 'admin' ? '管理员' : '智慧存0987',
-							phoneNumber: this.account,
-							account: this.account, // 添加account字段
-							loginType: this.loginType,
-							token: res.data.token,
-							userId: res.data.id || this.account, // 如果后端没有id，使用手机号
-							id: res.data.id || this.account, // 如果后端没有id，使用手机号
-							isLoggedIn: true
-						};
+						
+						let loginData;
+						
+						if (this.loginType === 'admin') {
+							// 管理员登录数据
+							loginData = {
+								username: '管理员',
+								phoneNumber: this.account,
+								account: this.account,
+								loginType: this.loginType,
+								token: res.data.token,
+								userId: res.data.id || this.account,
+								id: res.data.id || this.account,
+								isLoggedIn: true
+							};
+						} else {
+							// 用户登录数据
+							loginData = {
+								username: '智慧存0987',
+								phoneNumber: this.account,
+								account: this.account,
+								loginType: this.loginType,
+								token: res.data.token,
+								userId: res.data.id || this.account,
+								id: res.data.id || this.account,
+								isLoggedIn: true
+							};
+						}
 						
 						// 保存登录信息到本地存储
 						try {
