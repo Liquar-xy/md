@@ -48,6 +48,18 @@
     },
     /* 快应用特有相关 */
     "quickapp" : {},
+    /* H5特有相关 */
+    "h5" : {
+        "devServer" : {
+            "https" : false
+        },
+        "sdkConfigs" : {
+            "maps" : {
+                "type" : "baidu",
+                "key" : "7pzoTHchDdMRK7jmpCr1sugjv3hfoxz5"
+            }
+        }
+    },
     /* 小程序特有相关 */
     "mp-weixin" : {
         "appid" : "",

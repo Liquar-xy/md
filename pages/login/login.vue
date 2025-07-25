@@ -55,9 +55,26 @@ export default {
 			password: ''
 		}
 	},
+	onLoad() {
+		// 检查是否已经登录
+		this.checkLoginStatus();
+	},
 	methods: {
+		// 检查登录状态
+		checkLoginStatus() {
+			const token = uni.getStorageSync('token');
+			const userData = uni.getStorageSync('userData');
+			
+			if (token && userData) {
+				console.log('用户已登录，跳转到首页');
+				uni.reLaunch({
+					url: '/pages/index/index'
+				});
+			}
+		},
 		handleLogin() {
-			if (!this.account) {
+			// 表单验证
+			if (!this.account.trim()) {
 				uni.showToast({
 					title: '请输入手机号',
 					icon: 'none'
@@ -65,7 +82,7 @@ export default {
 				return;
 			}
 			
-			if (!this.password) {
+			if (!this.password.trim()) {
 				uni.showToast({
 					title: '请输入密码',
 					icon: 'none'
@@ -73,37 +90,53 @@ export default {
 				return;
 			}
 			
-			// 这里可以添加登录逻辑
-			console.log('登录信息:', {
-				account: this.account,
-				password: this.password
+			// 显示登录中
+			uni.showLoading({
+				title: '登录中...'
 			});
 			
-			// 保存登录用户信息到本地存储
-			try {
-				const userData = {
-					username: '智慧存0987', // 登录后的默认用户名
-					phoneNumber: this.account, // 使用输入的手机号
-					avatarUrl: '' // 默认空头像
-				};
-				uni.setStorageSync('userData', JSON.stringify(userData));
-				console.log('登录用户数据已保存');
-			} catch (e) {
-				console.log('保存登录数据失败:', e);
-			}
-			
-			uni.showToast({
-				title: '登录成功',
-				icon: 'success',
-				success: () => {
-					// 延迟跳转，让用户看到成功提示
+			// 模拟登录请求
+			setTimeout(() => {
+				try {
+					// 模拟登录成功，保存用户信息
+					const userData = {
+						id: 1,
+						username: '智慧存' + this.account.slice(-4),
+						phone: this.account,
+						avatar: '',
+						nickname: '智慧存' + this.account.slice(-4)
+					};
+					
+					// 保存token和用户信息
+					uni.setStorageSync('token', 'mock_token_' + Date.now());
+					uni.setStorageSync('userData', userData);
+					uni.setStorageSync('loginTime', Date.now());
+					
+					console.log('登录成功，用户数据已保存:', userData);
+					
+					uni.hideLoading();
+					uni.showToast({
+						title: '登录成功',
+						icon: 'success',
+						duration: 1500
+					});
+					
+					// 延迟跳转到首页
 					setTimeout(() => {
 						uni.reLaunch({
-							url: '/pages/my/my'
+							url: '/pages/index/index'
 						});
 					}, 1500);
+					
+				} catch (error) {
+					uni.hideLoading();
+					console.error('保存登录数据失败:', error);
+					uni.showToast({
+						title: '登录失败，请重试',
+						icon: 'none'
+					});
 				}
-			});
+			}, 1000); // 模拟网络请求延迟
 		}
 	}
 }

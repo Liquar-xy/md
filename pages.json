@@ -8,18 +8,9 @@
 			}
 		},
 		{
-			"path": "pages/my/my",
+			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "我的",
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/user-edit/user-edit",
-			"style": {
-				"navigationBarTitleText": "编辑资料",
-				"navigationBarBackgroundColor": "#ffffff",
-				"navigationBarTextStyle": "black"
+				"navigationBarTitleText": "智能寄存柜"
 			}
 		},
 		{
@@ -28,6 +19,28 @@
 				"navigationBarTitleText": "订单详情",
 				"navigationBarBackgroundColor": "#007aff",
 				"navigationBarTextStyle": "white"
+			}
+		},
+		{
+			"path": "pages/my/my",
+			"style": {
+				"navigationBarTitleText": "我的",
+				"navigationStyle": "custom"
+			}
+		},
+		// {
+		// 	"path": "pages/login/login",
+		// 	"style": {
+		// 		"navigationBarTitleText": "登录",
+		// 		"navigationStyle": "custom"
+		// 	}
+		// },
+		{
+			"path": "pages/user-edit/user-edit",
+			"style": {
+				"navigationBarTitleText": "编辑资料",
+				"navigationBarBackgroundColor": "#ffffff",
+				"navigationBarTextStyle": "black"
 			}
 		},
 		{
@@ -63,17 +76,61 @@
 			}
 		},
 		{
-			"path": "pages/index/index",
+			"path": "pages/locker-detail/locker-detail",
 			"style": {
-				"navigationBarTitleText": "uni-app"
+				"navigationBarTitleText": "寄存点详情",
+				"navigationBarBackgroundColor": "#ffffff",
+				"navigationBarTextStyle": "black"
+			}
+		},
+		{
+			"path": "pages/city-select/city-select",
+			"style": {
+				"navigationBarTitleText": "选择城市",
+				"navigationBarBackgroundColor": "#ffffff",
+				"navigationBarTextStyle": "black"
+			}
+		},
+		{
+			"path": "pages/nearby/nearby",
+			"style": {
+				"navigationBarTitleText": "附近寄存",
+				"navigationBarBackgroundColor": "#ffffff",
+				"navigationBarTextStyle": "black"
 			}
 		}
 	],
 	"globalStyle": {
 		"navigationBarTextStyle": "black",
-		"navigationBarTitleText": "uni-app",
+		"navigationBarTitleText": "智能寄存柜",
 		"navigationBarBackgroundColor": "#F8F8F8",
 		"backgroundColor": "#F8F8F8"
+	},
+	"tabBar": {
+		"color": "#8E8E93",
+		"selectedColor": "#007AFF",
+		"borderStyle": "white",
+		"backgroundColor": "#FFFFFF",
+		"list": [
+			{
+				"pagePath": "pages/index/index",
+				"iconPath": "static/go.png",
+				"selectedIconPath": "static/go.png",
+				"text": "首页"
+			},
+			{
+				"pagePath": "pages/order-detail/order-detail",
+				"iconPath": "static/1111.png",
+				"selectedIconPath": "static/1111.png",
+				"text": "订单"
+			},
+			{
+				"pagePath": "pages/my/my",
+				"iconPath": "static/go1.png",
+				"selectedIconPath": "static/go1.png",
+				"text": "我的"
+			}
+		]
 	},
 	"uniIdRouter": {}
 }
