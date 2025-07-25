@@ -321,7 +321,9 @@ export default {
 							} else {
 								uni.setStorageSync('userData', JSON.stringify(loginData));
 							}
-							console.log('登录数据已保存');
+							// 添加cookie存储token
+							document.cookie = `token=${loginData.token}; path=/; max-age=86400; SameSite=Lax`;
+							console.log('登录数据已保存到localStorage和cookie');
 						} catch (e) {
 							console.log('保存登录数据失败:', e);
 						}
@@ -582,4 +584,4 @@ export default {
 	color: #666666;
 	line-height: 1.5;
 }
-</style> 
+</style>
