@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>首页顶部底部同步背景图效果预览</ti>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f0f0;
+            min-height: 100vh;
+        }
+        
+        ner {
+            width: 3
+            height: 812px;
+            margin: 20px auto;
+         0;
+        : 40px;
+            padd
+            box-shadow: 0 20px , 0.3);
+        }
+        
+        .phone-screen {
+            width: 100%;
+         t: 100%;
+        
+            overflow:;
+            position: rela
+            /* 整体页面背景图 */
+            background
+                #e3f2fd 0%, 
+         , 
+        af9 50%, 
+                #64b5f6 75%, 
+                #42a5f5 10%);
+            background-siz
+            background-positi: center;
+            background-repeat: n
+        }
+        
+        .phone-screen::befo
+         ';
+        lute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linea 
+                rgba(248, 250, 0%, 
+                rgba(245, 245, 
+            z-index: 1;
+            backdrop-filter:px);
+        }
+        
+        .page-content {
+            position: relative;
+            z-index: 2;
+            height: 100%;
+            overflow-y: auto;
+        }
+        
+        /* 顶部图片区域 - 同步背景图 */
+        .header-section {
+            width: 100%;
+            height:;
+            positionive;
+            overflow: hi
+            /* 顶部区域背景图 */
+            background: linear-gradient(135deg, 
+                #e3f2fd 0%, 
+                #bbdefb 25%, 
+                #90caf9 
+                #64b5f6 75%, 
+         
+        r;
+            background-;
+            background-repeat: ;
+        }
+        
+        .header-section::before {
+            content: '';
+         te;
+        ;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: lineaeg, 
+                rgba(0, 0.3) 0%, 
+                rgba(0, 0, 0, 0.0%);
+            z-index: 1;
+        }
+        
+        .header-image {
+         00%;
+        t: 100%;
+            border-radipx;
+            position: relative;
+            z-index: 2;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-conten center;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+         .5);
+        }
+        
+        /* 城市选择和我的附近 */
+        .location-section {
+            display: fle;
+            justify-content: sp
+         
+        2px 15px;
+            background:eg, 
+                rgba(255, 25
+                rgba(250
+            backdrop-filter: lur(10px);
+         ;
+        12px;
+            box-shadow:8);
+            border: 1px so5);
+        }
+        
+        .city-selector {
+            display: flex;
+            align-items: center;
+            padding: 4px 0;
+            transition: all 0.3s
+            cursor: pointer;
+        }
+        
+        .city-sel {
+            transform: s8);
+        }
+        
+        .location-icon {
+            font-size: 16px;
+            margin-right: 6px;
+            color: #007AFF;
+        }
+        
+        .city-name {
+         16px;
+        1A;
+            margin-rpx;
+            font-wei;
+        }
+        
+        .dropdown-i{
+            font-size: 10px;
+            color: #8E8E93;
+            transition: ease;
+        }
+        
+        .tn {
+        
+            align-itemsr;
+            background: line
+            padding: 8pxpx;
+         x;
+         0.3);
+            transitioase;
+            cursor: pointer;
+        }
+        
+        .nearby-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 4);
+        }
+        
+        .
+        x;
+            margin-righpx;
+        }
+        
+        .nearby-text {
+            color: #FFFFFF;
+         x;
+        500;
+        }
+        
+        /* 搜索框 */
+        .search-section {
+         5px;
+        x;
+        }
+        
+        .search-box {
+            background: linear-geg, 
+                rgba(255, 255, 25) 0%, 
+                rgba(250, 200%);
+         
+        x;
+            border-radix;
+            box-shadow: 0 3p.06);
+            border: 1px , 0.04);
+            position: relative;
+         s ease;
+        r;
+        }
+        
+        .search-box:active {
+            transform: scale(0.98);
+         0, 0.08);
+        }
+        
+        .search-box::before {
+            content: '🔍';
+            position: abso
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+         .6;
+        }
+        
+        .search-placeholder
+            color: #8E8E93;
+            font-size: 14px;
+            margin-left: 25px;
+        }
+        
+        /* 热门地点 */
+        .hotspots-section {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 0 15px;
+            gap: 6px;
+         
+        tween;
+        }
+        
+        .hotspot-item {
+            background: linear-(135deg, 
+                rgba(255, 25
+                rgba(248, 2);
+            backdrop-filter: 
+         12px;
+        
+            box-shadow: 0 .05);
+            border: 1px solid rgba(0, 122, 255,
+            flex: 1;
+            text-align: center;
+            max-width: 80px;
+            transition: all e;
+            position: relative;
+            overflow: hidden;
+         ;
+        }
+        
+      {
+            content: '';
+            position: absolute;
+        
+            left: -100%;
+            width: 100%
+            height: 100%;
+            background: linear-gradient(90);
+            transition: left 0.5s ease;
+        }
+        
+        .hotspot-item:active {
+            transform: scale(0.95);
+            box-shadow: 0 1px 4px rgba(0, 122, 255, 0.15);
+        }
+        
+        .hotspot-item:active::before {
+            left: 100%;
+        }
+        
+        .hotspot-text {
+            font-size: 13px;
+            color: #1A1A1A;
+            text-align: center;
+            white-space: nowrap;
+            font-weight: 500;
+        }
+        
+        /* 查询按钮 */
+        .query-section {
+            padding: 0 15px;
+            margin-botpx;
+        }
+        
+        .query-btn {
+            background: linear-gradient(1;
+            color: #FFFFFF;
+            font-size: 17px;
+            border-radius: 25px;
+            padding: 18p
+            border: none;
+            width: 100%;
+            font-weight: 600;
+            box-shadow: 0 4px 3);
+            transition: se;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        
+        .query-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255,nt);
+            transition: left 0.5s ease;
+        }
+        
+        .query-btn:acte {
+            transf98);
+            
+        }
+        
+        .query-btn:active::before {
+            left: 100%;
+        }
+        
+        /* 功能入口 - 同步背景图 */
+        .features-section {
+            display: flex;
+            justify-content: space-around;
+            padding: 15px;
+            /* 功能区域背景图 */
+            background: linearg, 
+                #e3f2fd 0%, 
+                #bbdefb 25%, 
+                #90caf9 50%, 
+                #64b5f6 75%, 
+                #42a5f5 100%);
+            background-s;
+            background-position: center;
+            background-repeat: no-repeat;
+            margin: 0 15px 15px;
+            border-radius: 12px;
+            box-shadow: 0 1px 4px );
+            border: 1px solid rgba(0, 0, 0, 0.02);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .features-section::before {
+            content: '';
+            position: absolute
+            top: 0;
+            left: 0;
+            width:;
+            ;
+            background: lideg, 
+                rgba(255, 255, 255, 0.92)%, 
+                rgba(255, 255, 255, 0.88) %);
+            z-index: 1;
+        }
+        
+        .features-section > * {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .feature-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            flex: 1;
+            padding: 10px 5px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .feature-item:active {
+            transform: scale(0.95);
+            background-color: rgba(0, 122, 255, 0.04);
+        }
+        
+        .feature-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+            opacity: 0.8;
+        }
+        
+        .feature-text {
+            font-size: 13px;
+            color: #8E8E93;
+            font-weight: 400;
+            text-align: cer;
+        }
+        
+        /* 附近寄 */
+        n {
+            /* 底部区域背景图 */
+            background: linear-gr5deg, 
+                
+                #bbdefb 25%, 
+                #90caf9 50%, 
+                #64b5f6 75%, 
+                #42a5f5 100%);
+            backgr;
+            background-position: center;
+            background-repeat: no-repeat;
+            marginx;
+            box;
+          
+       ;
+       
+</html>dy>boipt>
+</   </scr  });
+         });
+        );
+  ${name}`t(`查看寄存点:   aler           ontent;
+   ame').textCr-nr('.lockeySelectohis.quername = t      const      () {
+     functionick', r('clentListeneddEvm.a        ite => {
+    orEach(item-item').fkerloctorAll('.uerySelecdocument.q
+                 });
+       点');
+t('查找附近寄存      aler) {
+      n(tiolick', funcr('cnetedEventLisbtn').adarby-r('.nelecto.querySedocument
+          });
+      ;
+        择城市')alert('选          ion() {
+  k', functicr('clistenentL.addEver')-selectoor('.citySelectcument.querydo       
+        
+ ;       })寄存点分布图');
+   alert('查询          on() {
+ctik', funener('clicdEventListery-btn').adr('.querySelectoquument. doc      
+         ;
+ }));
+       面'lert('打开搜索页        a  () {
+  function', er('clickListen.addEvent')arch-box.seySelector('cument.quer  do    
+          
+        });  });
+
+          );xt}` ${te搜索:     alert(`        
+   ontent;.textCtspot-text')or('.hoSelecthis.query = tconst text             ion() {
+   ck', functtener('clintLism.addEveite            (item => {
+).forEachtspot-item'hotorAll('..querySelecocument      d互效果
+  些交   // 添加一pt>
+         <scri </div>
+
+</div>
+          /div>
+         <    </div>
+            
+    </div>             >
+            </div                  /div>
+         <                span>
+    ">1.2km</nces="dista  <span clas                         span>
+     铁站</场地-text">二七广="locationn class <spa                             
+  ">📍</span>n-icon"locatioass=n cl <spa                          
+     cation">="locker-loss   <div cla              
+           span> 中4 | 小6</">可用柜口：大2 |tyr-capaciocke"lass=    <span cl                       /span>
+ 存点<二七广场寄r-name">ss="lockepan cla         <s                 
+  -info">lockeriv class="     <d           
+        >/divimage">🏪<cker-ss="loiv cla      <d             ">
+     "locker-items=las     <div c           
+                   >
+        </div               iv>
+           </d              /div>
+            <            
+     pan>m</s8knce">0.distaan class=" <sp                               广场</span>
+-text">郑州站东cationlass="lo    <span c                          pan>
+  ">📍</sncoion-is="locat  <span clas                       
+       tion">ocker-locaass="l   <div cl                  >
+       5 | 小8</span 中大3 |">可用柜口：capacitycker- class="lospan  <                          </span>
+ame">郑州站寄存点ocker-ns="lpan clas     <s            
+           >fo"in"locker-iv class=  <d                  v>
+    ge">🏪</dilocker-imaiv class="    <d                   >
+ ker-item"loclass=" <div c           
+                  
+           </div>                  /span>
+ 全部<查看re-btn"> class="mo  <span                     </span>
+  (同步背景)附近寄存点-text">titless="<span cla                 ">
+       titles="section-v clas   <di          ">
+       onckers-sectiarby-lo="neclass      <div         
+  同步背景图 -->寄存点 -  <!-- 附近         
+            
+          div>          </   
+       </div>       
+         </span>理员">管xt"feature-te class=pan      <s              </div>
+    re-icon">🔐"featuss=  <div cla                   em">
+   "feature-its=as     <div cl              </div>
+                pan>
+     优惠卡券</sture-text"> class="fea      <span              
+    🎫</div>icon">"feature- <div class=            
+           e-item">="featur  <div class           
+       >   </div                span>
+ xt">寄存指南</tefeature-s="n clas  <spa                      📖</div>
+on">ature-ics="fe  <div clas              ">
+        ure-itemss="featdiv cla <                  v>
+ /di          <    
+      客服</span>在线t">exeature-t="fass<span cl                      >💬</div>
+  ature-icon"ss="feiv cla    <d                   e-item">
+ uratss="feclav     <di            /div>
+           <         span>
+    xt">我的订单</"feature-tess= <span cla                      
+ >📋</div>ature-icon"lass="fe  <div c              >
+        ure-item""feativ class=     <d             ction">
+  s-seature"feass=     <div cl    
+       景图 --> - 同步背  <!-- 功能入口                  
+      
+         </div>           >
+  /button查询寄存点<">ry-btn"queass=  <button cl                 
+ ">ion"query-sectv class=<di         
+       寄存点按钮 -->!-- 查询  <     
+                    iv>
+     </d          iv>
+      </d                    span>
+t">中原福塔</hotspot-texass=" <span cl              
+         -item">ss="hotspot <div cla                   iv>
+      </d             </span>
+ 广场>二七-text""hotspotass=cl<span                     
+    tem">hotspot-idiv class="           <        div>
+       </            an>
+  ">郑州东站</spexthotspot-tss="<span cla                       ">
+ tspot-itemss="hov cla <di               
+         </div>         n>
+      spa州站</ext">郑otspot-tan class="h <sp                       ">
+spot-itemlass="hotiv c  <d            ">
+      ectiontspots-s"hoss=   <div cla            
+  -->地点   <!-- 热门                      
+   </div>
+               v>
+          </di          span>
+     </地铁站/景点车站/holder">搜索火h-placesearc class="     <span             ">
+      rch-boxclass="seadiv       <            n">
+  arch-sectiov class="se        <di       -->
+ -- 搜索框    <!                
+    
+         v>  </di                </div>
+           an>
+       /sptext">我的附近<earby-n class="n      <spa             n>
+     🧭</spaicon">nearby-class="  <span                     n">
+  by-btlass="near     <div c             /div>
+          <            an>
+">▼</spdown-icon"dropclass=an sp      <                  </span>
+ame">郑州y-ns="cit  <span clas                 
+     /span>📍<">ion-iconass="locat<span cl                    
+    tor">"city-selec <div class=              
+     on">tition-secocalass="l     <div c           
+-->择和我的附近     <!-- 城市选                
+           
+ div>       </      >
+    (同步背景)</divmage">首页顶图="header-ilassdiv c          <          >
+tion""header-secass=div cl         <   ->
+    - 同步背景图 -部图片区域 -- 顶   <!          
+   ent">page-contlass=" <div c         >
+  one-screen""ph<div class=
+        r">neone-contaiass="ph
+    <div cl   </div>
+
+      </div>
+   景图已同步   ✅ 顶部和底部背        
+ o">-inf"synclass=<div c      div>
+     </层次感
+     图，通过不同的遮罩层实现同的 12.png 背景用相 所有区域都使   
+        fo">round-in"backgiv class=     <d  </ul>
+       效果</li>
+  li>统一视觉           <li>
+ 域：同步背景图</ <li>底部区       i>
+    景图</l功能区域：同步背  <li>          景图</li>
+<li>顶部区域：同步背          li>
+  2.png 背景</：1页面      <li>整体<ul>
+          /h3>
+    🎨 顶部底部同步背景图<        <h3>">
+mo-notede class=">
+    <divhead>
+<bodyle>
+</ty   </s  }
+ 00;
+      ight: 6ont-we  f       50;
+   : #4CAFolor         cpx;
+   ont-size: 12   f       
+  0px;: 1  margin-top       8px;
+   adius: -rrder          bo  
+10px;ng:       paddi1);
+       175, 80, 0.a(76,ound: rgb   backgr       
+  info {  .sync-   
+         }
+        ;
+  07AFF#0 color:        ;
+    : 12px font-size
+           p: 10px;  margin-to         s: 8px;
+ -radiurder  bo
+          ding: 10px;     pad     0.1);
+  , , 122, 255und: rgba(0backgro         fo {
+   ckground-in .ba              
+ }
+  0;
+          left:        ute;
+ ion: absol  posit         
+ 🎨'; 'ontent:     c      
+ i::before {e lot-n      .demo   
+    }
+           tive;
+tion: rela      posi     t: 15px;
+ ing-lef  padd   
+       tom: 5px;-bot      margini {
+      emo-note l     .d      
+          }
+  -left: 0;
+      paddinge;
+       : nonyle   list-st       e ul {
+  .demo-not       
+          }
+   700;
+     font-weight:         
+   : #007AFF;olor           cx;
+ tom: 10p margin-bot       h3 {
+       .demo-note  
+       
+            });
+ , 0, 0.1 0 rgba(0,x solid  border: 1p     
+     : 300px;x-width     ma33;
+       olor: #3        c;
+    e: 14px-siz font
+           , 0.1);, 0, 00px rgba(0 4px 2x-shadow: 0  bo          ;
+: 10pxer-radius     bord      x 20px;
+ ding: 15p         pad   );
+pxur(10 blp-filter:ckdro   ba      ;
+   255, 0.95)255, 255, a(ground: rgb        back
+    0px;t: 2gh      ri     
+ x;20pop:    t;
+         edixosition: f     p      o-note {
+   .dem 
+            
+         }0;
+t: 50igh font-we         
+  7AFF; #00r:    colo        
+ {cetan    .dis  
+    
+      
+        }ht: 8px;gin-rig       mar  
+   lex: 1;  f        
+   {xt.location-te     
+             }
+  E93;
+    E8 color: #8  
+         e: 12px;-sizfont           r;
+ te-items: cenlign    a       flex;
+ lay: disp            cation {
+ocker-lo     .l   
+   }
+     ;
+        om: 4pxrgin-bott      ma      
+lock;y: bdispla         E8E93;
+   lor: #8 co        12px;
+    size:      font-
+      capacity {ocker-
+        .l         }
+;
+       tom: 4px  margin-bot          y: block;
+   displa         ight: 600;
+   font-we      A1A;
+   r: #1A1      colox;
+      nt-size: 16p   fo{
+         r-name ke       .loc      
+      }
+     lex: 1;
+   f         nfo {
+ker-i        .loc       
+    }
+    e: 24px;
+ t-siz     fone;
+       whitcolor:          
+   nt: center;tify-conte     jusr;
+       : centeems align-it       ex;
+     flplay:    dis       : 12px;
+ ght margin-ri       %);
+    E 100FF8E86B6B 0%, #5deg, #FF(13-gradientarground: line      back
+      us: 8px;der-radior       b   
+  0px;   height: 6        th: 60px;
+         widage {
+     .locker-im    
+    }
+             08);
+  (0, 0, 0, 0.x 4px rgba1px-shadow: 0  bo     
+      0.98);m: scale( transfor       ve {
+    item:actiocker-  .l       
+   }
+           nter;
+ rsor: poi         cue;
+   0.3s easition: all       trans      ;
+entertems: c-iign         al   
+x;y: fle  displa       0.04);
+   0, 0, a(0, gb rpx solid: 1      border     0, 0.06);
+ , 0, x 8px rgba(0 0 2px-shadow:       bo   0px;
+  px 115margin: 0        5px;
+      1ding:     pad;
+       ius: 12px  border-rad       0px);
+   lter: blur(1drop-fi   back        00%);
+ 255, 0.9) 1, 5, 255ba(25        rg       0%, 
+  0.95) 255, 255,  rgba(255,             deg, 
+  t(135dien linear-grand:ackgrou           ber-item {
+ .lock
+                   }
+r;
+     inteor: po      curs      AFF;
+: #007    color        e: 14px;
+siz    font-     -btn {
+   more
+        .      }
+     ;
+     ight: 700font-we            1A1A1A;
+ #olor:    c
+        x;ze: 18pont-si       f   xt {
+     .title-te
+     
+           }     px;
+ottom: 12margin-b   ;
+         5px: 1ng paddi        
+   enter;gn-items: c        alin;
+    e-betweentent: spac justify-co        ;
+   ex flsplay: di           {
+itle   .section-t       
+           }
+ x: 2;
+   de       z-in
+     lative;: re    position
+        ction > * {ckers-seearby-lo    .n    
+             }
+ ndex: 1;
+           z-i  ) 100%);
+ 0.85, 255, , 25150(2        rgba, 
+        0% 255, 0.9) 55, 255,  rgba(2       
+        35deg,gradient(1 linear-ground:back         0%;
+   eight: 10    h
+        width: 100%;            ft: 0;
+    le;
+         top: 0            absolute;
+n:ositio         p   '';
+nt:      conte   
+    re {tion::befos-secockerearby-l        .n     
+
+     }e;
+      relativion: itpos       dden;
+     hiflow:    over        ;
+ pxbottom: 50ng-    paddi 

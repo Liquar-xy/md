@@ -10,7 +10,7 @@
 		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "智能寄存柜"
+				"navigationBarTitleText": "便捷储物舱"
 			}
 		},
 		{
@@ -28,13 +28,6 @@
 				"navigationStyle": "custom"
 			}
 		},
-		// {
-		// 	"path": "pages/login/login",
-		// 	"style": {
-		// 		"navigationBarTitleText": "登录",
-		// 		"navigationStyle": "custom"
-		// 	}
-		// },
 		{
 			"path": "pages/user-edit/user-edit",
 			"style": {
@@ -97,6 +90,45 @@
 				"navigationBarTitleText": "附近寄存",
 				"navigationBarBackgroundColor": "#ffffff",
 				"navigationBarTextStyle": "black"
+			}
+		},
+		{
+			"path": "pages/search/search",
+			"style": {
+				"navigationBarTitleText": "搜索寄存点",
+				"navigationBarBackgroundColor": "#ffffff",
+				"navigationBarTextStyle": "black"
+			}
+		},
+		{
+			"path": "pages/search/search-simple",
+			"style": {
+				"navigationBarTitleText": "简单搜索",
+				"navigationBarBackgroundColor": "#ffffff",
+				"navigationBarTextStyle": "black"
+			}
+		},
+
+		{
+			"path": "pages/locker-map/locker-map",
+			"style": {
+				"navigationBarTitleText": "寄存点分布图",
+				"navigationBarBackgroundColor": "#ffffff",
+				"navigationBarTextStyle": "black"
+			}
+		},
+		{
+			"path": "pages/admin/admin",
+			"style": {
+				"navigationBarTitleText": "管理员后台",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/admin/profile",
+			"style": {
+				"navigationBarTitleText": "个人信息",
+				"navigationStyle": "custom"
 			}
 		}
 	],

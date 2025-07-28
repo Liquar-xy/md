@@ -30,6 +30,11 @@
 			</view>
 			
 			<button class="login-btn" @click="handleLogin">登录</button>
+			
+			<!-- 开发测试用快速登录 -->
+			<view class="quick-login" @click="quickLogin">
+				<text class="quick-login-text">快速登录（测试）</text>
+			</view>
 		</view>
 		
 		<!-- 底部logo区域 -->
@@ -72,11 +77,27 @@ export default {
 				});
 			}
 		},
-		handleLogin() {
+		
+		// 验证手机号格式
+		validatePhone(phone) {
+			const phoneRegex = /^1[3-9]\d{9}$/;
+			return phoneRegex.test(phone);
+		},
+		
+		// 处理登录
+		async handleLogin() {
 			// 表单验证
 			if (!this.account.trim()) {
 				uni.showToast({
 					title: '请输入手机号',
+					icon: 'none'
+				});
+				return;
+			}
+			
+			if (!this.validatePhone(this.account)) {
+				uni.showToast({
+					title: '请输入正确的手机号',
 					icon: 'none'
 				});
 				return;
@@ -90,53 +111,80 @@ export default {
 				return;
 			}
 			
+			if (this.password.length < 6) {
+				uni.showToast({
+					title: '密码至少6位',
+					icon: 'none'
+				});
+				return;
+			}
+			
 			// 显示登录中
 			uni.showLoading({
 				title: '登录中...'
 			});
 			
-			// 模拟登录请求
-			setTimeout(() => {
-				try {
-					// 模拟登录成功，保存用户信息
-					const userData = {
-						id: 1,
-						username: '智慧存' + this.account.slice(-4),
-						phone: this.account,
-						avatar: '',
-						nickname: '智慧存' + this.account.slice(-4)
-					};
-					
-					// 保存token和用户信息
-					uni.setStorageSync('token', 'mock_token_' + Date.now());
-					uni.setStorageSync('userData', userData);
-					uni.setStorageSync('loginTime', Date.now());
-					
-					console.log('登录成功，用户数据已保存:', userData);
-					
-					uni.hideLoading();
-					uni.showToast({
-						title: '登录成功',
-						icon: 'success',
-						duration: 1500
-					});
-					
-					// 延迟跳转到首页
-					setTimeout(() => {
-						uni.reLaunch({
-							url: '/pages/index/index'
+			try {
+				// 模拟登录请求
+				setTimeout(() => {
+					try {
+						// 模拟登录成功，保存用户信息
+						const userData = {
+							id: 1,
+							username: '智慧存' + this.account.slice(-4),
+							phone: this.account,
+							avatar: '',
+							nickname: '智慧存' + this.account.slice(-4)
+						};
+						
+						// 保存token和用户信息
+						uni.setStorageSync('token', 'mock_token_' + Date.now());
+						uni.setStorageSync('userData', userData);
+						uni.setStorageSync('loginTime', Date.now());
+						
+						console.log('登录成功，用户数据已保存:', userData);
+						
+						uni.hideLoading();
+						uni.showToast({
+							title: '登录成功',
+							icon: 'success',
+							duration: 1500
 						});
-					}, 1500);
-					
-				} catch (error) {
-					uni.hideLoading();
-					console.error('保存登录数据失败:', error);
-					uni.showToast({
-						title: '登录失败，请重试',
-						icon: 'none'
-					});
-				}
-			}, 1000); // 模拟网络请求延迟
+						
+						// 延迟跳转到首页
+						setTimeout(() => {
+							uni.reLaunch({
+								url: '/pages/index/index'
+							});
+						}, 1500);
+						
+					} catch (error) {
+						uni.hideLoading();
+						console.error('保存登录数据失败:', error);
+						uni.showToast({
+							title: '登录失败，请重试',
+							icon: 'none'
+						});
+					}
+				}, 1000); // 模拟网络请求延迟
+				
+			} catch (error) {
+				uni.hideLoading();
+				console.error('登录失败:', error);
+				
+				uni.showToast({
+					title: error.message || '登录失败，请重试',
+					icon: 'none',
+					duration: 2000
+				});
+			}
+		},
+		
+		// 快速登录（测试用）
+		quickLogin() {
+			this.account = '13800138000';
+			this.password = '123456';
+			this.handleLogin();
 		}
 	}
 }
@@ -219,6 +267,18 @@ export default {
 	background-color: #0056cc;
 }
 
+.quick-login {
+	text-align: center;
+	margin-top: 30rpx;
+	padding: 20rpx;
+}
+
+.quick-login-text {
+	font-size: 26rpx;
+	color: #007aff;
+	text-decoration: underline;
+}
+
 .footer-section {
 	margin-top: auto;
 	padding-bottom: 60rpx;
@@ -257,4 +317,4 @@ export default {
 	color: #666666;
 	line-height: 1.5;
 }
-</style> 
+</style>

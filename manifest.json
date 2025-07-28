@@ -43,7 +43,12 @@
             /* ios打包配置 */
             "ios" : {},
             /* SDK配置 */
-            "sdkConfigs" : {}
+            "sdkConfigs" : {
+                "maps" : {
+                    "type" : "baidu",
+                    "key" : "9jnxn6bIxVgX1u4KffC5Cc83dTMzzYIA"
+                }
+            }
         }
     },
     /* 快应用特有相关 */
@@ -56,7 +61,7 @@
         "sdkConfigs" : {
             "maps" : {
                 "type" : "baidu",
-                "key" : "7pzoTHchDdMRK7jmpCr1sugjv3hfoxz5"
+                "key" : "9jnxn6bIxVgX1u4KffC5Cc83dTMzzYIA"
             }
         }
     },

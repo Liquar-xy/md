@@ -163,9 +163,62 @@ export default {
 		
 		// 查看全部订单
 		handleViewAllOrders() {
-			uni.showToast({
-				title: '查看全部订单',
-				icon: 'none'
+			console.log('获取全部订单列表');
+			uni.showLoading({
+				title: '加载中...'
+			});
+			
+			// 获取用户数据
+			let userData = null;
+			try {
+				const userDataStr = uni.getStorageSync('userData');
+				if (userDataStr) {
+					userData = JSON.parse(userDataStr);
+				}
+			} catch (e) {
+				console.log('获取用户数据失败:', e);
+			}
+			
+			// 调用后端list接口
+			uni.request({
+				url: 'http://localhost:8000/list',
+				method: 'POST',
+				data: {
+					userId: userData?.userId || '1',
+					page: 1,
+					pageSize: 20
+				},
+				header: {
+					'Content-Type': 'application/x-www-form-urlencoded'
+				},
+				success: (res) => {
+					uni.hideLoading();
+					console.log('订单列表响应:', res.data);
+					
+					if (res.data && res.data.code === 200) {
+						// 跳转到订单列表页面，传递订单数据
+						uni.navigateTo({
+							url: '/pages/order-list/order-list',
+							success: () => {
+								// 通过事件总线传递数据
+								uni.$emit('orderListData', res.data.data || []);
+							}
+						});
+					} else {
+						uni.showToast({
+							title: res.data?.msg || '获取订单失败',
+							icon: 'none'
+						});
+					}
+				},
+				fail: (err) => {
+					uni.hideLoading();
+					console.log('获取订单列表失败:', err);
+					uni.showToast({
+						title: '网络错误，请重试',
+						icon: 'none'
+					});
+				}
 			});
 		},
 		
@@ -305,9 +358,28 @@ export default {
 
 <style scoped>
 .my-container {
+	background-image: url('/static/12.png');
+	background-size: cover;
+	background-position: center;
+	background-repeat: no-repeat;
+	background-attachment: fixed;
 	min-height: 100vh;
-	background-color: #f5f5f5;
 	padding-bottom: 120rpx;
+	position: relative;
+}
+
+.my-container::before {
+	content: '';
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: linear-gradient(180deg, 
+		rgba(248, 250, 255, 0.85) 0%, 
+		rgba(245, 245, 245, 0.9) 100%);
+	z-index: -1;
+	backdrop-filter: blur(2rpx);
 }
 
 /* 用户信息区域 */

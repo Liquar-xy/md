@@ -1,10 +1,17 @@
 <template>
 	<view class="page">
+		<!-- 顶部状态栏 -->
+		<view class="status-bar">
+			<text class="status-text">城市定位状态: {{locationStatus}}</text>
+			<text class="api-key-text">百度地图: {{mapStatus}}</text>
+		</view>
+		
 		<!-- 搜索栏 -->
 		<view class="search-section">
-			<view class="location-info">
+			<view class="location-info" @click="selectCity">
 				<text class="location-icon">📍</text>
 				<text class="current-city">{{currentCity}}</text>
+				<text class="dropdown-icon">▼</text>
 			</view>
 			<view class="search-box" @click="openSearch">
 				<text class="search-icon">🔍</text>
@@ -12,939 +19,1488 @@
 			</view>
 		</view>
 		
-		<!-- 百度地图 -->
+		<!-- 地图容器 -->
 		<view class="map-container">
-			<map
-				id="nearbyMap"
-				class="map"
-				:longitude="mapCenter.longitude"
-				:latitude="mapCenter.latitude"
-				:scale="15"
-				:markers="mapMarkers"
-				:show-location="true"
-				:enable-3D="false"
-				:show-compass="true"
-				:enable-overlooking="false"
-				:enable-zoom="true"
-				:enable-scroll="true"
-				:enable-rotate="false"
-				:enable-satellite="false"
-				:enable-traffic="false"
-				@markertap="onMarkerTap"
-				@regionchange="onRegionChange"
-				@tap="onMapTap"
-				@updated="onMapUpdated"
-			></map>
-			
-			<!-- 定位按钮 -->
-			<view class="location-btn" @click="relocate">
-				<text class="location-btn-icon">🧭</text>
+			<!-- 简化的地图显示区域 -->
+			<view class="map-placeholder" v-if="!mapReady">
+				<view class="placeholder-content">
+					<text class="placeholder-icon">🗺️</text>
+					<text class="placeholder-text">{{loadingText}}</text>
+					<text class="placeholder-status">状态: {{mapStatus}}</text>
+				</view>
 			</view>
 			
-			<!-- 刷新按钮 -->
-			<view class="refresh-btn" @click="refreshNearbyLockers">
-				<text class="refresh-btn-icon">🔄</text>
+			<!-- 百度地图容器 -->
+			<view id="baiduMapContainer" class="baidu-map-container" v-show="mapReady"></view>
+			
+			<!-- 地图控制按钮 -->
+			<view class="map-controls">
+				<view class="control-btn location-btn" @click="getCurrentLocation">
+					<text class="btn-icon">🏙️</text>
+					<text class="btn-text">回到城市</text>
+				</view>
+				<view class="control-btn refresh-btn" @click="refreshMap">
+					<text class="btn-icon">🔄</text>
+					<text class="btn-text">刷新</text>
+				</view>
+				<view class="control-btn lockers-btn" @click="refreshNearbyLockers">
+					<text class="btn-icon">🏪</text>
+					<text class="btn-text">寄存点</text>
+				</view>
+
+
 			</view>
 			
-			<!-- API模式切换按钮（开发测试用） -->
-			<view class="api-mode-btn" @click="toggleAPIMode">
-				<text class="api-mode-text">{{useRealAPI ? '真实API' : '模拟数据'}}</text>
+			<!-- 地图错误提示 -->
+			<view v-if="mapError" class="map-error">
+				<text class="error-title">地图加载失败</text>
+				<text class="error-message">{{mapErrorMessage}}</text>
+				<view class="error-actions">
+					<button class="retry-btn" @click="retryLoadMap">重试</button>
+				</view>
 			</view>
 			
-			<!-- 调试信息显示（开发模式） -->
-			<view class="debug-info" v-if="!useRealAPI">
-				<text class="debug-text">调试模式</text>
+			<!-- 位置信息显示 -->
+			<view class="location-info-panel" v-if="currentLocation">
+				<text class="location-title">🏙️ 当前城市位置 ({{currentLocation.source}})</text>
+				<text class="location-detail">🌐 经度: {{currentLocation.longitude}}</text>
+				<text class="location-detail">🌐 纬度: {{currentLocation.latitude}}</text>
+				<text class="location-detail">🎯 精度: {{currentLocation.accuracy}}米</text>
+				<text class="location-detail" v-if="currentLocation.altitude">⛰️ 海拔: {{currentLocation.altitude}}米</text>
+				<text class="location-detail" v-if="currentLocation.speed">🚗 速度: {{currentLocation.speed}}km/h</text>
+				<text class="location-detail">🕐 更新: {{currentLocation.timestamp}}</text>
+				<text class="location-detail address">📍 {{currentLocation.address}}</text>
 			</view>
 		</view>
 		
-		<!-- 底部寄存点列表 -->
-		<view class="bottom-panel" :class="{ 'expanded': showLockerList }">
-			<!-- 拖拽指示器 -->
-			<view class="drag-indicator" @click="toggleLockerList">
-				<view class="drag-line"></view>
+		<!-- 寄存点信息面板 -->
+		<view class="locker-panel" v-if="currentLocation">
+			<view class="panel-header">
+				<text class="panel-title">🏪 附近寄存点</text>
+				<text class="panel-count" v-if="nearbyLockers.length > 0">找到 {{nearbyLockers.length}} 个寄存点</text>
+				<text class="panel-count" v-else>附近暂无寄存点</text>
+				<text class="refresh-btn-small" @click="refreshNearbyLockers">🔄</text>
 			</view>
 			
-			<!-- 无寄存点状态 -->
-			<view class="no-lockers" v-if="!loading && nearbyLockers.length === 0">
-				<text class="no-lockers-title">抱歉</text>
-				<text class="no-lockers-desc">您附近5KM内暂无寄存点</text>
-			</view>
-			
-			<!-- 有寄存点状态 -->
-			<view class="lockers-content" v-else>
-				<view class="lockers-header" v-if="nearbyLockers.length > 0">
-					<text class="lockers-count">附近共有{{nearbyLockers.length}}个寄存柜</text>
-					<text class="refresh-text" @click="refreshAllData">刷新</text>
+			<!-- 有寄存点时显示寄存点信息 -->
+			<view class="selected-locker" v-if="selectedLocker">
+				<view class="locker-info">
+					<text class="locker-name">{{selectedLocker.name}}</text>
+					<text class="locker-address">📍 {{selectedLocker.address}}</text>
+					<text class="locker-distance">📏 距离: {{selectedLocker.distance}}</text>
+					<text class="locker-status" :class="selectedLocker.status">
+						🔘 状态: {{selectedLocker.status === 'available' ? '可用' : '不可用'}}
+					</text>
 				</view>
 				
-				<!-- 寄存点列表 -->
-				<scroll-view class="lockers-list" scroll-y="true" v-if="showLockerList">
-					<view 
-						class="locker-card" 
-						v-for="(locker, index) in nearbyLockers" 
-						:key="locker.id"
-						@click="selectLocker(locker)"
-					>
-						<image class="locker-image" src="/static/locker-image.jpg" mode="aspectFill"></image>
-						<view class="locker-info">
-							<text class="locker-name">{{locker.name}}</text>
-							<text class="locker-capacity" :class="{ 'unavailable': locker.status === 'unavailable' }">
-								{{locker.status === 'unavailable' ? '设备离线' : `大柜${locker.large}个 中柜${locker.medium}个 小柜${locker.small}个`}}
-							</text>
-							<view class="locker-location">
-								<text class="location-icon">📍</text>
-								<text class="location-text">{{locker.address}}</text>
-							</view>
-							<text class="distance" v-if="locker.distance">{{locker.distance}}</text>
-						</view>
+				<view class="locker-capacity">
+					<view class="capacity-item">
+						<text class="capacity-label">大柜</text>
+						<text class="capacity-value" :class="{ 'zero': selectedLocker.large === 0 }">{{selectedLocker.large}}</text>
 					</view>
-				</scroll-view>
+					<view class="capacity-item">
+						<text class="capacity-label">中柜</text>
+						<text class="capacity-value" :class="{ 'zero': selectedLocker.medium === 0 }">{{selectedLocker.medium}}</text>
+					</view>
+					<view class="capacity-item">
+						<text class="capacity-label">小柜</text>
+						<text class="capacity-value" :class="{ 'zero': selectedLocker.small === 0 }">{{selectedLocker.small}}</text>
+					</view>
+				</view>
 				
-				<!-- 当前选择寄存柜（收起状态） -->
-				<view class="current-locker" v-if="!showLockerList && selectedLocker">
-					<view class="current-locker-content" @click="selectLocker(selectedLocker)">
-						<image class="current-locker-image" src="/static/locker-image.jpg" mode="aspectFill"></image>
-						<view class="current-locker-info">
-							<text class="current-locker-name">{{selectedLocker.name}}</text>
-							<text class="current-locker-capacity" :class="{ 'unavailable': selectedLocker.status === 'unavailable' }">
-								{{selectedLocker.status === 'unavailable' ? '设备离线' : `大柜${selectedLocker.large}个 中柜${selectedLocker.medium}个 小柜${selectedLocker.small}个`}}
-							</text>
-						</view>
-					</view>
+				<view class="locker-actions">
+					<button class="action-btn primary" @click="selectLocker(selectedLocker)" 
+							:disabled="selectedLocker.status !== 'available'">
+						{{selectedLocker.status === 'available' ? '选择此寄存点' : '暂不可用'}}
+					</button>
 				</view>
 			</view>
 			
-			<!-- 加载状态 -->
-			<view class="loading" v-if="loading">
-				<text class="loading-text">正在获取附近寄存点...</text>
+			<!-- 没有寄存点时显示提示信息 -->
+			<view class="no-lockers" v-else>
+				<view class="no-lockers-content">
+					<text class="no-lockers-icon">📍</text>
+					<text class="no-lockers-title">附近暂无寄存点</text>
+					<text class="no-lockers-desc">在当前位置5公里范围内未找到可用的寄存点</text>
+					<view class="no-lockers-actions">
+						<button class="action-btn secondary" @click="refreshNearbyLockers">
+							🔄 重新搜索
+						</button>
+						<button class="action-btn primary" @click="openSearch">
+							🔍 搜索其他地点
+						</button>
+					</view>
+				</view>
 			</view>
 		</view>
 	</view>
 </template>
 
 <script>
-	// ===== 后端接口配置说明 =====
-	// 1. 后端服务地址: http://localhost:8000
-	// 2. 我的附近接口: GET /api/nearby/my-nearby
-	// 3. 接口请求格式: GET ?longitude=116.397428&latitude=39.90923&radius=5&limit=20
-	// 4. 返回格式: { user_location: {...}, nearby_points: [...], total_count: 2, search_radius: 5.0, baidu_map_ak: "..." }
-	// 5. 启动后端服务: go run cmd/ito-deposit/main.go
-	// 6. 测试接口: .\test_api.ps1
+	// 百度地图AK配置
+	const BAIDU_MAP_AK = '9jnxn6bIxVgX1u4KffC5Cc83dTMzzYIA';
 	
 	export default {
 		data() {
 			return {
-				currentCity: '郑州',
-				mapCenter: {
-					longitude: 113.6253,
-					latitude: 34.7466
-				},
-				mapMarkers: [],
+				// 基本信息
+				currentCity: '定位中...',
+				
+				// 地图相关
+				mapInstance: null,
+				mapStatus: '初始化中',
+				mapError: false,
+				mapErrorMessage: '',
+				mapReady: false,
+				
+				// 定位相关
+				locationStatus: '准备定位',
+				currentLocation: null,
+				watchId: null,
+				
+				// 寄存点相关
 				nearbyLockers: [],
 				selectedLocker: null,
-				showLockerList: false,
-				loading: true,
-				searchTimer: null, // 搜索防抖定时器
-				realTimeUpdateTimer: null, // 实时更新定时器
-				useRealAPI: true // 是否使用真实API，false则使用模拟数据
+				
+				// 状态管理
+				loadingText: '正在初始化...'
 			}
 		},
+		
 		onLoad() {
-			console.log('=== 附近寄存页面加载 ===');
-			console.log('当前API模式:', this.useRealAPI ? '真实API' : '模拟数据');
-			
-			// 检查登录状态
-			if (!this.checkLoginStatus()) {
-				return; // 如果未登录，会跳转到登录页，不继续执行
-			}
-			
-			// 检查是否有已选择的城市
-			const selectedCity = uni.getStorageSync('selectedCity');
-			if (selectedCity && selectedCity.name) {
-				this.currentCity = selectedCity.name;
-				console.log('已选择城市:', selectedCity);
-			}
-			
-			// 显示页面加载提示
-			uni.showToast({
-				title: '正在初始化...',
-				icon: 'loading',
-				duration: 2000
-			});
-			
-			this.initLocation();
+			console.log('=== 实时定位地图页面加载 ===');
+			console.log('百度地图API密钥:', BAIDU_MAP_AK);
 		},
 		
-		onShow() {
-			console.log('附近寄存页面显示');
-			// 页面显示时开始实时更新
-			this.startRealTimeUpdate();
-		},
-		
-		onHide() {
-			console.log('附近寄存页面隐藏');
-			// 页面隐藏时停止实时更新
-			this.stopRealTimeUpdate();
+		onReady() {
+			console.log('=== 页面渲染完成，开始初始化 ===');
+			this.startInitialization();
 		},
 		
 		onUnload() {
-			console.log('附近寄存页面卸载');
-			// 页面卸载时清理定时器
-			this.stopRealTimeUpdate();
-			if (this.searchTimer) {
-				clearTimeout(this.searchTimer);
+			console.log('📱 页面卸载，清理资源');
+			if (this.watchId) {
+				clearInterval(this.watchId);
+				console.log('✅ 位置监听定时器已清理');
 			}
 		},
-		methods: {
-			// 检查登录状态
-			checkLoginStatus() {
-				const token = uni.getStorageSync('token');
-				const userData = uni.getStorageSync('userData');
-				
-				if (!token || !userData) {
-					console.log('用户未登录，跳转到登录页');
-					uni.reLaunch({
-						url: '/pages/login/login'
+		
+		onHide() {
+			console.log('📱 页面隐藏');
+			// 页面隐藏时可以选择暂停位置监听以节省电量
+		},
+		
+		onShow() {
+			console.log('📱 页面显示');
+			
+			// 检查城市是否发生变化
+			const selectedCity = uni.getStorageSync('selectedCity');
+			if (selectedCity) {
+				if (selectedCity.name !== this.currentCity) {
+					console.log('🏙️ 检测到城市变化:', this.currentCity, '->', selectedCity.name);
+					this.currentCity = selectedCity.name;
+					
+					// 显示城市切换提示
+					uni.showToast({
+						title: `已切换到${selectedCity.name}`,
+						icon: 'success',
+						duration: 2000
 					});
-					return false;
+					
+					// 如果地图已经初始化，重新设置城市位置
+					if (this.mapInstance) {
+						this.setCityLocation(selectedCity);
+					} else {
+						// 如果地图未初始化，重新初始化
+						this.startInitialization();
+					}
+				} else {
+					console.log('🏙️ 城市未变化，保持当前状态:', this.currentCity);
 				}
+			} else {
+				console.log('⚠️ 未找到选择的城市，使用默认城市');
+				// 如果没有选择城市，设置默认城市
+				const defaultCity = {
+					name: '郑州',
+					coordinates: {
+						longitude: 113.6253,
+						latitude: 34.7466
+					}
+				};
+				uni.setStorageSync('selectedCity', defaultCity);
+				this.currentCity = defaultCity.name;
 				
-				console.log('用户已登录:', userData);
-				return true;
+				if (this.mapInstance) {
+					this.setCityLocation(defaultCity);
+				} else {
+					this.startInitialization();
+				}
+			}
+			
+			// 页面重新显示时可以重新启动位置监听（已废弃的GPS功能）
+			// if (this.currentLocation && !this.watchId) {
+			//     this.startBaiduLocationWatch();
+			// }
+		},
+		
+		methods: {
+			// 选择城市
+			selectCity() {
+				console.log('选择城市');
+				uni.navigateTo({
+					url: '/pages/city-select/city-select?from=nearby'
+				});
 			},
 			
-			// 初始化定位
-			initLocation() {
-				console.log('=== 开始初始化定位 ===');
-				console.log('当前地图中心:', this.mapCenter);
+			// 开始初始化
+			startInitialization() {
+				console.log('🚀 开始初始化');
+				this.loadingText = '正在初始化地图...';
+				this.mapStatus = '初始化中';
 				
-				uni.showLoading({
-					title: '定位中...'
+				// 获取用户选择的城市
+				const selectedCity = uni.getStorageSync('selectedCity');
+				if (selectedCity && selectedCity.coordinates) {
+					console.log('📍 使用选择的城市:', selectedCity.name);
+					this.currentCity = selectedCity.name;
+					this.initMapWithCity(selectedCity);
+				} else {
+					console.log('📍 未找到选择的城市，使用默认城市');
+					this.currentCity = '郑州';
+					this.initMapWithDefaultCity();
+				}
+			},
+			
+			// 基于选择的城市初始化地图
+			async initMapWithCity(selectedCity) {
+				console.log('🗺️ 基于选择城市初始化地图:', selectedCity.name);
+				this.mapStatus = '加载地图API';
+				this.loadingText = '正在加载百度地图API...';
+				
+				try {
+					await this.loadBaiduMapAPI();
+					this.createMapInstance();
+					
+					// 地图创建完成后设置城市位置
+					setTimeout(() => {
+						this.setCityLocation(selectedCity);
+					}, 1000);
+					
+				} catch (error) {
+					console.error('地图初始化失败:', error);
+					this.handleError('地图初始化失败: ' + error.message);
+				}
+			},
+			
+			// 使用默认城市初始化地图
+			async initMapWithDefaultCity() {
+				console.log('🗺️ 使用默认城市初始化地图');
+				const defaultCity = {
+					name: '郑州',
+					coordinates: {
+						longitude: 113.6253,
+						latitude: 34.7466
+					}
+				};
+				
+				// 保存默认城市到本地存储
+				uni.setStorageSync('selectedCity', defaultCity);
+				
+				await this.initMapWithCity(defaultCity);
+			},
+			
+			// 设置城市位置
+			setCityLocation(selectedCity) {
+				console.log('📍 设置城市位置:', selectedCity.name);
+				const { longitude, latitude } = selectedCity.coordinates;
+				
+				this.locationStatus = `当前城市: ${selectedCity.name}`;
+				
+				// 更新位置信息
+				this.currentLocation = {
+					longitude: longitude.toFixed(6),
+					latitude: latitude.toFixed(6),
+					accuracy: 1000,
+					timestamp: new Date().toLocaleTimeString(),
+					address: `${selectedCity.name}市中心`,
+					source: '城市选择'
+				};
+				
+				// 更新地图中心
+				if (this.mapInstance) {
+					const point = new BMap.Point(longitude, latitude);
+					this.mapInstance.centerAndZoom(point, 13);
+					
+					// 添加城市中心标记
+					this.addCityLocationMarker(point, selectedCity.name);
+				}
+				
+				// 搜索该城市的寄存点
+				this.loadNearbyLockers(longitude, latitude);
+				
+				// 显示成功提示
+				uni.showToast({
+					title: `已定位到${selectedCity.name}`,
+					icon: 'success',
+					duration: 2000
 				});
 				
-				// 检查是否支持定位
-				if (typeof navigator === 'undefined' || !navigator.geolocation) {
-					console.warn('浏览器不支持定位功能，使用默认位置');
-					uni.hideLoading();
-					this.handleLocationFail({ errMsg: 'geolocation not supported' });
+				console.log('✅ 城市位置设置完成');
+			},
+			
+			// 添加城市位置标记
+			addCityLocationMarker(point, cityName) {
+				if (!this.mapInstance) return;
+				
+				// 清除之前的标记
+				this.mapInstance.clearOverlays();
+				
+				// 创建城市标记
+				const marker = new BMap.Marker(point);
+				
+				// 创建城市图标
+				const icon = new BMap.Icon(
+					'data:image/svg+xml;base64,' + btoa(`
+						<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+							<circle cx="16" cy="16" r="12" fill="#FF6B35" stroke="#FFFFFF" stroke-width="4"/>
+							<circle cx="16" cy="16" r="4" fill="#FFFFFF"/>
+							<circle cx="16" cy="16" r="14" fill="none" stroke="#FF6B35" stroke-width="2" opacity="0.3"/>
+						</svg>
+					`),
+					new BMap.Size(32, 32),
+					{
+						anchor: new BMap.Size(16, 16)
+					}
+				);
+				marker.setIcon(icon);
+				
+				this.mapInstance.addOverlay(marker);
+				
+				// 添加信息窗口
+				const infoContent = `
+					<div style="padding: 15px; min-width: 250px;">
+						<h4 style="margin: 0 0 10px 0; color: #FF6B35;">🏙️ ${cityName}</h4>
+						<p style="margin: 5px 0;"><strong>经度:</strong> ${point.lng.toFixed(6)}</p>
+						<p style="margin: 5px 0;"><strong>纬度:</strong> ${point.lat.toFixed(6)}</p>
+						<p style="margin: 5px 0;"><strong>定位方式:</strong> 城市选择</p>
+						<p style="margin: 5px 0;"><strong>更新时间:</strong> ${new Date().toLocaleTimeString()}</p>
+						<p style="margin: 5px 0; word-break: break-all;"><strong>地址:</strong> ${cityName}市中心区域</p>
+					</div>
+				`;
+				
+				const infoWindow = new BMap.InfoWindow(infoContent);
+				marker.addEventListener('click', () => {
+					this.mapInstance.openInfoWindow(infoWindow, point);
+				});
+				
+				console.log('📍 城市位置标记已添加');
+			},
+			
+			// 使用百度地图定位
+			startBaiduGeolocation() {
+				console.log('📍 开始百度地图定位');
+				this.loadingText = '正在使用百度定位获取您的位置...';
+				this.mapStatus = '百度定位中';
+				this.locationStatus = '正在定位';
+				
+				if (!this.mapInstance) {
+					console.error('❌ 地图实例未创建');
+					this.fallbackToHTML5Location();
 					return;
 				}
 				
-				// 设置定位选项
-				const locationOptions = {
-					type: 'gcj02', // 返回可用于uni.openLocation的坐标
-					altitude: false, // 不需要高度信息
-					geocode: false, // 不需要地理编码
-					timeout: 15000, // 15秒超时
-					enableHighAccuracy: true, // 启用高精度定位
-					maximumAge: 60000 // 缓存1分钟
-				};
-				
-				console.log('定位配置:', locationOptions);
-				
-				uni.getLocation({
-					...locationOptions,
-					success: (res) => {
-						console.log('✅ 定位成功:', res);
-						console.log('经度:', res.longitude, '纬度:', res.latitude);
-						console.log('精度:', res.accuracy, '米');
-						
-						this.mapCenter = {
-							longitude: res.longitude,
-							latitude: res.latitude
-						};
-						
-						// 定位成功后处理城市切换和寄存点加载
-						this.handleLocationSuccess(res);
-					},
-					fail: (err) => {
-						console.error('❌ 定位失败:', err);
-						this.handleLocationFail(err);
-					},
-					complete: () => {
-						uni.hideLoading();
-					}
-				});
-			},
-			
-			// 处理定位成功
-			async handleLocationSuccess(locationRes) {
-				const { latitude, longitude } = locationRes;
-				
 				try {
-					// 1. 根据经纬度获取城市信息并自动切换
-					const cityInfo = await this.getCityByLocation(latitude, longitude);
+					// 创建百度定位控件
+					const geolocationControl = new BMap.GeolocationControl({
+						anchor: BMAP_ANCHOR_BOTTOM_RIGHT,
+						offset: new BMap.Size(10, 10),
+						enableAutoLocation: false,
+						locationIcon: null
+					});
 					
-					if (cityInfo && cityInfo.name) {
-						this.currentCity = cityInfo.name;
-						// 保存到本地存储，同步到首页
-						uni.setStorageSync('selectedCity', cityInfo);
-						
-						uni.showToast({
-							title: `已定位到${cityInfo.name}`,
-							icon: 'success',
-							duration: 1500
-						});
-					}
+					// 添加定位控件到地图（隐藏）
+					this.mapInstance.addControl(geolocationControl);
 					
-					// 2. 获取附近寄存点
-					await this.loadNearbyLockers(latitude, longitude);
+					// 创建定位对象
+					const geolocation = new BMap.Geolocation();
+					
+					// 定位成功回调
+					geolocation.getCurrentPosition((result) => {
+						if (geolocation.getStatus() == BMAP_STATUS_SUCCESS) {
+							console.log('✅ 百度定位成功:', result);
+							this.handleBaiduLocationSuccess(result);
+						} else {
+							console.error('❌ 百度定位失败:', geolocation.getStatus());
+							this.fallbackToHTML5Location();
+						}
+					}, {
+						enableHighAccuracy: true,
+						timeout: 10000,
+						maximumAge: 60000
+					});
+					
+					console.log('✅ 百度定位已启动');
 					
 				} catch (error) {
-					console.error('处理定位结果失败:', error);
-					// 即使城市获取失败，也要尝试加载寄存点
-					this.loadNearbyLockers(latitude, longitude);
+					console.error('❌ 百度定位初始化失败:', error);
+					this.fallbackToHTML5Location();
 				}
 			},
 			
-			// 处理定位失败
-			handleLocationFail(error) {
-				console.error('定位失败详细信息:', error);
+			// 处理百度定位成功
+			handleBaiduLocationSuccess(result) {
+				console.log('📍 百度定位详细信息:', result);
 				
-				let message = '定位失败';
-				let suggestion = '将使用默认位置显示寄存点';
+				const point = result.point;
+				const accuracy = result.accuracy || 100;
 				
-				if (error.errMsg) {
-					if (error.errMsg.includes('auth deny') || error.errMsg.includes('denied')) {
-						message = '位置权限被拒绝';
-						suggestion = '请在浏览器设置中允许位置访问权限，或使用模拟数据测试';
-					} else if (error.errMsg.includes('timeout')) {
-						message = '定位超时';
-						suggestion = '请检查网络连接，或使用模拟数据测试';
-					} else if (error.errMsg.includes('unavailable')) {
-						message = '定位服务不可用';
-						suggestion = '请检查设备定位功能是否开启';
-					}
-				}
+				// 更新位置信息
+				this.currentLocation = {
+					longitude: point.lng.toFixed(6),
+					latitude: point.lat.toFixed(6),
+					accuracy: Math.round(accuracy),
+					timestamp: new Date().toLocaleTimeString(),
+					address: '正在解析地址...',
+					source: '百度定位'
+				};
 				
-				uni.showModal({
-					title: '定位失败',
-					content: `${message}\n\n${suggestion}`,
-					confirmText: '使用模拟数据',
-					cancelText: '使用默认位置',
-					success: (res) => {
-						if (res.confirm) {
-							// 用户选择使用模拟数据
-							console.log('用户选择使用模拟数据');
-							this.useRealAPI = false;
-							this.loadMockDataWithUserLocation(this.mapCenter.latitude, this.mapCenter.longitude);
-							this.loading = false;
-						} else {
-							// 使用默认位置（郑州）
-							console.log('使用默认位置:', this.mapCenter);
-							this.loadNearbyLockers(this.mapCenter.latitude, this.mapCenter.longitude);
-						}
-					}
-				});
-			},
-			
-			// 根据经纬度获取城市信息（从我的附近接口的响应中获取）
-			getCityByLocation(latitude, longitude) {
-				return new Promise((resolve, reject) => {
-					// 由于我的附近接口已经返回了用户位置信息，这里直接返回默认值
-					// 实际的城市信息会在loadNearbyLockers中从接口响应中获取
-					resolve({
-						id: 1,
-						name: '当前位置',
-						code: 'current'
-					});
-				});
-			},
-			
-			// 重新定位
-			relocate() {
+				this.locationStatus = `百度定位成功 (精度: ${Math.round(accuracy)}米)`;
+				
+				// 更新地图中心
+				this.mapInstance.centerAndZoom(point, 16);
+				
+				// 添加位置标记
+				this.addBaiduLocationMarker(point, accuracy);
+				
+				// 解析地址
+				this.reverseGeocode(point.lng, point.lat);
+				
+				// 搜索附近寄存点
+				this.loadNearbyLockers(point.lng, point.lat);
+				
+				// 开始监听位置变化
+				this.startBaiduLocationWatch();
+				
+				// 显示成功提示
 				uni.showToast({
-					title: '重新定位中...',
-					icon: 'loading'
+					title: `定位成功 (${Math.round(accuracy)}米)`,
+					icon: 'success',
+					duration: 2000
 				});
-				this.initLocation();
+				
+				console.log('✅ 百度定位处理完成');
 			},
 			
-			// 刷新附近寄存点
-			refreshNearbyLockers() {
-				if (this.mapCenter.latitude && this.mapCenter.longitude) {
-					this.loadNearbyLockers(this.mapCenter.latitude, this.mapCenter.longitude);
-				} else {
-					this.initLocation();
+			// 添加百度定位标记
+			addBaiduLocationMarker(point, accuracy) {
+				if (!this.mapInstance) return;
+				
+				// 清除之前的标记
+				this.mapInstance.clearOverlays();
+				
+				// 创建位置标记
+				const marker = new BMap.Marker(point);
+				
+				// 创建自定义图标
+				const icon = new BMap.Icon(
+					'data:image/svg+xml;base64,' + btoa(`
+						<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+							<circle cx="16" cy="16" r="12" fill="#007AFF" stroke="#FFFFFF" stroke-width="4"/>
+							<circle cx="16" cy="16" r="4" fill="#FFFFFF"/>
+							<circle cx="16" cy="16" r="14" fill="none" stroke="#007AFF" stroke-width="2" opacity="0.3"/>
+						</svg>
+					`),
+					new BMap.Size(32, 32),
+					{
+						anchor: new BMap.Size(16, 16)
+					}
+				);
+				marker.setIcon(icon);
+				
+				this.mapInstance.addOverlay(marker);
+				
+				// 添加精度圆圈
+				const circle = new BMap.Circle(point, accuracy, {
+					strokeColor: '#007AFF',
+					strokeWeight: 2,
+					strokeOpacity: 0.6,
+					fillColor: '#007AFF',
+					fillOpacity: 0.2
+				});
+				this.mapInstance.addOverlay(circle);
+				
+				// 添加信息窗口
+				const infoContent = `
+					<div style="padding: 15px; min-width: 250px;">
+						<h4 style="margin: 0 0 10px 0; color: #007AFF;">📍 当前位置 (百度定位)</h4>
+						<p style="margin: 5px 0;"><strong>经度:</strong> ${point.lng.toFixed(6)}</p>
+						<p style="margin: 5px 0;"><strong>纬度:</strong> ${point.lat.toFixed(6)}</p>
+						<p style="margin: 5px 0;"><strong>精度:</strong> ${Math.round(accuracy)}米</p>
+						<p style="margin: 5px 0;"><strong>更新时间:</strong> ${new Date().toLocaleTimeString()}</p>
+						<p style="margin: 5px 0; word-break: break-all;"><strong>地址:</strong> ${this.currentLocation?.address || '解析中...'}</p>
+					</div>
+				`;
+				
+				const infoWindow = new BMap.InfoWindow(infoContent);
+				marker.addEventListener('click', () => {
+					this.mapInstance.openInfoWindow(infoWindow, point);
+				});
+				
+				console.log('📍 百度定位标记已添加');
+			},
+			
+			// 开始百度位置监听
+			startBaiduLocationWatch() {
+				console.log('👁️ 开始百度位置监听');
+				
+				// 每30秒更新一次位置
+				if (this.watchId) {
+					clearInterval(this.watchId);
+				}
+				
+				this.watchId = setInterval(() => {
+					console.log('🔄 定时更新位置');
+					this.updateBaiduLocation();
+				}, 30000); // 30秒更新一次
+				
+				console.log('✅ 百度位置监听已启动');
+			},
+			
+			// 更新百度位置
+			updateBaiduLocation() {
+				if (!this.mapInstance) return;
+				
+				const geolocation = new BMap.Geolocation();
+				geolocation.getCurrentPosition((result) => {
+					if (geolocation.getStatus() == BMAP_STATUS_SUCCESS) {
+						console.log('🔄 位置更新成功:', result);
+						
+						const newPoint = result.point;
+						const oldLocation = this.currentLocation;
+						
+						// 计算位置变化
+						if (oldLocation) {
+							const distance = this.calculateDistance(
+								parseFloat(oldLocation.latitude),
+								parseFloat(oldLocation.longitude),
+								newPoint.lat,
+								newPoint.lng
+							);
+							
+							// 位置变化超过50米才更新
+							if (distance < 50) {
+								console.log('📍 位置变化较小，跳过更新:', distance, '米');
+								return;
+							}
+							
+							console.log('📍 位置显著变化:', distance, '米');
+						}
+						
+						// 更新位置
+						this.handleBaiduLocationSuccess(result);
+						
+						// 位置显著变化时重新搜索附近寄存点
+						console.log('📍 位置显著变化，重新搜索附近寄存点');
+						this.loadNearbyLockers(newPoint.lng, newPoint.lat);
+					}
+				}, {
+					enableHighAccuracy: true,
+					timeout: 5000
+				});
+			},
+			
+			// ========== 以下方法已废弃，保留用于向后兼容 ==========
+			// 注意：当前版本使用城市选择定位，不再使用GPS定位
+			
+			// 备用HTML5定位（已废弃）
+			fallbackToHTML5Location() {
+				console.log('🔄 使用HTML5定位作为备用方案');
+				this.loadingText = '正在使用浏览器定位...';
+				this.locationStatus = '浏览器定位中';
+				
+				if (!navigator.geolocation) {
+					this.useDefaultLocation();
+					return;
+				}
+				
+				navigator.geolocation.getCurrentPosition(
+					(position) => {
+						console.log('✅ HTML5定位成功:', position);
+						this.handleHTML5LocationSuccess(position);
+					},
+					(error) => {
+						console.error('❌ HTML5定位也失败:', error);
+						this.useDefaultLocation();
+					},
+					{
+						enableHighAccuracy: true,
+						timeout: 10000,
+						maximumAge: 60000
+					}
+				);
+			},
+			
+			// 处理HTML5定位成功
+			handleHTML5LocationSuccess(position) {
+				const coords = position.coords;
+				
+				this.currentLocation = {
+					longitude: coords.longitude.toFixed(6),
+					latitude: coords.latitude.toFixed(6),
+					accuracy: Math.round(coords.accuracy),
+					timestamp: new Date().toLocaleTimeString(),
+					address: '正在解析地址...',
+					source: 'HTML5定位'
+				};
+				
+				this.locationStatus = `HTML5定位成功 (精度: ${Math.round(coords.accuracy)}米)`;
+				
+				// 更新地图
+				if (this.mapInstance) {
+					const point = new BMap.Point(coords.longitude, coords.latitude);
+					this.mapInstance.centerAndZoom(point, 16);
+					this.addBaiduLocationMarker(point, coords.accuracy);
+				}
+				
+				// 解析地址
+				this.reverseGeocode(coords.longitude, coords.latitude);
+				
+				// 搜索附近寄存点
+				this.loadNearbyLockers(coords.longitude, coords.latitude);
+				
+				uni.showToast({
+					title: `定位成功 (${Math.round(coords.accuracy)}米)`,
+					icon: 'success',
+					duration: 2000
+				});
+			},
+			
+
+			
+			// 初始化地图
+			async initMap() {
+				console.log('🗺️ 开始初始化百度地图');
+				this.mapStatus = '加载地图API';
+				this.loadingText = '正在加载百度地图API...';
+				
+				try {
+					await this.loadBaiduMapAPI();
+					this.createMapInstance();
+					
+					// 地图创建完成后开始百度定位
+					setTimeout(() => {
+						this.startBaiduGeolocation();
+					}, 1000);
+					
+				} catch (error) {
+					console.error('地图初始化失败:', error);
+					this.handleError('地图初始化失败: ' + error.message);
 				}
 			},
 			
-			// 调用后端接口获取附近寄存点
-			loadNearbyLockers(latitude, longitude) {
-				this.loading = true;
-				console.log('开始获取附近寄存点:', { latitude, longitude, useRealAPI: this.useRealAPI });
+			// 加载百度地图API
+			loadBaiduMapAPI() {
+				return new Promise((resolve, reject) => {
+					if (window.BMap) {
+						resolve();
+						return;
+					}
+					
+					console.log('📡 加载百度地图JavaScript API');
+					
+					const script = document.createElement('script');
+					script.type = 'text/javascript';
+					script.src = `https://api.map.baidu.com/api?v=3.0&ak=${BAIDU_MAP_AK}&callback=initBaiduMapCallback`;
+					script.onerror = () => reject(new Error('百度地图API加载失败'));
+					
+					window.initBaiduMapCallback = () => {
+						console.log('✅ 百度地图API加载完成');
+						resolve();
+					};
+					
+					document.head.appendChild(script);
+				});
+			},
+			
+			// 创建地图实例
+			createMapInstance() {
+				console.log('🗺️ 创建百度地图实例');
+				this.mapStatus = '创建地图';
 				
-				// 如果不使用真实API，直接使用模拟数据
-				if (!this.useRealAPI) {
-					console.log('🔄 使用模拟数据模式');
+				try {
+					const mapContainer = document.getElementById('baiduMapContainer');
+					if (!mapContainer) {
+						throw new Error('地图容器未找到');
+					}
+					
+					this.mapInstance = new BMap.Map(mapContainer);
+					
+					const initialPoint = new BMap.Point(113.6253, 34.7466);
+					this.mapInstance.centerAndZoom(initialPoint, 15);
+					
+					// 启用地图交互功能
+					this.mapInstance.enableScrollWheelZoom(true);     // 启用滚轮缩放
+					this.mapInstance.enableDragging(true);            // 启用拖拽
+					this.mapInstance.enableDoubleClickZoom(true);     // 启用双击缩放
+					this.mapInstance.enableKeyboard(true);           // 启用键盘操作
+					this.mapInstance.enableInertialDragging(true);   // 启用惯性拖拽
+					this.mapInstance.enableContinuousZoom(true);     // 启用连续缩放
+					
+					// 添加地图控件
+					this.mapInstance.addControl(new BMap.NavigationControl());
+					this.mapInstance.addControl(new BMap.ScaleControl());
+					
+					// 地图事件监听
+					this.mapInstance.addEventListener('tilesloaded', () => {
+						console.log('✅ 地图瓦片加载完成');
+						this.mapStatus = '地图就绪';
+						this.mapReady = true;
+						this.loadingText = '';
+					});
+					
+					// 地图拖拽事件
+					this.mapInstance.addEventListener('dragstart', () => {
+						console.log('🖱️ 开始拖拽地图');
+					});
+					
+					this.mapInstance.addEventListener('dragend', () => {
+						console.log('🖱️ 拖拽地图结束');
+						// 可以在这里添加拖拽结束后的逻辑，比如重新搜索附近寄存点
+					});
+					
+					// 地图缩放事件
+					this.mapInstance.addEventListener('zoomstart', () => {
+						console.log('🔍 开始缩放地图');
+					});
+					
+					this.mapInstance.addEventListener('zoomend', () => {
+						console.log('🔍 缩放地图结束');
+						const zoom = this.mapInstance.getZoom();
+						console.log('当前缩放级别:', zoom);
+					});
+					
+					// 地图点击事件
+					this.mapInstance.addEventListener('click', (e) => {
+						console.log('🖱️ 点击地图:', e.point);
+						// 可以在这里添加点击地图的逻辑
+					});
+					
+					// 位置标记和寄存点搜索会在定位成功后自动执行
+					
+					console.log('✅ 百度地图实例创建完成');
+					
+				} catch (error) {
+					console.error('❌ 创建地图实例失败:', error);
+					this.handleError('创建地图实例失败: ' + error.message);
+				}
+			},
+			
+
+			
+			// 计算两点间距离（米）
+			calculateDistance(lat1, lon1, lat2, lon2) {
+				const R = 6371000; // 地球半径（米）
+				const dLat = (lat2 - lat1) * Math.PI / 180;
+				const dLon = (lon2 - lon1) * Math.PI / 180;
+				const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+						Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+						Math.sin(dLon/2) * Math.sin(dLon/2);
+				const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+				return R * c;
+			},
+			
+			// 处理定位错误
+			handleLocationError(error) {
+				let errorMessage = '定位失败';
+				
+				if (error.code) {
+					switch(error.code) {
+						case error.PERMISSION_DENIED:
+							errorMessage = '用户拒绝了定位请求';
+							break;
+						case error.POSITION_UNAVAILABLE:
+							errorMessage = '位置信息不可用';
+							break;
+						case error.TIMEOUT:
+							errorMessage = '定位请求超时';
+							break;
+					}
+				}
+				
+				this.locationStatus = errorMessage;
+				this.useDefaultLocation();
+			},
+			
+			// 使用默认位置
+			useDefaultLocation() {
+				console.log('📍 使用默认位置（郑州）');
+				
+				this.currentLocation = {
+					longitude: '113.625300',
+					latitude: '34.746600',
+					accuracy: 1000,
+					timestamp: new Date().toLocaleTimeString(),
+					address: '河南省郑州市二七区',
+					source: '默认位置'
+				};
+				
+				this.currentCity = '郑州';
+				this.locationStatus = '使用默认位置';
+				this.loadingText = '';
+				
+				// 更新地图到默认位置
+				if (this.mapInstance) {
+					const point = new BMap.Point(113.6253, 34.7466);
+					this.mapInstance.centerAndZoom(point, 15);
+					this.addBaiduLocationMarker(point, 1000);
+				}
+				
+				// 搜索默认位置附近的寄存点
+				this.loadNearbyLockers(113.6253, 34.7466);
+				
+				// 显示提示
+				uni.showToast({
+					title: '使用默认位置：郑州',
+					icon: 'none',
+					duration: 2000
+				});
+				
+				console.log('✅ 默认位置设置完成');
+			},
+			
+			// 逆地理编码 - 获取详细地址信息
+			reverseGeocode(longitude, latitude) {
+				console.log('🔍 开始解析地址:', { longitude, latitude });
+				
+				// 如果地图实例还没创建，延迟执行
+				if (!this.mapInstance) {
 					setTimeout(() => {
-						this.loadMockDataWithUserLocation(latitude, longitude);
-						this.loading = false;
+						this.reverseGeocode(longitude, latitude);
 					}, 1000);
 					return;
 				}
 				
-				// 调用ito-deposit后端"我的附近"接口
-				const apiUrl = 'http://localhost:8000/api/nearby/my-nearby'; // 后端"我的附近"接口地址
+				const geocoder = new BMap.Geocoder();
+				const point = new BMap.Point(longitude, latitude);
+				
+				geocoder.getLocation(point, (result) => {
+					if (result) {
+						console.log('✅ 地址解析成功:', result);
+						
+						const addressComponents = result.addressComponents;
+						const fullAddress = result.address;
+						
+						// 更新位置信息
+						if (this.currentLocation) {
+							this.currentLocation.address = fullAddress;
+						}
+						
+						// 更新城市信息
+						const city = addressComponents.city || addressComponents.district || '未知城市';
+						const province = addressComponents.province || '';
+						
+						this.currentCity = city.replace('市', ''); // 去掉"市"字
+						
+						console.log('🏙️ 城市信息更新:', {
+							province: province,
+							city: city,
+							district: addressComponents.district,
+							street: addressComponents.street,
+							fullAddress: fullAddress
+						});
+						
+						// 保存城市信息到本地存储
+						uni.setStorageSync('currentCity', {
+							name: this.currentCity,
+							province: province,
+							fullName: city,
+							coordinates: {
+								longitude: longitude,
+								latitude: latitude
+							},
+							timestamp: new Date().getTime()
+						});
+						
+						// 显示城市更新提示
+						uni.showToast({
+							title: `当前城市: ${this.currentCity}`,
+							icon: 'none',
+							duration: 2000
+						});
+						
+					} else {
+						console.warn('⚠️ 地址解析失败');
+						this.currentLocation.address = '地址解析失败';
+					}
+				});
+			},
+			
+			// 添加当前位置标记
+			addCurrentLocationMarker() {
+				if (!this.mapInstance || !this.currentLocation) return;
+				
+				const longitude = parseFloat(this.currentLocation.longitude);
+				const latitude = parseFloat(this.currentLocation.latitude);
+				const point = new BMap.Point(longitude, latitude);
+				
+				// 清除之前的标记
+				this.mapInstance.clearOverlays();
+				
+				// 创建自定义位置标记
+				const marker = new BMap.Marker(point);
+				
+				// 创建蓝色圆点图标
+				const icon = new BMap.Icon(
+					'data:image/svg+xml;base64,' + btoa(`
+						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+							<circle cx="12" cy="12" r="8" fill="#007AFF" stroke="#FFFFFF" stroke-width="3"/>
+							<circle cx="12" cy="12" r="3" fill="#FFFFFF"/>
+						</svg>
+					`),
+					new BMap.Size(24, 24),
+					{
+						anchor: new BMap.Size(12, 12)
+					}
+				);
+				marker.setIcon(icon);
+				
+				this.mapInstance.addOverlay(marker);
+				
+				// 添加精度圆圈
+				if (this.currentLocation.accuracy) {
+					const circle = new BMap.Circle(point, this.currentLocation.accuracy, {
+						strokeColor: '#007AFF',
+						strokeWeight: 2,
+						strokeOpacity: 0.5,
+						fillColor: '#007AFF',
+						fillOpacity: 0.1
+					});
+					this.mapInstance.addOverlay(circle);
+				}
+				
+				// 创建详细信息窗口
+				const infoContent = `
+					<div style="padding: 10px; min-width: 200px;">
+						<h4 style="margin: 0 0 10px 0; color: #007AFF;">📍 当前位置</h4>
+						<p style="margin: 5px 0;"><strong>经度:</strong> ${longitude}</p>
+						<p style="margin: 5px 0;"><strong>纬度:</strong> ${latitude}</p>
+						<p style="margin: 5px 0;"><strong>精度:</strong> ${this.currentLocation.accuracy}米</p>
+						${this.currentLocation.altitude ? `<p style="margin: 5px 0;"><strong>海拔:</strong> ${this.currentLocation.altitude}米</p>` : ''}
+						${this.currentLocation.speed ? `<p style="margin: 5px 0;"><strong>速度:</strong> ${this.currentLocation.speed}km/h</p>` : ''}
+						<p style="margin: 5px 0;"><strong>更新时间:</strong> ${this.currentLocation.timestamp}</p>
+						<p style="margin: 5px 0; word-break: break-all;"><strong>地址:</strong> ${this.currentLocation.address}</p>
+					</div>
+				`;
+				
+				const infoWindow = new BMap.InfoWindow(infoContent);
+				marker.addEventListener('click', () => {
+					this.mapInstance.openInfoWindow(infoWindow, point);
+				});
+				
+				console.log('📍 位置标记已更新');
+			},
+			
+			// 更新位置标记
+			updateLocationMarker(longitude, latitude) {
+				if (!this.mapInstance) return;
+				
+				// 重新添加标记（简单方式）
+				this.addCurrentLocationMarker();
+				
+				console.log('📍 位置标记已更新到新位置:', { longitude, latitude });
+			},
+			
+			// 加载附近寄存点
+			loadNearbyLockers(longitude, latitude) {
+				if (!longitude || !latitude) {
+					console.warn('⚠️ 缺少位置信息，无法搜索附近寄存点');
+					return;
+				}
+				
+				console.log('🔍 开始搜索附近寄存点');
+				console.log('搜索位置:', { longitude, latitude });
+				
+				// 显示加载状态
+				this.loadingText = '正在搜索附近寄存点...';
+				
+				// 调用后端"我的附近"接口
+				const apiUrl = 'http://localhost:8000/api/nearby/my-nearby';
 				
 				// 构建查询参数
 				const params = new URLSearchParams({
-					latitude: latitude.toString(),
 					longitude: longitude.toString(),
-					radius: '5.0', // 5公里范围
-					limit: '50' // 最多返回50个寄存点
+					latitude: latitude.toString(),
+					radius: '5',    // 5公里范围
+					limit: '20'     // 最多返回20个寄存点
 				});
 				
 				const fullUrl = `${apiUrl}?${params.toString()}`;
-				
-				console.log('请求参数:', requestData);
+				console.log('📡 请求URL:', fullUrl);
 				
 				uni.request({
 					url: fullUrl,
 					method: 'GET',
 					header: {
 						'Content-Type': 'application/json'
-						// 注意：根据后端配置，这个接口不需要JWT认证
 					},
-					timeout: 10000, // 10秒超时
+					timeout: 10000,
 					success: (res) => {
-						console.log('=== 后端"我的附近"接口响应 ===');
-						console.log('状态码:', res.statusCode);
+						console.log('=== 后端附近寄存点接口响应 ===');
+						console.log('HTTP状态码:', res.statusCode);
 						console.log('响应数据:', res.data);
 						
-						if (res.statusCode === 200) {
-							console.log('✅ 后端"我的附近"接口调用成功');
-							console.log('📍 用户位置信息:', res.data.user_location);
-							console.log('📊 附近寄存点数量:', res.data.total_count);
-							
-							// 根据后端返回的数据结构处理
-							const userLocation = res.data.user_location;
-							const nearbyPoints = res.data.nearby_points || [];
-							
-							// 更新地图中心为用户实际位置
-							if (userLocation) {
-								this.mapCenter = {
-									longitude: userLocation.longitude,
-									latitude: userLocation.latitude
-								};
-								
-								// 显示用户位置信息
-								uni.showToast({
-									title: `定位到${userLocation.city}`,
-									icon: 'success',
-									duration: 1500
-								});
-							}
-							
-							console.log('📍 解析到的寄存点数据:', nearbyPoints);
-							console.log('📊 寄存点数量:', nearbyPoints.length);
-							
-							if (nearbyPoints && nearbyPoints.length > 0) {
-								// 处理寄存点数据
-								this.nearbyLockers = this.processBackendLockersData(nearbyPoints);
-								this.updateMapMarkers();
-								this.selectedLocker = this.nearbyLockers[0];
-								
-								// 显示找到寄存点的提示
-								uni.showToast({
-									title: `找到${this.nearbyLockers.length}个寄存点`,
-									icon: 'success',
-									duration: 1500
-								});
-								
-								// 自动展开列表显示寄存点
-								setTimeout(() => {
-									this.showLockerList = true;
-								}, 1000);
-								
-							} else {
-								// 没有找到寄存点
-								this.nearbyLockers = [];
-								this.mapMarkers = [];
-								this.selectedLocker = null;
-								
-								uni.showToast({
-									title: `附近${res.data.search_radius || 5}KM内暂无寄存点`,
-									icon: 'none',
-									duration: 2000
-								});
-							}
+						if (res.statusCode === 200 && res.data) {
+							this.handleNearbyLockersSuccess(res.data);
 						} else {
-							throw new Error(`接口返回错误: ${res.statusCode} - ${res.data?.message || '未知错误'}`);
+							console.error('❌ 接口返回错误:', res.statusCode);
+							this.handleNearbyLockersError('接口返回错误: ' + res.statusCode);
 						}
 					},
 					fail: (error) => {
-						console.error('=== 后端"我的附近"接口调用失败 ===');
-						console.error('错误详情:', error);
-						console.error('请求URL:', fullUrl);
-						
-						// 根据错误类型显示不同提示
-						let errorMessage = '网络连接失败';
-						let suggestion = '';
-						
-						if (error.errMsg) {
-							if (error.errMsg.includes('timeout')) {
-								errorMessage = '请求超时';
-								suggestion = '请检查网络连接或稍后重试';
-							} else if (error.errMsg.includes('fail') || error.errMsg.includes('connect')) {
-								errorMessage = '无法连接到后端服务';
-								suggestion = '请确保后端服务已启动在 http://localhost:8000';
-							} else if (error.errMsg.includes('abort')) {
-								errorMessage = '请求被取消';
-								suggestion = '请重新尝试';
-							}
-						}
-						
-						console.log('💡 故障排除提示:');
-						console.log('1. 检查后端服务是否启动: go run cmd/ito-deposit/main.go');
-						console.log('2. 检查服务端口: http://localhost:8000');
-						console.log('3. 检查网络连接');
-						console.log('4. 或使用模拟数据测试前端功能');
-						
-						uni.showModal({
-							title: '连接后端服务失败',
-							content: `${errorMessage}\n${suggestion}\n\n是否使用模拟数据测试前端功能？`,
-							confirmText: '使用模拟数据',
-							cancelText: '重试连接',
-							success: (modalRes) => {
-								if (modalRes.confirm) {
-									console.log('🔄 切换到模拟数据模式');
-									this.useRealAPI = false;
-									this.loadMockDataWithUserLocation(latitude, longitude);
-								} else {
-									// 用户选择重试
-									console.log('🔄 用户选择重试连接');
-									setTimeout(() => {
-										this.loadNearbyLockers(latitude, longitude);
-									}, 2000);
-								}
-							}
-						});
-					},
-					complete: () => {
-						this.loading = false;
+						console.error('❌ 附近寄存点接口调用失败:', error);
+						this.handleNearbyLockersError('网络请求失败: ' + (error.errMsg || '未知错误'));
 					}
 				});
 			},
 			
-			// 处理后端返回的寄存点数据
-			processBackendLockersData(nearbyPoints) {
-				return nearbyPoints.map(point => {
-					return {
-						id: point.id,
-						name: point.name || '未知寄存点',
-						large: Math.floor(Math.random() * 10) + 1, // 模拟数据，实际应该从后端获取
-						medium: Math.floor(Math.random() * 10) + 1,
-						small: Math.floor(Math.random() * 10) + 1,
-						address: point.address || '地址未知',
-						longitude: point.longitude,
-						latitude: point.latitude,
-						distance: point.distance.toFixed(1) + 'km',
-						status: 'available' // 默认可用状态
-					};
+			// 处理附近寄存点接口成功响应
+			handleNearbyLockersSuccess(responseData) {
+				console.log('✅ 附近寄存点接口调用成功');
+				
+				// 提取寄存点数据
+				const nearbyPoints = responseData.nearby_points || [];
+				const totalCount = responseData.total_count || 0;
+				const searchRadius = responseData.search_radius || 5;
+				
+				console.log('📍 附近寄存点数据:', {
+					count: nearbyPoints.length,
+					totalCount: totalCount,
+					searchRadius: searchRadius
 				});
-			},
-			
-			// 处理寄存点数据（保留原方法用于模拟数据）
-			processLockersData(lockers, userLat, userLng) {
-				return lockers.map(locker => {
-					// 计算距离
-					const distance = this.calculateDistance(
-						userLat, userLng, 
-						locker.latitude, locker.longitude
-					);
+				
+				if (nearbyPoints && nearbyPoints.length > 0) {
+					// 处理寄存点数据
+					this.nearbyLockers = this.processNearbyLockersData(nearbyPoints);
 					
-					return {
-						id: locker.id,
-						name: locker.name || '未知寄存点',
-						large: locker.large_count || 0,
-						medium: locker.medium_count || 0,
-						small: locker.small_count || 0,
-						address: locker.address || '地址未知',
-						longitude: locker.longitude,
-						latitude: locker.latitude,
-						distance: distance,
-						status: locker.status || 'available' // available, unavailable
-					};
-				}).sort((a, b) => {
-					// 按距离排序
-					return parseFloat(a.distance) - parseFloat(b.distance);
-				});
-			},
-			
-			// 计算两点间距离
-			calculateDistance(lat1, lng1, lat2, lng2) {
-				const R = 6371; // 地球半径（公里）
-				const dLat = this.deg2rad(lat2 - lat1);
-				const dLng = this.deg2rad(lng2 - lng1);
-				const a = 
-					Math.sin(dLat/2) * Math.sin(dLat/2) +
-					Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) * 
-					Math.sin(dLng/2) * Math.sin(dLng/2);
-				const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-				const distance = R * c;
-				
-				if (distance < 1) {
-					return Math.round(distance * 1000) + 'm';
-				} else {
-					return distance.toFixed(1) + 'km';
-				}
-			},
-			
-			// 角度转弧度
-			deg2rad(deg) {
-				return deg * (Math.PI/180);
-			},
-			
-			// 加载模拟数据（模拟后端接口返回格式）
-			loadMockDataWithUserLocation(userLat, userLng) {
-				console.log('=== 使用模拟数据 ===');
-				console.log('模拟用户位置:', { userLat, userLng });
-				
-				// 确保坐标有效
-				if (!userLat || !userLng || isNaN(userLat) || isNaN(userLng)) {
-					console.warn('用户坐标无效，使用默认坐标（郑州）');
-					userLat = 34.7466;
-					userLng = 113.6253;
-				}
-				
-				// 模拟后端返回的数据格式
-				const mockResponse = {
-					user_location: {
-						longitude: userLng,
-						latitude: userLat,
-						address: '河南省郑州市中原区',
-						city: '郑州市',
-						district: '中原区',
-						province: '河南省',
-						location_type: 'mock'
-					},
-					nearby_points: [
-						{
-							id: 1,
-							name: '成功驾校寄存柜',
-							address: '新乡路与内环路交叉口西100米成功驾校内',
-							distance: 0.8,
-							longitude: userLng + 0.003,
-							latitude: userLat + 0.002
-						},
-						{
-							id: 2,
-							name: '开龙天汇广场寄存柜',
-							address: '农业路与东五路口西南角开龙天汇广场地下室水果区内',
-							distance: 1.2,
-							longitude: userLng - 0.002,
-							latitude: userLat + 0.003
-						},
-						{
-							id: 3,
-							name: '郑州东站寄存柜',
-							address: '郑州东站东广场地下一层',
-							distance: 2.5,
-							longitude: userLng + 0.001,
-							latitude: userLat - 0.002
-						},
-						{
-							id: 4,
-							name: '中原万达寄存柜',
-							address: '中原路与秦岭路交叉口万达广场',
-							distance: 1.8,
-							longitude: userLng - 0.004,
-							latitude: userLat - 0.001
-						}
-					],
-					total_count: 4,
-					search_radius: 5.0,
-					baidu_map_ak: '7pzoTHchDdMRK7jmpCr1sugjv3hfoxz5'
-				};
-				
-				console.log('模拟响应数据:', mockResponse);
-				
-				// 更新地图中心为用户位置
-				this.mapCenter = {
-					longitude: mockResponse.user_location.longitude,
-					latitude: mockResponse.user_location.latitude
-				};
-				
-				console.log('更新地图中心:', this.mapCenter);
-				
-				// 更新城市信息
-				this.currentCity = mockResponse.user_location.city;
-				
-				// 处理寄存点数据
-				this.nearbyLockers = this.processBackendLockersData(mockResponse.nearby_points);
-				this.updateMapMarkers();
-				
-				console.log('处理后的寄存点数据:', this.nearbyLockers);
-				console.log('地图标记:', this.mapMarkers);
-				
-				if (this.nearbyLockers.length > 0) {
+					// 在地图上添加寄存点标记
+					this.addLockersToMap(this.nearbyLockers);
+					
+					// 选择第一个寄存点
 					this.selectedLocker = this.nearbyLockers[0];
 					
+					console.log('✅ 寄存点数据处理完成:', this.nearbyLockers.length, '个');
+					
+					// 显示成功提示
 					uni.showToast({
-						title: `找到${this.nearbyLockers.length}个寄存点（模拟数据）`,
+						title: `找到${this.nearbyLockers.length}个寄存点`,
 						icon: 'success',
 						duration: 2000
 					});
 					
-					// 自动展开列表显示寄存点
-					setTimeout(() => {
-						this.showLockerList = true;
-					}, 1500);
+				} else {
+					console.log('⚠️ 附近没有找到寄存点');
+					this.nearbyLockers = [];
+					this.selectedLocker = null;
+					
+					uni.showToast({
+						title: `附近${searchRadius}km内暂无寄存点`,
+						icon: 'none',
+						duration: 2000
+					});
 				}
+				
+				this.loadingText = '';
 			},
 			
-			// 加载模拟数据（原方法，保留用于其他地方调用）
-			loadMockData(userLat, userLng) {
-				const mockLockers = [
+			// 处理附近寄存点接口错误
+			handleNearbyLockersError(errorMessage) {
+				console.error('❌ 附近寄存点加载失败:', errorMessage);
+				
+				// 使用模拟数据作为备用
+				console.log('🔄 使用模拟数据作为备用');
+				this.nearbyLockers = [
 					{
-						id: 1,
-						name: '成功驾校寄存柜',
-						large: 6,
+						id: 'mock_1',
+						name: '模拟寄存点1',
+						large: 3,
+						medium: 5,
+						small: 8,
+						address: '模拟地址1',
+						distance: '0.5km',
+						status: 'available',
+						longitude: parseFloat(this.currentLocation?.longitude || 113.6253) + 0.005,
+						latitude: parseFloat(this.currentLocation?.latitude || 34.7466) + 0.005
+					},
+					{
+						id: 'mock_2',
+						name: '模拟寄存点2',
+						large: 2,
 						medium: 4,
-						small: 10,
-						address: '新乡路与内环路交叉口西100米成功驾校内',
-						longitude: userLng + 0.001,
-						latitude: userLat + 0.001,
-						status: 'available'
-					},
-					{
-						id: 2,
-						name: '开龙天汇广场寄存柜',
-						large: 0,
-						medium: 0,
-						small: 0,
-						address: '农业路与东五路口西南角开龙天汇广场地下室水果区内',
-						longitude: userLng + 0.002,
-						latitude: userLat + 0.002,
-						status: 'unavailable'
-					},
-					{
-						id: 3,
-						name: '郑州东站寄存柜',
-						large: 8,
-						medium: 6,
-						small: 15,
-						address: '郑州东站东广场地下一层',
-						longitude: userLng - 0.001,
-						latitude: userLat - 0.001,
-						status: 'available'
+						small: 6,
+						address: '模拟地址2',
+						distance: '1.2km',
+						status: 'available',
+						longitude: parseFloat(this.currentLocation?.longitude || 113.6253) - 0.008,
+						latitude: parseFloat(this.currentLocation?.latitude || 34.7466) + 0.003
 					}
 				];
 				
-				// 处理模拟数据，计算距离
-				this.nearbyLockers = this.processLockersData(mockLockers, userLat, userLng);
-				this.updateMapMarkers();
+				this.selectedLocker = this.nearbyLockers[0];
+				this.addLockersToMap(this.nearbyLockers);
 				
-				if (this.nearbyLockers.length > 0) {
-					this.selectedLocker = this.nearbyLockers[0];
-				}
+				this.loadingText = '';
+				
+				uni.showToast({
+					title: '使用模拟数据',
+					icon: 'none',
+					duration: 2000
+				});
 			},
 			
-			// 更新地图标记
-			updateMapMarkers() {
-				console.log('=== 更新地图标记 ===');
-				console.log('寄存点数据:', this.nearbyLockers);
+			// 处理寄存点数据
+			processNearbyLockersData(nearbyPoints) {
+				console.log('🔄 处理寄存点数据');
 				
-				this.mapMarkers = this.nearbyLockers.map((locker, index) => {
-					const marker = {
-						id: locker.id,
-						longitude: parseFloat(locker.longitude),
-						latitude: parseFloat(locker.latitude),
-						width: 30,
-						height: 30,
-						anchor: {
-							x: 0.5,
-							y: 1
-						},
-						callout: {
-							content: `${locker.name}\n距离: ${locker.distance}\n地址: ${locker.address}`,
-							fontSize: 12,
-							borderRadius: 6,
-							bgColor: '#ffffff',
-							padding: 8,
-							display: 'BYCLICK',
-							textAlign: 'left'
-						},
-						// 添加标签显示距离
-						label: {
-							content: locker.distance,
-							fontSize: 10,
-							color: '#ffffff',
-							bgColor: locker.status === 'available' ? '#007AFF' : '#FF6B6B',
-							borderRadius: 6,
-							padding: 3,
-							anchorX: 0.5,
-							anchorY: -0.5
-						}
+				return nearbyPoints.map((point, index) => {
+					console.log(`处理寄存点 ${index + 1}:`, point);
+					
+					return {
+						id: point.id || `point_${index + 1}`,
+						name: point.name || `寄存点${index + 1}`,
+						large: point.large_count || point.large || 0,
+						medium: point.medium_count || point.medium || 0,
+						small: point.small_count || point.small || 0,
+						address: point.address || '地址信息待完善',
+						distance: this.formatDistance(point.distance),
+						status: point.status || 'available',
+						longitude: parseFloat(point.longitude),
+						latitude: parseFloat(point.latitude),
+						// 保留原始数据
+						rawData: point
 					};
-					
-					// 不设置自定义图标，使用系统默认标记
-					// 这样可以避免图标文件不存在的问题
-					
-					console.log(`标记 ${index + 1}:`, marker);
-					return marker;
 				});
-				
-				console.log('✅ 地图标记已更新:', this.mapMarkers.length, '个标记');
-				console.log('标记详情:', this.mapMarkers);
-				
-				// 如果有寄存点，调整地图视野以包含所有标记
-				if (this.mapMarkers.length > 0) {
-					this.adjustMapView();
+			},
+			
+			// 格式化距离显示
+			formatDistance(distance) {
+				if (typeof distance === 'number') {
+					if (distance < 1) {
+						return Math.round(distance * 1000) + 'm';
+					} else {
+						return distance.toFixed(1) + 'km';
+					}
+				} else if (typeof distance === 'string') {
+					return distance;
+				} else {
+					return '距离未知';
 				}
 			},
 			
-			// 调整地图视野
-			adjustMapView() {
-				// 计算所有标记的边界
-				let minLat = this.mapMarkers[0].latitude;
-				let maxLat = this.mapMarkers[0].latitude;
-				let minLng = this.mapMarkers[0].longitude;
-				let maxLng = this.mapMarkers[0].longitude;
+			// 在地图上添加寄存点标记
+			addLockersToMap(lockers) {
+				if (!this.mapInstance || !lockers || lockers.length === 0) {
+					return;
+				}
 				
-				this.mapMarkers.forEach(marker => {
-					minLat = Math.min(minLat, marker.latitude);
-					maxLat = Math.max(maxLat, marker.latitude);
-					minLng = Math.min(minLng, marker.longitude);
-					maxLng = Math.max(maxLng, marker.longitude);
+				console.log('📍 在地图上添加寄存点标记:', lockers.length, '个');
+				
+				lockers.forEach((locker, index) => {
+					if (!locker.longitude || !locker.latitude) {
+						console.warn('⚠️ 寄存点缺少坐标信息:', locker);
+						return;
+					}
+					
+					const point = new BMap.Point(locker.longitude, locker.latitude);
+					const marker = new BMap.Marker(point);
+					
+					// 创建寄存点图标
+					const icon = new BMap.Icon(
+						'data:image/svg+xml;base64,' + btoa(`
+							<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28">
+								<rect x="2" y="2" width="24" height="24" fill="#FF6B35" stroke="#FFFFFF" stroke-width="2" rx="4"/>
+								<text x="14" y="18" text-anchor="middle" fill="white" font-size="12" font-weight="bold">柜</text>
+							</svg>
+						`),
+						new BMap.Size(28, 28),
+						{
+							anchor: new BMap.Size(14, 14)
+						}
+					);
+					marker.setIcon(icon);
+					
+					this.mapInstance.addOverlay(marker);
+					
+					// 添加信息窗口
+					const infoContent = `
+						<div style="padding: 15px; min-width: 250px;">
+							<h4 style="margin: 0 0 10px 0; color: #FF6B35;">🏪 ${locker.name}</h4>
+							<p style="margin: 5px 0;"><strong>地址:</strong> ${locker.address}</p>
+							<p style="margin: 5px 0;"><strong>距离:</strong> ${locker.distance}</p>
+							<div style="margin: 10px 0;">
+								<strong>柜子数量:</strong><br>
+								大柜: ${locker.large}个 | 中柜: ${locker.medium}个 | 小柜: ${locker.small}个
+							</div>
+							<p style="margin: 5px 0; color: ${locker.status === 'available' ? '#28a745' : '#dc3545'};">
+								<strong>状态:</strong> ${locker.status === 'available' ? '可用' : '不可用'}
+							</p>
+						</div>
+					`;
+					
+					const infoWindow = new BMap.InfoWindow(infoContent);
+					marker.addEventListener('click', () => {
+						this.mapInstance.openInfoWindow(infoWindow, point);
+						this.selectedLocker = locker;
+						console.log('选中寄存点:', locker.name);
+					});
 				});
 				
-				// 计算中心点和缩放级别
-				const centerLat = (minLat + maxLat) / 2;
-				const centerLng = (minLng + maxLng) / 2;
+				console.log('✅ 寄存点标记添加完成');
+			},
+			
+			// 手动获取当前位置
+			getCurrentLocation() {
+				console.log('🏙️ 回到城市按钮点击');
+				this.locationStatus = '正在回到选择的城市...';
+				this.loadingText = '正在回到选择的城市...';
 				
-				// 更新地图中心（如果需要的话）
-				// this.mapCenter = {
-				//     latitude: centerLat,
-				//     longitude: centerLng
-				// };
-			},
-			
-			// 地图标记点击
-			onMarkerTap(e) {
-				const markerId = e.detail.markerId;
-				const locker = this.nearbyLockers.find(item => item.id === markerId);
-				if (locker) {
-					this.selectedLocker = locker;
-					this.showLockerList = false;
-				}
-			},
-			
-			// 地图区域变化
-			onRegionChange(e) {
-				if (e.type === 'end') {
-					console.log('地图区域变化:', e.detail);
+				// 显示加载提示
+				uni.showLoading({
+					title: '正在回到城市...'
+				});
+				
+				// 获取用户选择的城市
+				const selectedCity = uni.getStorageSync('selectedCity');
+				console.log('🔍 存储中的选择城市:', selectedCity);
+				console.log('🔍 城市名称:', selectedCity?.name);
+				console.log('🔍 城市坐标:', selectedCity?.coordinates);
+				
+				if (selectedCity && selectedCity.coordinates) {
+					console.log('📍 回到选择的城市:', selectedCity.name);
+					console.log('📍 城市坐标:', selectedCity.coordinates);
 					
-					// 更新地图中心点
-					if (e.detail && e.detail.centerLocation) {
-						this.mapCenter = {
-							longitude: e.detail.centerLocation.longitude,
-							latitude: e.detail.centerLocation.latitude
+					// 更新当前城市显示
+					this.currentCity = selectedCity.name;
+					
+					setTimeout(() => {
+						uni.hideLoading();
+						this.setCityLocation(selectedCity);
+						
+						// 显示成功提示
+						uni.showToast({
+							title: `已回到${selectedCity.name}`,
+							icon: 'success',
+							duration: 2000
+						});
+					}, 1000);
+				} else {
+					console.log('📍 未找到选择的城市，使用默认城市');
+					
+					setTimeout(() => {
+						uni.hideLoading();
+						const defaultCity = {
+							name: '郑州',
+							coordinates: {
+								longitude: 113.6253,
+								latitude: 34.7466
+							}
 						};
 						
-						// 可选：拖拽地图后自动重新搜索附近寄存点
-						// this.searchNearbyInNewArea();
-					}
+						// 保存默认城市并更新显示
+						uni.setStorageSync('selectedCity', defaultCity);
+						this.currentCity = defaultCity.name;
+						this.setCityLocation(defaultCity);
+						
+						// 显示提示
+						uni.showToast({
+							title: '已回到默认城市：郑州',
+							icon: 'none',
+							duration: 2000
+						});
+					}, 1000);
 				}
 			},
 			
-			// 地图点击事件
-			onMapTap(e) {
-				console.log('地图点击:', e.detail);
-			},
-			
-			// 地图更新事件
-			onMapUpdated(e) {
-				console.log('地图更新完成:', e.detail);
-			},
-			
-			// 在新区域搜索附近寄存点
-			searchNearbyInNewArea() {
-				// 防抖处理，避免频繁请求
-				if (this.searchTimer) {
-					clearTimeout(this.searchTimer);
+
+			// 手动HTML5定位
+			manualHTML5Location() {
+				console.log('🧭 手动HTML5定位');
+				
+				if (!navigator.geolocation) {
+					uni.hideLoading();
+					uni.showModal({
+						title: '定位失败',
+						content: '浏览器不支持定位功能',
+						showCancel: false
+					});
+					return;
 				}
 				
-				this.searchTimer = setTimeout(() => {
-					uni.showToast({
-						title: '正在搜索新区域...',
-						icon: 'loading',
-						duration: 1000
-					});
-					
-					this.loadNearbyLockers(this.mapCenter.latitude, this.mapCenter.longitude);
-				}, 1000);
+				navigator.geolocation.getCurrentPosition(
+					(position) => {
+						uni.hideLoading();
+						console.log('✅ HTML5手动定位成功:', position);
+						this.handleHTML5LocationSuccess(position);
+					},
+					(error) => {
+						uni.hideLoading();
+						console.error('❌ HTML5手动定位失败:', error);
+						
+						let errorMsg = '定位失败';
+						switch(error.code) {
+							case error.PERMISSION_DENIED:
+								errorMsg = '定位权限被拒绝，请在浏览器设置中允许位置访问';
+								break;
+							case error.POSITION_UNAVAILABLE:
+								errorMsg = '位置信息不可用，请检查GPS或网络连接';
+								break;
+							case error.TIMEOUT:
+								errorMsg = '定位超时，请重试';
+								break;
+						}
+						
+						uni.showModal({
+							title: '定位失败',
+							content: errorMsg,
+							showCancel: false
+						});
+					},
+					{
+						enableHighAccuracy: true,
+						timeout: 15000,
+						maximumAge: 0
+					}
+				);
 			},
 			
-			// 切换寄存点列表显示
-			toggleLockerList() {
-				this.showLockerList = !this.showLockerList;
+			// 刷新地图
+			refreshMap() {
+				console.log('🔄 刷新地图和附近寄存点');
+				this.loadingText = '正在刷新...';
+				
+				// 显示刷新提示
+				uni.showLoading({
+					title: '正在刷新...'
+				});
+				
+				// 获取用户选择的城市，确保地图显示正确的城市
+				const selectedCity = uni.getStorageSync('selectedCity');
+				if (selectedCity && selectedCity.coordinates) {
+					console.log('🔄 刷新到选择的城市:', selectedCity.name);
+					
+					// 更新当前城市显示
+					this.currentCity = selectedCity.name;
+					
+					setTimeout(() => {
+						uni.hideLoading();
+						
+						// 重新设置城市位置
+						this.setCityLocation(selectedCity);
+						
+						// 显示刷新成功提示
+						uni.showToast({
+							title: `已刷新${selectedCity.name}的寄存点`,
+							icon: 'success',
+							duration: 2000
+						});
+					}, 1000);
+					
+				} else if (this.currentLocation) {
+					// 如果没有选择城市但有当前位置，基于当前位置刷新
+					const longitude = parseFloat(this.currentLocation.longitude);
+					const latitude = parseFloat(this.currentLocation.latitude);
+					
+					console.log('🔄 基于当前位置刷新附近寄存点');
+					
+					setTimeout(() => {
+						uni.hideLoading();
+						this.loadNearbyLockers(longitude, latitude);
+						
+						uni.showToast({
+							title: '已刷新附近寄存点',
+							icon: 'success',
+							duration: 2000
+						});
+					}, 1000);
+					
+				} else {
+					// 没有位置信息，重新初始化
+					console.log('🔄 重新初始化地图和定位');
+					
+					setTimeout(() => {
+						uni.hideLoading();
+						this.mapReady = false;
+						this.startInitialization();
+						
+						uni.showToast({
+							title: '正在重新初始化地图',
+							icon: 'loading',
+							duration: 2000
+						});
+					}, 1000);
+				}
+			},
+			
+			// 手动刷新附近寄存点
+			refreshNearbyLockers() {
+				if (!this.currentLocation) {
+					uni.showToast({
+						title: '请先获取位置信息',
+						icon: 'none',
+						duration: 2000
+					});
+					return;
+				}
+				
+				const longitude = parseFloat(this.currentLocation.longitude);
+				const latitude = parseFloat(this.currentLocation.latitude);
+				
+				console.log('🔄 手动刷新附近寄存点');
+				this.loadNearbyLockers(longitude, latitude);
+			},
+			
+
+			
+			// 错误处理
+			handleError(message) {
+				console.error('❌ 错误:', message);
+				this.mapError = true;
+				this.mapErrorMessage = message;
+				this.mapStatus = '加载失败';
+				this.loadingText = '';
+			},
+			
+			// 重试加载地图
+			retryLoadMap() {
+				console.log('🔄 重试加载地图');
+				this.mapError = false;
+				this.mapErrorMessage = '';
+				this.startInitialization();
+			},
+			
+			// 搜索功能
+			openSearch() {
+				console.log('🔍 打开搜索页面');
+				uni.navigateTo({
+					url: '/pages/search/search'
+				});
 			},
 			
 			// 选择寄存点
 			selectLocker(locker) {
 				console.log('选择寄存点:', locker);
-				uni.navigateTo({
-					url: `/pages/locker-detail/locker-detail?id=${locker.id}`
-				});
-			},
-			
-			// 打开搜索
-			openSearch() {
-				uni.showToast({
-					title: '跳转到搜索页面',
-					icon: 'none'
-				});
-				// TODO: 跳转到搜索页面
-				// uni.navigateTo({
-				//     url: '/pages/search/search'
-				// });
-			},
-			
-			// 开始实时更新
-			startRealTimeUpdate() {
-				// 每30秒更新一次附近寄存点信息
-				this.realTimeUpdateTimer = setInterval(() => {
-					if (this.mapCenter.latitude && this.mapCenter.longitude && !this.loading) {
-						console.log('实时更新附近寄存点');
-						this.loadNearbyLockers(this.mapCenter.latitude, this.mapCenter.longitude);
+				uni.showModal({
+					title: '确认选择',
+					content: `确定选择 ${locker.name} 吗？`,
+					success: (res) => {
+						if (res.confirm) {
+							uni.showToast({
+								title: '跳转到寄存点详情',
+								icon: 'success',
+								duration: 1500
+							});
+						}
 					}
-				}, 30000); // 30秒更新一次
-			},
-			
-			// 停止实时更新
-			stopRealTimeUpdate() {
-				if (this.realTimeUpdateTimer) {
-					clearInterval(this.realTimeUpdateTimer);
-					this.realTimeUpdateTimer = null;
-				}
-			},
-			
-			// 手动刷新所有数据
-			refreshAllData() {
-				uni.showLoading({
-					title: '刷新中...'
 				});
-				
-				// 重新定位并获取数据
-				this.initLocation();
-			},
-			
-			// 切换API模式（开发测试用）
-			toggleAPIMode() {
-				this.useRealAPI = !this.useRealAPI;
-				
-				uni.showToast({
-					title: `已切换到${this.useRealAPI ? '真实API' : '模拟数据'}模式`,
-					icon: 'none',
-					duration: 2000
-				});
-				
-				// 重新加载数据
-				setTimeout(() => {
-					this.refreshAllData();
-				}, 1000);
 			}
 		}
 	}
@@ -958,10 +1514,33 @@
 		background-color: #F5F5F5;
 	}
 	
+	/* 状态栏 */
+	.status-bar {
+		background-color: #007AFF;
+		color: white;
+		padding: 10rpx 30rpx;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		font-size: 24rpx;
+	}
+	
+	.status-text {
+		font-weight: 600;
+	}
+	
+	.api-key-text {
+		opacity: 0.8;
+		font-size: 20rpx;
+	}
+	
 	/* 搜索栏 */
 	.search-section {
 		background-color: #FFFFFF;
 		padding: 20rpx 30rpx;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
 		box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
 		z-index: 10;
 	}
@@ -969,12 +1548,12 @@
 	.location-info {
 		display: flex;
 		align-items: center;
-		margin-bottom: 20rpx;
 	}
 	
 	.location-icon {
-		font-size: 28rpx;
-		margin-right: 8rpx;
+		font-size: 32rpx;
+		margin-right: 12rpx;
+		color: #007AFF;
 	}
 	
 	.current-city {
@@ -1007,305 +1586,379 @@
 	.map-container {
 		flex: 1;
 		position: relative;
+		background-color: #E5E5E5;
 	}
 	
-	.map {
+	.baidu-map-container {
 		width: 100%;
 		height: 100%;
+		border-radius: 0;
+		background-color: #E5E5E5;
+		position: relative;
+		z-index: 1;
+		cursor: grab;
 	}
 	
-	.location-btn {
-		position: absolute;
-		right: 30rpx;
-		top: 30rpx;
-		width: 80rpx;
-		height: 80rpx;
-		background-color: #FFFFFF;
-		border-radius: 50%;
+	.baidu-map-container:active {
+		cursor: grabbing;
+	}
+	
+	/* 地图占位符 */
+	.map-placeholder {
+		width: 100%;
+		height: 100%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15);
-		z-index: 5;
+		background-color: #F0F0F0;
 	}
 	
-	.location-btn:active {
-		transform: scale(0.95);
-	}
-	
-	.location-btn-icon {
-		font-size: 32rpx;
-	}
-	
-	.refresh-btn {
-		position: absolute;
-		right: 30rpx;
-		top: 130rpx;
-		width: 80rpx;
-		height: 80rpx;
-		background-color: #FFFFFF;
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15);
-		z-index: 5;
-	}
-	
-	.refresh-btn:active {
-		transform: scale(0.95);
-	}
-	
-	.refresh-btn-icon {
-		font-size: 28rpx;
-	}
-	
-	.api-mode-btn {
-		position: absolute;
-		right: 30rpx;
-		top: 230rpx;
-		background-color: #FFFFFF;
-		border-radius: 20rpx;
-		padding: 12rpx 20rpx;
-		box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15);
-		z-index: 5;
-	}
-	
-	.api-mode-btn:active {
-		transform: scale(0.95);
-	}
-	
-	.api-mode-text {
-		font-size: 22rpx;
-		color: #007AFF;
-		font-weight: 500;
-	}
-	
-	.debug-info {
-		position: absolute;
-		left: 30rpx;
-		top: 230rpx;
-		background-color: #FF6B6B;
-		border-radius: 20rpx;
-		padding: 8rpx 16rpx;
-		z-index: 5;
-	}
-	
-	.debug-text {
-		font-size: 20rpx;
-		color: #FFFFFF;
-		font-weight: 500;
-	}
-	
-	/* 底部面板 */
-	.bottom-panel {
-		background-color: #FFFFFF;
-		border-radius: 24rpx 24rpx 0 0;
-		box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.1);
-		transition: all 0.3s ease;
-		max-height: 40vh;
-		min-height: 200rpx;
-	}
-	
-	.bottom-panel.expanded {
-		max-height: 60vh;
-	}
-	
-	.drag-indicator {
-		padding: 20rpx;
-		display: flex;
-		justify-content: center;
-		cursor: pointer;
-	}
-	
-	.drag-line {
-		width: 60rpx;
-		height: 6rpx;
-		background-color: #E9ECEF;
-		border-radius: 3rpx;
-	}
-	
-	/* 无寄存点状态 */
-	.no-lockers {
+	.placeholder-content {
 		text-align: center;
-		padding: 60rpx 30rpx;
+		padding: 40rpx;
 	}
 	
-	.no-lockers-title {
-		font-size: 36rpx;
-		color: #1A1A1A;
-		font-weight: 600;
+	.placeholder-icon {
+		font-size: 80rpx;
 		display: block;
-		margin-bottom: 16rpx;
-	}
-	
-	.no-lockers-desc {
-		font-size: 28rpx;
-		color: #8E8E93;
-	}
-	
-	/* 寄存点内容 */
-	.lockers-content {
-		padding: 0 30rpx 30rpx;
-	}
-	
-	.lockers-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		padding: 20rpx 0;
-		border-bottom: 1rpx solid #F0F0F0;
 		margin-bottom: 20rpx;
 	}
 	
-	.lockers-count {
+	.placeholder-text {
 		font-size: 28rpx;
-		color: #1A1A1A;
-		font-weight: 600;
+		color: #666;
+		display: block;
+		margin-bottom: 10rpx;
 	}
 	
-	.refresh-text {
-		font-size: 26rpx;
-		color: #007AFF;
-		padding: 8rpx 16rpx;
-		border-radius: 20rpx;
-		background-color: rgba(0, 122, 255, 0.1);
-		transition: all 0.3s ease;
+	.placeholder-status {
+		font-size: 24rpx;
+		color: #999;
+		display: block;
 	}
 	
-	.refresh-text:active {
-		background-color: rgba(0, 122, 255, 0.2);
+	/* 地图控制按钮 */
+	.map-controls {
+		position: absolute;
+		right: 30rpx;
+		top: 30rpx;
+		z-index: 10;
+	}
+	
+	.control-btn {
+		background-color: #FFFFFF;
+		border-radius: 50rpx;
+		padding: 20rpx 30rpx;
+		margin-bottom: 20rpx;
+		display: flex;
+		align-items: center;
+		box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.15);
+		min-width: 120rpx;
+		justify-content: center;
+	}
+	
+	.control-btn:active {
 		transform: scale(0.95);
 	}
 	
-	/* 寄存点列表 */
-	.lockers-list {
+	.lockers-btn {
+		background-color: #FF6B35 !important;
+	}
+	
+	.lockers-btn .btn-text {
+		color: white !important;
+	}
+	
+
+	
+
+	
+	.btn-icon {
+		font-size: 32rpx;
+		margin-right: 10rpx;
+	}
+	
+	.btn-text {
+		font-size: 24rpx;
+		color: #333;
+		font-weight: 500;
+	}
+	
+	/* 地图错误提示 */
+	.map-error {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		background-color: #FFFFFF;
+		padding: 60rpx 40rpx;
+		border-radius: 20rpx;
+		text-align: center;
+		box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.15);
+		z-index: 20;
+		max-width: 600rpx;
+	}
+	
+	.error-title {
+		font-size: 32rpx;
+		font-weight: 600;
+		color: #FF3B30;
+		margin-bottom: 20rpx;
+		display: block;
+	}
+	
+	.error-message {
+		font-size: 28rpx;
+		color: #666;
+		margin-bottom: 40rpx;
+		display: block;
+		line-height: 1.5;
+	}
+	
+	.error-actions {
+		display: flex;
+		justify-content: center;
+	}
+	
+	.retry-btn {
+		background-color: #007AFF;
+		color: white;
+		border: none;
+		padding: 20rpx 40rpx;
+		border-radius: 10rpx;
+		font-size: 28rpx;
+	}
+	
+	/* 位置信息面板 */
+	.location-info-panel {
+		position: absolute;
+		top: 20rpx;
+		left: 20rpx;
+		background-color: rgba(0, 0, 0, 0.8);
+		color: white;
+		padding: 20rpx;
+		border-radius: 10rpx;
+		z-index: 15;
+		font-size: 24rpx;
+		max-width: 400rpx;
+	}
+	
+	.location-title {
+		font-size: 28rpx;
+		font-weight: 600;
+		margin-bottom: 10rpx;
+		display: block;
+	}
+	
+	.location-detail {
+		display: block;
+		margin-bottom: 8rpx;
+		opacity: 0.9;
+		font-family: monospace;
+	}
+	
+	.location-detail.address {
+		margin-top: 10rpx;
+		padding-top: 10rpx;
+		border-top: 1rpx solid rgba(255, 255, 255, 0.3);
+		font-size: 22rpx;
+		line-height: 1.4;
+	}
+	
+	/* 寄存点信息面板 */
+	.locker-panel {
+		background-color: #FFFFFF;
+		border-top: 1rpx solid #E5E5E5;
+		padding: 30rpx;
 		max-height: 400rpx;
 	}
 	
-	.locker-card {
+	.panel-header {
 		display: flex;
-		padding: 30rpx 0;
-		border-bottom: 1rpx solid #F0F0F0;
-		transition: all 0.3s ease;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 30rpx;
 	}
 	
-	.locker-card:active {
-		background-color: rgba(0, 122, 255, 0.05);
-		transform: scale(0.98);
+	.panel-title {
+		font-size: 32rpx;
+		font-weight: 600;
+		color: #333;
 	}
 	
-	.locker-card:last-child {
-		border-bottom: none;
+	.panel-count {
+		font-size: 24rpx;
+		color: #666;
+		flex: 1;
 	}
 	
-	.locker-image {
-		width: 120rpx;
-		height: 120rpx;
-		border-radius: 12rpx;
-		margin-right: 24rpx;
-		background-color: #F5F5F5;
+	.refresh-btn-small {
+		font-size: 28rpx;
+		color: #007AFF;
+		padding: 10rpx;
+		cursor: pointer;
+	}
+	
+	.refresh-btn-small:active {
+		transform: scale(0.9);
+	}
+	
+	.selected-locker {
+		background-color: #F8F9FA;
+		border-radius: 15rpx;
+		padding: 30rpx;
 	}
 	
 	.locker-info {
-		flex: 1;
-		position: relative;
+		margin-bottom: 30rpx;
 	}
 	
 	.locker-name {
 		font-size: 30rpx;
-		color: #1A1A1A;
 		font-weight: 600;
+		color: #333;
 		display: block;
-		margin-bottom: 12rpx;
+		margin-bottom: 10rpx;
+	}
+	
+	.locker-address {
+		font-size: 26rpx;
+		color: #666;
+		display: block;
+		margin-bottom: 10rpx;
+	}
+	
+	.locker-distance {
+		font-size: 24rpx;
+		color: #007AFF;
+		display: block;
+		margin-bottom: 10rpx;
+	}
+	
+	.locker-status {
+		font-size: 24rpx;
+		display: block;
+	}
+	
+	.locker-status.available {
+		color: #28a745;
+	}
+	
+	.locker-status:not(.available) {
+		color: #dc3545;
 	}
 	
 	.locker-capacity {
-		font-size: 24rpx;
-		color: #007AFF;
-		display: block;
-		margin-bottom: 12rpx;
-	}
-	
-	.locker-capacity.unavailable {
-		color: #FF6B6B;
-	}
-	
-	.locker-location {
 		display: flex;
-		align-items: center;
+		justify-content: space-around;
+		margin-bottom: 30rpx;
+		background-color: #FFFFFF;
+		border-radius: 10rpx;
+		padding: 20rpx;
 	}
 	
-	.location-text {
-		font-size: 24rpx;
-		color: #8E8E93;
-		margin-left: 8rpx;
+	.capacity-item {
+		text-align: center;
 		flex: 1;
 	}
 	
-	.distance {
-		position: absolute;
-		top: 0;
-		right: 0;
-		font-size: 22rpx;
-		color: #007AFF;
-		background-color: rgba(0, 122, 255, 0.1);
-		padding: 4rpx 12rpx;
-		border-radius: 12rpx;
-	}
-	
-	/* 当前选择寄存柜 */
-	.current-locker {
-		padding: 20rpx 0;
-	}
-	
-	.current-locker-content {
-		display: flex;
-		align-items: center;
-		padding: 20rpx;
-		background-color: #F8F9FA;
-		border-radius: 12rpx;
-		transition: all 0.3s ease;
-	}
-	
-	.current-locker-content:active {
-		background-color: rgba(0, 122, 255, 0.05);
-		transform: scale(0.98);
-	}
-	
-	.current-locker-image {
-		width: 80rpx;
-		height: 80rpx;
-		border-radius: 8rpx;
-		margin-right: 20rpx;
-		background-color: #F5F5F5;
-	}
-	
-	.current-locker-name {
-		font-size: 28rpx;
-		color: #1A1A1A;
-		font-weight: 600;
+	.capacity-label {
+		font-size: 24rpx;
+		color: #666;
 		display: block;
-		margin-bottom: 8rpx;
+		margin-bottom: 10rpx;
 	}
 	
-	.current-locker-capacity {
-		font-size: 22rpx;
+	.capacity-value {
+		font-size: 36rpx;
+		font-weight: 600;
 		color: #007AFF;
+		display: block;
 	}
 	
-	.current-locker-capacity.unavailable {
-		color: #FF6B6B;
+	.capacity-value.zero {
+		color: #999;
+		opacity: 0.6;
 	}
 	
-	/* 加载状态 */
-	.loading {
-		text-align: center;
-		padding: 60rpx 30rpx;
+	.locker-actions {
+		display: flex;
+		justify-content: center;
 	}
 	
-	.loading-text {
+	.action-btn {
+		border: none;
+		border-radius: 25rpx;
+		padding: 25rpx 60rpx;
 		font-size: 28rpx;
-		color: #8E8E93;
+		font-weight: 500;
 	}
-</style>
+	
+	.action-btn.primary {
+		background-color: #007AFF;
+		color: white;
+	}
+	
+	.action-btn:active {
+		transform: scale(0.95);
+	}
+	
+	.action-btn:disabled {
+		background-color: #ccc !important;
+		color: #666 !important;
+		cursor: not-allowed;
+	}
+</style>	
+
+	/* 无寄存点提示样式 */
+	.no-lockers {
+		padding: 40rpx 30rpx;
+		text-align: center;
+	}
+	
+	.no-lockers-content {
+		background: #f8f9fa;
+		border-radius: 20rpx;
+		padding: 60rpx 40rpx;
+		border: 2rpx dashed #ddd;
+	}
+	
+	.no-lockers-icon {
+		font-size: 80rpx;
+		display: block;
+		margin-bottom: 20rpx;
+		opacity: 0.6;
+	}
+	
+	.no-lockers-title {
+		font-size: 32rpx;
+		font-weight: 600;
+		color: #333;
+		display: block;
+		margin-bottom: 15rpx;
+	}
+	
+	.no-lockers-desc {
+		font-size: 26rpx;
+		color: #666;
+		line-height: 1.5;
+		display: block;
+		margin-bottom: 40rpx;
+	}
+	
+	.no-lockers-actions {
+		display: flex;
+		gap: 20rpx;
+		justify-content: center;
+	}
+	
+	.action-btn.secondary {
+		background: #f8f9fa;
+		color: #666;
+		border: 2rpx solid #ddd;
+	}
+	
+	.action-btn.secondary:hover {
+		background: #e9ecef;
+		border-color: #adb5bd;
+	}
