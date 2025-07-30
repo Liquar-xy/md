@@ -47,6 +47,10 @@
             <view class="order-actions">
               <button v-if="order.status === 2" class="order-btn primary">取出</button>
               <button v-if="order.status === 3" class="order-btn default">去评价</button>
+              <!-- 右下角状态显示 -->
+              <view class="order-status-badge" :class="'status-' + order.status">
+                <text class="status-text">{{ order.status === 1 ? '待支付' : order.status === 2 ? '寄存中' : order.status === 3 ? '已完成' : order.status === 4 ? '已取消' : order.status === 5 ? '超时' : order.status === 6 ? '异常' : '' }}</text>
+              </view>
             </view>
           </view>
         </view>
@@ -84,7 +88,7 @@ export default {
       orders: [],
       total: 0,
       page: 1,
-      size: 10,
+      size: 20, // 修改分页条数为20
       storage_location_name: '',
       loading: false
     }
@@ -120,9 +124,9 @@ export default {
         data: JSON.stringify({
           page: this.page,
           size: this.size,
-          storageLocationName: this.storage_location_name,
-          // 根据当前tab传递不同的订单类型
-          orderType: this.currentTab === 0 ? 'current' : 'history'
+          storage_location_name: this.storage_location_name,
+          // 根据状态筛选：状态1,2为当前订单，状态3为历史订单
+          status: this.currentTab === 0 ? "1,2" : "3"
         }),
         success: (res) => {
           console.log('订单列表请求成功:', res);
@@ -193,7 +197,9 @@ export default {
       uni.showToast({ title: '订单页面', icon: 'none' });
     },
     handleMyClick() {
-      uni.showToast({ title: '我的页面', icon: 'none' });
+     uni.navigateTo({
+     	url: '/pages/my/my'
+     });
     },
     // 添加分页相关方法
     onReachBottom() {
@@ -357,6 +363,7 @@ export default {
 .order-actions {
   display: flex;
   align-items: center;
+  position: relative;
 }
 .order-btn {
   font-size: 28rpx;
@@ -372,6 +379,43 @@ export default {
 .order-btn.default {
   background: #f0f0f0;
   color: #666;
+}
+.order-status-badge {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 4rpx 12rpx;
+  border-radius: 12rpx;
+  font-size: 22rpx;
+}
+.order-status-badge.status-1 {
+  background: #ff9500;
+  color: #fff;
+}
+.order-status-badge.status-2 {
+  background: #007aff;
+  color: #fff;
+}
+.order-status-badge.status-3 {
+  background: #34c759;
+  color: #fff;
+}
+.order-status-badge.status-4 {
+  background: #ff3b30;
+  color: #fff;
+}
+.order-status-badge.status-5 {
+  background: #ff9500;
+  color: #fff;
+}
+.order-status-badge.status-6 {
+  background: #ff3b30;
+  color: #fff;
+}
+.status-text {
+  font-size: 22rpx;
+  font-weight: bold;
 }
 .order-list.empty {
   text-align: center;
