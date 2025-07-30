@@ -3,7 +3,7 @@
     <!-- 顶部返回栏 -->
     <view class="header-bar">
       <view class="back-btn" @click="goBack" hover-class="back-btn-hover">
-        <text class="iconfont back-icon">&#xe60c;</text>
+        <text class="back-icon">←</text>
       </view>
       <text class="header-title">订单详情</text>
       <view class="header-placeholder"></view>
@@ -87,6 +87,12 @@
           @click="handleEvaluate"
         >
           去评价
+        </button>
+        <button 
+          class="action-btn secondary"
+          @click="handleCustomAction"
+        >
+          去支付
         </button>
       </view>
     </view>
@@ -279,6 +285,27 @@ export default {
         title: '评价功能开发中',
         icon: 'none'
       });
+    },
+    handleCustomAction() {
+      if (!this.order) {
+        uni.showToast({
+          title: '订单数据不完整',
+          icon: 'none'
+        });
+        return;
+      }
+
+      // 只传递订单ID，让alipay页面从后端获取完整数据
+      uni.navigateTo({
+        url: `/pages/alipay/alipay?id=${this.order.id}`,
+        fail: (err) => {
+          console.error('跳转支付页面失败:', err);
+          uni.showToast({
+            title: '页面跳转失败',
+            icon: 'none'
+          });
+        }
+      });
     }
   }
 }
@@ -314,7 +341,7 @@ export default {
   background-color: rgba(0, 0, 0, 0.1);
 }
 
-.back-btn .back-icon {
+.back-icon {
   font-size: 36rpx;
   color: #222;
   line-height: 1;
@@ -421,6 +448,12 @@ export default {
 .action-btn.default {
   background: #f0f0f0;
   color: #666;
+}
+
+.action-btn.secondary {
+  background: #34c759;
+  color: #fff;
+  margin-top: 16rpx;
 }
 
 /* 错误状态 */
