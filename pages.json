@@ -109,7 +109,6 @@
       }
     },
     {
-<<<<<<< HEAD
       "path": "pages/point/point",
       "style": {
         "navigationBarTitleText": "我的网点"
@@ -135,13 +134,12 @@
         "navigationBarTitleText": "收费规则",
         "navigationStyle": "custom"
       }
-=======
-    	"path" : "pages/alipay/alipay",
-    	"style" : 
-    	{
-    		"navigationBarTitleText" : ""
-    	}
->>>>>>> 15cb5c4c6d2cca35134afce123a0a5d2a74cdb13
+    },
+    {
+      "path": "pages/alipay/alipay",
+      "style": {
+        "navigationBarTitleText": ""
+      }
     }
   ],
   "globalStyle": {
