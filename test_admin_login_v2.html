@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员登录接口测试 V2</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .step {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .step h4 {
+            margin: 0 0 10px 0;
+            color: #495057;
+        }
+        .api-info {
+            background: #d1ecf1;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .api-info h3 {
+            margin: 0 0 10px 0;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔐 管理员登录接口测试 V2</h1>
+    
+    <div class="api-info">
+        <h3>📋 接口信息</h3>
+        <p><strong>路由:</strong> POST /admin/login</p>
+        <p><strong>完整URL:</strong> http://localhost:8000/admin/login</p>
+        <p><strong>参数:</strong> mobile, password, smsCode</p>
+                    <p><strong>Redis键:</strong> sendSms{mobile}admin</p>
+    </div>
+    
+    <div class="container">
+        <h3>📋 测试步骤</h3>
+        <div class="step">
+            <h4>步骤1: 发送验证码</h4>
+            <p>输入手机号，点击"发送验证码"按钮</p>
+            <p><strong>注意:</strong> 验证码会存储到Redis键: sendSms{mobile}admin</p>
+        </div>
+        <div class="step">
+            <h4>步骤2: 输入验证码</h4>
+            <p>查看后端日志获取验证码，或使用测试验证码</p>
+        </div>
+        <div class="step">
+            <h4>步骤3: 管理员登录</h4>
+            <p>输入密码和验证码，点击"管理员登录"</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <h3>📱 发送验证码</h3>
+        <div class="form-group">
+            <label for="mobile">手机号:</label>
+            <input type="text" id="mobile" value="13661740781" placeholder="输入手机号">
+        </div>
+        <button onclick="sendSms()">📤 发送验证码</button>
+        <div id="smsResult" class="result"></div>
+    </div>
+
+    <div class="container">
+        <h3>🔐 管理员登录</h3>
+        <div class="form-group">
+            <label for="loginMobile">手机号:</label>
+            <input type="text" id="loginMobile" value="13661740781" placeholder="输入手机号">
+        </div>
+        <div class="form-group">
+            <label for="password">密码:</label>
+            <input type="password" id="password" value="200621" placeholder="输入密码">
+        </div>
+        <div class="form-group">
+            <label for="smsCode">验证码:</label>
+            <input type="text" id="smsCode" placeholder="输入验证码">
+        </div>
+        <button onclick="adminLogin()">🚀 管理员登录</button>
+        <button onclick="clearResults()">🗑️ 清空结果</button>
+        <div id="loginResult" class="result"></div>
+    </div>
+
+    <div class="container">
+        <h3>📊 测试数据</h3>
+        <div class="form-group">
+            <label>测试验证码:</label>
+            <input type="text" value="1234" readonly style="background-color: #f8f9fa;">
+            <small>（如果后端有默认验证码，可以使用这个）</small>
+        </div>
+        <div class="form-group">
+            <label>Redis键格式:</label>
+            <input type="text" value="sendSms13661740781admin" readonly style="background-color: #f8f9fa;">
+            <small>（验证码存储的Redis键）</small>
+        </div>
+    </div>
+
+    <script>
+        function sendSms() {
+            const mobile = document.getElementById('mobile').value;
+            
+            if (!mobile) {
+                alert('请输入手机号');
+                return;
+            }
+
+            document.getElementById('smsResult').innerHTML = '🔄 发送中...';
+            document.getElementById('smsResult').className = 'result';
+
+            const data = {
+                mobile: mobile,
+                source: 'admin_login'  // 管理员登录专用标识
+            };
+
+            console.log('发送验证码请求:', data);
+
+            fetch('http://localhost:8000/sendSms', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('发送短信响应:', data);
+                if (data.code === 200) {
+                    document.getElementById('smsResult').innerHTML = 
+                        `✅ 验证码发送成功!\n\n` +
+                        `📱 手机号: ${mobile}\n` +
+                        `🔑 Redis键: sendSms${mobile}admin\n` +
+                        `📋 完整响应:\n${JSON.stringify(data, null, 2)}`;
+                    document.getElementById('smsResult').className = 'result success';
+                } else {
+                    document.getElementById('smsResult').innerHTML = 
+                        `❌ 发送失败: ${data.msg}\n\n` +
+                        `📋 完整响应:\n${JSON.stringify(data, null, 2)}`;
+                    document.getElementById('smsResult').className = 'result error';
+                }
+            })
+            .catch(error => {
+                console.error('发送失败:', error);
+                document.getElementById('smsResult').innerHTML = 
+                    `❌ 网络错误: ${error.message}\n\n` +
+                    `可能的原因:\n` +
+                    `1. 后端服务未启动\n` +
+                    `2. 跨域问题 (CORS)\n` +
+                    `3. 网络连接问题`;
+                document.getElementById('smsResult').className = 'result error';
+            });
+        }
+
+        function adminLogin() {
+            const mobile = document.getElementById('loginMobile').value;
+            const password = document.getElementById('password').value;
+            const smsCode = document.getElementById('smsCode').value;
+
+            if (!mobile || !password || !smsCode) {
+                alert('请填写完整信息');
+                return;
+            }
+
+            document.getElementById('loginResult').innerHTML = '🔄 登录中...';
+            document.getElementById('loginResult').className = 'result';
+
+            const data = {
+                mobile: mobile,
+                password: password,
+                smsCode: smsCode
+            };
+
+            console.log('管理员登录请求:', data);
+            console.log('请求URL: http://localhost:8000/admin/login');
+
+            fetch('http://localhost:8000/admin/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams(data)
+            })
+            .then(response => {
+                console.log('HTTP响应状态:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('管理员登录响应:', data);
+                if (data.code === 200) {
+                    document.getElementById('loginResult').innerHTML = 
+                        `✅ 管理员登录成功!\n\n` +
+                        `👤 管理员ID: ${data.id}\n` +
+                        `🔑 Token: ${data.token}\n` +
+                        `💬 消息: ${data.msg}\n\n` +
+                        `📋 完整响应:\n${JSON.stringify(data, null, 2)}`;
+                    document.getElementById('loginResult').className = 'result success';
+                } else {
+                    document.getElementById('loginResult').innerHTML = 
+                        `❌ 登录失败: ${data.msg}\n\n` +
+                        `可能的原因:\n` +
+                        `1. 验证码错误\n` +
+                        `2. 密码错误\n` +
+                        `3. 管理员不存在\n\n` +
+                        `📋 完整响应:\n${JSON.stringify(data, null, 2)}`;
+                    document.getElementById('loginResult').className = 'result error';
+                }
+            })
+            .catch(error => {
+                console.error('登录失败:', error);
+                document.getElementById('loginResult').innerHTML = 
+                    `❌ 网络错误: ${error.message}\n\n` +
+                    `可能的原因:\n` +
+                    `1. 后端服务未启动\n` +
+                    `2. 跨域问题 (CORS)\n` +
+                    `3. 网络连接问题\n` +
+                    `4. 接口路由错误`;
+                document.getElementById('loginResult').className = 'result error';
+            });
+        }
+
+        function clearResults() {
+            document.getElementById('smsResult').innerHTML = '';
+            document.getElementById('loginResult').innerHTML = '';
+        }
+    </script>
+</body>
+</html> 

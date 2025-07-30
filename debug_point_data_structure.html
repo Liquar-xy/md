@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>调试网点数据结构</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .debug-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button {
+            background: #007aff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 5px;
+        }
+        .field-test {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>调试网点数据结构</h1>
+        
+        <div class="debug-section">
+            <h3>测试网点详情接口</h3>
+            <input type="number" id="pointId" value="1" placeholder="网点ID">
+            <button onclick="debugPointDetail()">调试详情</button>
+            <div id="result" class="result" style="display: none;"></div>
+        </div>
+        
+        <div class="debug-section">
+            <h3>字段测试</h3>
+            <div id="fieldTest" class="field-test" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        async function debugPointDetail() {
+            const pointId = document.getElementById('pointId').value;
+            const resultDiv = document.getElementById('result');
+            const fieldTestDiv = document.getElementById('fieldTest');
+            
+            if (!pointId) {
+                showResult('请输入网点ID', 'error');
+                return;
+            }
+            
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.textContent = `正在调试网点ID: ${pointId}...`;
+            
+            try {
+                const response = await fetch('http://localhost:8000/point_info', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `Id=${pointId}`
+                });
+                
+                const data = await response.json();
+                
+                let result = `=== 网点详情接口调试 ===\n`;
+                result += `请求URL: http://localhost:8000/point_info\n`;
+                result += `请求方法: POST\n`;
+                result += `请求参数: Id=${pointId}\n`;
+                result += `响应状态: ${response.status}\n\n`;
+                
+                if (data.code === 200 || data.code === "200") {
+                    result += `✅ 接口调用成功!\n`;
+                    result += `响应码: ${data.code}\n`;
+                    result += `消息: ${data.msg}\n\n`;
+                    
+                    result += `=== 原始数据结构 ===\n`;
+                    result += `完整响应对象:\n${JSON.stringify(data, null, 2)}\n\n`;
+                    
+                    result += `=== 字段分析 ===\n`;
+                    result += `data.Name: ${data.Name} (类型: ${typeof data.Name})\n`;
+                    result += `data.name: ${data.name} (类型: ${typeof data.name})\n`;
+                    result += `data.Address: ${data.Address} (类型: ${typeof data.Address})\n`;
+                    result += `data.address: ${data.address} (类型: ${typeof data.address})\n`;
+                    result += `data.PointType: ${data.PointType} (类型: ${typeof data.PointType})\n`;
+                    result += `data.pointType: ${data.pointType} (类型: ${typeof data.pointType})\n`;
+                    result += `data.AvailableLarge: ${data.AvailableLarge} (类型: ${typeof data.AvailableLarge})\n`;
+                    result += `data.availableLarge: ${data.availableLarge} (类型: ${typeof data.availableLarge})\n`;
+                    result += `data.AvailableMedium: ${data.AvailableMedium} (类型: ${typeof data.AvailableMedium})\n`;
+                    result += `data.availableMedium: ${data.availableMedium} (类型: ${typeof data.availableMedium})\n`;
+                    result += `data.AvailableSmall: ${data.AvailableSmall} (类型: ${typeof data.AvailableSmall})\n`;
+                    result += `data.availableSmall: ${data.availableSmall} (类型: ${typeof data.availableSmall})\n`;
+                    result += `data.OpenTime: ${data.OpenTime} (类型: ${typeof data.OpenTime})\n`;
+                    result += `data.openTime: ${data.openTime} (类型: ${typeof data.openTime})\n`;
+                    result += `data.Staus: ${data.Staus} (类型: ${typeof data.Staus})\n`;
+                    result += `data.staus: ${data.staus} (类型: ${typeof data.staus})\n`;
+                    result += `data.PointImage: ${data.PointImage} (类型: ${typeof data.PointImage})\n`;
+                    result += `data.pointImage: ${data.pointImage} (类型: ${typeof data.pointImage})\n\n`;
+                    
+                    // 测试字段映射
+                    testFieldMapping(data);
+                    
+                    resultDiv.className = 'result success';
+                } else {
+                    result += `❌ 接口返回错误!\n`;
+                    result += `错误码: ${data.code}\n`;
+                    result += `错误信息: ${data.msg}\n`;
+                    resultDiv.className = 'result error';
+                }
+                
+                resultDiv.textContent = result;
+                
+            } catch (error) {
+                showResult(`❌ 网络错误: ${error.message}`, 'error');
+            }
+        }
+        
+        function testFieldMapping(data) {
+            const fieldTestDiv = document.getElementById('fieldTest');
+            fieldTestDiv.style.display = 'block';
+            
+            let testResult = `=== 字段映射测试 ===\n`;
+            
+            // 测试不同的字段名组合
+            const name = data.Name || data.name || '未设置';
+            const address = data.Address || data.address || '未设置';
+            const pointType = data.PointType || data.pointType || '未设置';
+            const availableLarge = parseInt(data.AvailableLarge || data.availableLarge) || 0;
+            const availableMedium = parseInt(data.AvailableMedium || data.availableMedium) || 0;
+            const availableSmall = parseInt(data.AvailableSmall || data.availableSmall) || 0;
+            const openTime = data.OpenTime || data.openTime || '未设置';
+            const staus = parseInt(data.Staus || data.staus) || 1;
+            const pointImage = data.PointImage || data.pointImage || '';
+            
+            testResult += `映射结果:\n`;
+            testResult += `- 名称: ${name}\n`;
+            testResult += `- 地址: ${address}\n`;
+            testResult += `- 类型: ${pointType}\n`;
+            testResult += `- 大型柜: ${availableLarge}组\n`;
+            testResult += `- 中型柜: ${availableMedium}组\n`;
+            testResult += `- 小型柜: ${availableSmall}个\n`;
+            testResult += `- 营业时间: ${openTime}\n`;
+            testResult += `- 状态: ${staus === 1 ? '营业中' : '暂停营业'}\n`;
+            testResult += `- 图片: ${pointImage || '无'}\n`;
+            
+            fieldTestDiv.textContent = testResult;
+            fieldTestDiv.className = 'field-test info';
+        }
+        
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = message;
+            resultDiv.className = `result ${type}`;
+            resultDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html> 

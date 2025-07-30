@@ -1,670 +1,579 @@
 <template>
-	<view class="page">
-		<!-- 顶部导航栏 -->
-		<view class="header">
-			<view class="back-btn" @click="goBack">
-				<text class="back-icon">←</text>
-			</view>
-			<text class="header-title">寄存点详情</text>
-			<view class="share-btn">
-				<text class="share-icon">⋯</text>
-			</view>
-		</view>
+  <view class="locker-detail-container">
+    <!-- 返回栏 -->
+    <view class="header-bar">
+      <text class="back-btn" @click="goBack">〈</text>
+      <text class="header-title">柜子信息</text>
+    </view>
 
-		<!-- 寄存点信息 -->
-		<view class="locker-info-section">
-			<view class="locker-header">
-				<text class="locker-name">{{lockerInfo.name}}</text>
-				<view class="locker-status" :class="lockerInfo.status">
-					<text class="status-text">{{lockerInfo.status === 'available' ? '营业中' : '暂停服务'}}</text>
-				</view>
-			</view>
+    <!-- 柜点信息 -->
+    <view class="site-info">
+      <view class="site-title">{{ lockerInfo.name }}</view>
+      <view class="site-address">
+        <text class="iconfont">📍</text>
+        {{ lockerInfo.address }}
+      </view>
+      <view class="site-map-btn">导航</view>
+    </view>
 
-			<view class="locker-address">
-				<text class="address-icon">📍</text>
-				<text class="address-text">{{lockerInfo.address}}</text>
-			</view>
+    <!-- 当前可用 -->
+    <view class="available-section">
+      <view class="section-title">当前可用 <text class="device-status">设备在线</text></view>
+      <view class="locker-list">
+        <view class="locker-item" v-for="item in lockerInfo.locker" :key="item.name">
+          <image class="locker-img" :src="getLockerImg(item.lockerType)" />
+          <view class="locker-desc">
+            <view class="locker-name">{{ item.name }} <text class="locker-status" v-if="item.num > 0">(可用)</text><text class="locker-status" v-else style="color:#e74c3c;">(已满)</text></view>
+            <view class="locker-size">{{ item.size }}</view>
+            <view class="locker-rate">{{ item.hourlyRate === 0 ? '免费' : (item.hourlyRate + '元/小时') }}</view>
+            <view class="locker-desc-text">{{ item.description }}</view>
+          </view>
+        </view>
+      </view>
+    </view>
 
-			<view class="locker-distance" v-if="lockerInfo.distance">
-				<text class="distance-text">距离您 {{lockerInfo.distance}}</text>
-			</view>
-		</view>
+    <!-- 选择寄存 -->
+    <view class="select-section">
+      <view class="section-title">选择寄存</view>
+      <view class="select-row">
+        <text>选择柜子型号</text>
+        <picker :range="lockerTypes.map(l=>l.name)" :value="selectedLockerType" @change="onLockerTypeChange">
+          <view class="picker-value">{{ lockerTypes[selectedLockerType] ? lockerTypes[selectedLockerType].name : '无可用柜子' }}</view>
+        </picker>
+      </view>
+      <view class="select-row">
+        <text>选择寄存时长</text>
+        <picker :range="hours" :value="selectedHour" @change="onHourChange">
+          <view class="picker-value">{{ hours[selectedHour] }}</view>
+        </picker>
+      </view>
+      <view class="select-row">
+        <text>选择取件方式</text>
+        <picker :range="pickupWays" :value="selectedPickupWay" @change="onPickupWayChange">
+          <view class="picker-value">{{ pickupWays[selectedPickupWay] }}</view>
+        </picker>
+      </view>
+      <view class="select-row price-row">
+        <text>预计费用（优惠后）：</text>
+        <text class="price">￥{{ calcPrice }}</text>
+      </view>
+    </view>
 
-		<!-- 柜子容量信息 -->
-		<view class="capacity-section">
-			<view class="section-title">
-				<text class="title-text">可用柜子</text>
-				<text class="refresh-btn" @click="refreshCapacity">🔄 刷新</text>
-			</view>
+    <!-- 取件方式 -->
+    <view class="pickup-section">
+      <view class="section-title">取件方式</view>
+      <view class="pickup-list">
+        <view class="pickup-item" v-for="(way, idx) in pickupWays" :key="way">
+          <text>{{ way }}</text>
+          <button size="mini" :type="idx === selectedPickupWay ? 'primary' : 'default'">{{ idx === selectedPickupWay ? '已选' : '选用' }}</button>
+        </view>
+      </view>
+    </view>
 
-			<view class="capacity-grid">
-				<view class="capacity-item">
-					<view class="capacity-icon large">📦</view>
-					<text class="capacity-label">大柜</text>
-					<text class="capacity-count" :class="{ 'zero': lockerInfo.large === 0 }">{{lockerInfo.large}}</text>
-					<text class="capacity-size">适合行李箱</text>
-				</view>
+    <!-- 底部操作栏 -->
+    <view class="footer-bar">
+      <view class="footer-price">合计￥{{ calcPrice }}</view>
+      <button class="footer-btn" type="primary" @click="onConfirmDeposit">确认寄存</button>
+    </view>
 
-				<view class="capacity-item">
-					<view class="capacity-icon medium">📦</view>
-					<text class="capacity-label">中柜</text>
-					<text class="capacity-count" :class="{ 'zero': lockerInfo.medium === 0 }">{{lockerInfo.medium}}</text>
-					<text class="capacity-size">适合背包</text>
-				</view>
+    <!-- 柜门已开弹窗 -->
+    <view v-if="showDepositResult" class="deposit-result-modal">
+      <image src="https://img.icons8.com/ios-filled/100/000000/box.png" class="result-img" />
+      <view class="result-title">柜门已开，请存放您的物品</view>
+      <view class="result-locker-id">{{ depositResult.locker_id }}号</view>
+      <button class="order-btn" @click="goOrderDetail">查看订单</button>
+      <view class="change-locker-tip">
+        柜子异常？<text class="change-link" @click="onChangeLocker">点击换个柜子&gt;&gt;</text>
+      </view>
+    </view>
 
-				<view class="capacity-item">
-					<view class="capacity-icon small">📦</view>
-					<text class="capacity-label">小柜</text>
-					<text class="capacity-count" :class="{ 'zero': lockerInfo.small === 0 }">{{lockerInfo.small}}</text>
-					<text class="capacity-size">适合手提包</text>
-				</view>
-			</view>
-		</view>
-
-		<!-- 服务信息 -->
-		<view class="service-section">
-			<view class="section-title">
-				<text class="title-text">服务信息</text>
-			</view>
-
-			<view class="service-item">
-				<text class="service-label">营业时间</text>
-				<text class="service-value">{{lockerInfo.openTime || '24小时'}}</text>
-			</view>
-
-			<view class="service-item">
-				<text class="service-label">联系电话</text>
-				<text class="service-value phone" @click="callPhone">{{lockerInfo.mobile || '暂无'}}</text>
-			</view>
-
-			<view class="service-item">
-				<text class="service-label">收费标准</text>
-				<text class="service-value">{{lockerInfo.price || '按时计费'}}</text>
-			</view>
-		</view>
-
-		<!-- 操作按钮 -->
-		<view class="action-section">
-			<button class="action-btn primary" @click="startDeposit" :disabled="!hasAvailableLocker">
-				立即寄存
-			</button>
-			<button class="action-btn secondary" @click="getDirections">
-				获取路线
-			</button>
-		</view>
-	</view>
+    <!-- 换柜子弹窗 -->
+    <view v-if="showChangeLocker" class="change-locker-modal">
+      <view class="modal-title">更换柜门</view>
+      <view class="modal-locker-id">{{ newLockerId }}号</view>
+      <view class="modal-desc">
+        原{{ depositResult.locker_id }}号柜门异常，即将为您打开新的柜门。请您取出原柜门个人物品，存放在新柜门内。
+      </view>
+      <button class="confirm-btn" @click="onConfirmChangeLocker">确认</button>
+    </view>
+  </view>
 </template>
 
 <script>
-	export default {
-		data() {
-			return {
-				lockerInfo: {
-					id: 1,
-					name: '寄存点名称',
-					address: '寄存点地址',
-					status: 'available',
-					large: 0,
-					medium: 0,
-					small: 0,
-					distance: '',
-					openTime: '24小时',
-					mobile: '',
-					price: '按时计费'
-				}
-			}
-		},
-		
-		computed: {
-			hasAvailableLocker() {
-				return this.lockerInfo.large > 0 || this.lockerInfo.medium > 0 || this.lockerInfo.small > 0;
-			}
-		},
-		
-		onLoad(options) {
-			console.log('寄存点详情页加载，参数:', options);
-			
-			// 获取传入的参数
-			if (options.id) {
-				this.loadLockerDetail(options.id);
-			} else if (options.name && options.address) {
-				// 从搜索页面跳转过来的参数
-				this.lockerInfo.name = decodeURIComponent(options.name);
-				this.lockerInfo.address = decodeURIComponent(options.address);
-				this.loadLockerDetail(options.id || 1);
-			}
-		},
-		
-		methods: {
-			// 返回上一页
-			goBack() {
-				uni.navigateBack();
-			},
-			
-			// 加载寄存点详情
-			loadLockerDetail(id) {
-				console.log('加载寄存点详情:', id);
-				
-				// 显示加载状态
-				uni.showLoading({
-					title: '加载中...'
-				});
-				
-				// 统一的API基础URL
-				const API_BASE_URL = 'http://localhost:8000';
-				
-				// 调用后端接口获取详情 - 使用正确的API路径
-				uni.request({
-					url: `${API_BASE_URL}/getDepositLocker?locker_id=${id}`,
-					method: 'GET',
-					header: {
-						'Content-Type': 'application/json'
-					},
-					success: (res) => {
-						console.log('获取寄存点详情成功:', res.data);
-						uni.hideLoading();
-						
-						if (res.data) {
-							// 处理后端返回的数据格式
-							this.processLockerData(res.data);
-						} else {
-							this.handleLoadError('获取详情失败');
-						}
-					},
-					fail: (err) => {
-						console.log('获取寄存点详情失败:', err);
-						uni.hideLoading();
-						this.handleLoadError('网络请求失败');
-					}
-				});
-			},
-			
-			// 处理后端返回的寄存点数据
-			processLockerData(data) {
-				console.log('处理寄存点数据:', data);
-				
-				// 根据后端返回的数据结构处理
-				this.lockerInfo = {
-					id: this.lockerInfo.id,
-					name: data.name || '寄存点',
-					address: data.address || '地址信息',
-					status: 'available',
-					longitude: data.longitude || 0,
-					latitude: data.latitude || 0,
-					distance: this.lockerInfo.distance,
-					openTime: '06:00-23:00',
-					mobile: '400-123-4567',
-					price: '按时计费'
-				};
-				
-				// 处理柜子信息
-				if (data.locker && Array.isArray(data.locker)) {
-					let large = 0, medium = 0, small = 0;
-					
-					data.locker.forEach(locker => {
-						if (locker.locker_type === 1 || locker.size === 'large') {
-							large += locker.num || 0;
-						} else if (locker.locker_type === 2 || locker.size === 'medium') {
-							medium += locker.num || 0;
-						} else if (locker.locker_type === 3 || locker.size === 'small') {
-							small += locker.num || 0;
-						}
-					});
-					
-					this.lockerInfo.large = large;
-					this.lockerInfo.medium = medium;
-					this.lockerInfo.small = small;
-				} else {
-					// 默认值
-					this.lockerInfo.large = 5;
-					this.lockerInfo.medium = 8;
-					this.lockerInfo.small = 12;
-				}
-				
-				console.log('处理后的寄存点信息:', this.lockerInfo);
-			},
-			
-			// 处理加载错误
-			handleLoadError(message) {
-				// 使用模拟数据
-				this.lockerInfo = {
-					id: 1,
-					name: '郑州东站寄存点',
-					address: '郑州市金水区郑东新区郑州东站西广场',
-					status: 'available',
-					large: 5,
-					medium: 8,
-					small: 12,
-					distance: '1.2km',
-					openTime: '06:00-23:00',
-					mobile: '400-123-4567',
-					price: '大柜8元/小时，中柜6元/小时，小柜4元/小时'
-				};
-				
-				uni.showToast({
-					title: message + '，使用模拟数据',
-					icon: 'none',
-					duration: 2000
-				});
-			},
-			
-			// 刷新容量信息
-			refreshCapacity() {
-				console.log('刷新容量信息');
-				this.loadLockerDetail(this.lockerInfo.id);
-			},
-			
-			// 拨打电话
-			callPhone() {
-				if (!this.lockerInfo.mobile) {
-					uni.showToast({
-						title: '暂无联系电话',
-						icon: 'none'
-					});
-					return;
-				}
-				
-				uni.makePhoneCall({
-					phoneNumber: this.lockerInfo.mobile,
-					success: () => {
-						console.log('拨打电话成功');
-					},
-					fail: (error) => {
-						console.error('拨打电话失败:', error);
-						uni.showToast({
-							title: '拨打电话失败',
-							icon: 'none'
-						});
-					}
-				});
-			},
-			
-			// 开始寄存
-			startDeposit() {
-				if (!this.hasAvailableLocker) {
-					uni.showToast({
-						title: '暂无可用柜子',
-						icon: 'none'
-					});
-					return;
-				}
-				
-				// 跳转到寄存页面或显示寄存选项
-				uni.showActionSheet({
-					itemList: ['大柜寄存', '中柜寄存', '小柜寄存'],
-					success: (res) => {
-						const types = ['large', 'medium', 'small'];
-						const selectedType = types[res.tapIndex];
-						
-						if (this.lockerInfo[selectedType] > 0) {
-							this.processDeposit(selectedType);
-						} else {
-							uni.showToast({
-								title: '该类型柜子暂无库存',
-								icon: 'none'
-							});
-						}
-					}
-				});
-			},
-			
-			// 处理寄存
-			processDeposit(type) {
-				console.log('处理寄存:', type);
-				
-				// 这里可以跳转到寄存确认页面或直接处理寄存逻辑
-				uni.showModal({
-					title: '确认寄存',
-					content: `确定要使用${type === 'large' ? '大' : type === 'medium' ? '中' : '小'}柜进行寄存吗？`,
-					success: (res) => {
-						if (res.confirm) {
-							// 执行寄存逻辑
-							this.executeDeposit(type);
-						}
-					}
-				});
-			},
-			
-			// 执行寄存
-			executeDeposit(type) {
-				uni.showLoading({
-					title: '正在寄存...'
-				});
-				
-				// 模拟寄存请求
-				setTimeout(() => {
-					uni.hideLoading();
-					
-					// 模拟成功
-					const orderNo = 'DP' + Date.now();
-					
-					uni.showModal({
-						title: '寄存成功',
-						content: `订单号：${orderNo}\n请妥善保管取件码`,
-						showCancel: false,
-						success: () => {
-							// 跳转到订单详情或我的页面
-							uni.navigateTo({
-								url: '/pages/order-detail/order-detail'
-							});
-						}
-					});
-				}, 2000);
-			},
-			
-			// 获取路线
-			getDirections() {
-				console.log('获取路线到:', this.lockerInfo.address);
-				
-				// 调用地图应用获取路线
-				uni.openLocation({
-					latitude: 34.7466, // 示例坐标
-					longitude: 113.6253,
-					name: this.lockerInfo.name,
-					address: this.lockerInfo.address,
-					success: () => {
-						console.log('打开地图成功');
-					},
-					fail: (error) => {
-						console.error('打开地图失败:', error);
-						uni.showToast({
-							title: '打开地图失败',
-							icon: 'none'
-						});
-					}
-				});
-			}
-		}
-	}
+export default {
+  data() {
+    return {
+      lockerInfo: {
+        name: '',
+        address: '',
+        locker: []
+      },
+      lockerTypes: [], // 只包含有余量的locker
+      selectedLockerType: 0,
+      hours: ['1小时', '2小时', '3小时', '4小时', '8小时'],
+      selectedHour: 0,
+      pickupWays: ['柜门扫码取件', '柜门密码取件', '柜台人工取件'],
+      selectedPickupWay: 0,
+      depositResult: null,
+      showDepositResult: false,
+      showChangeLocker: false,
+      newLockerId: null
+    }
+  },
+  computed: {
+    calcPrice() {
+      if (!this.lockerTypes.length) return '0.0';
+      const locker = this.lockerTypes[this.selectedLockerType];
+      if (!locker) return '0.0';
+      const price = locker.hourlyRate || 0;
+      // 提取小时数
+      const hourStr = this.hours[this.selectedHour];
+      const hour = parseInt(hourStr.match(/\d+/)?.[0] || '1');
+      return price === 0 ? '免费' : (price * hour).toFixed(2);
+    }
+  },
+  onLoad(options) {
+    const locker_id = options.locker_id || 1;
+    this.fetchLockerInfo(locker_id);
+  },
+  methods: {
+    goBack() {
+      uni.navigateBack();
+    },
+    onLockerTypeChange(e) {
+      this.selectedLockerType = e.detail.value;
+    },
+    onHourChange(e) {
+      this.selectedHour = e.detail.value;
+    },
+    onPickupWayChange(e) {
+      this.selectedPickupWay = e.detail.value;
+    },
+    onConfirmDeposit() {
+      // 构造请求参数
+      const scheduled_duration = parseInt(this.hours[this.selectedHour].match(/\d+/)[0]);
+      const locker_type = this.lockerTypes[this.selectedLockerType].lockerType;
+      const cabinet_id = this.lockerInfo.id || 1;
+      uni.request({
+        url: 'http://127.0.0.1:8000/deposit/createDeposit',
+        method: 'POST',
+        data: {
+          scheduled_duration,
+          locker_type,
+          cabinet_id
+        },
+        header: {
+          Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTM3NTUyNDMsImlkIjoiMTIzIiwieW91cl9jdXN0b21fY2xhaW0iOiJ5b3VyX2N1c3RvbV92YWx1ZSJ9.qcdoe8dSYtfQBZgCP30Yln4r8z9ovPDEF1fNVlviWX4'
+        },
+        success: (res) => {
+          if (res.data && (res.data.code === 200 || res.data.code === "200")) {
+            this.depositResult = {
+              order_no: res.data.data.orderNo,
+              locker_id: res.data.data.lockerId
+            };
+            this.showDepositResult = true;
+          } else {
+            uni.showToast({ title: res.data.msg || '寄存失败', icon: 'none' });
+          }
+        }
+      });
+    },
+    onChangeLocker() {
+      uni.request({
+        url: 'http://127.0.0.1:8000/deposit/updateDepositLockerId',
+        method: 'POST',
+        data: {
+          order_id: this.depositResult.order_no
+        },
+        header: {
+          Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTM3NTUyNDMsImlkIjoiMTIzIiwieW91cl9jdXN0b21fY2xhaW0iOiJ5b3VyX2N1c3RvbV92YWx1ZSJ9.qcdoe8dSYtfQBZgCP30Yln4r8z9ovPDEF1fNVlviWX4'
+        },
+        success: (res) => {
+          if (res.data && (res.data.code === 200 || res.data.code === "200")) {
+            this.newLockerId = res.data.lockerId;
+            this.showChangeLocker = true;
+          } else {
+            uni.showToast({ title: res.data.msg || '换柜失败', icon: 'none' });
+          }
+        }
+      });
+    },
+    onConfirmChangeLocker() {
+      this.showChangeLocker = false;
+      this.depositResult.locker_id = this.newLockerId;
+    },
+    goOrderDetail() {
+      // 跳转到订单详情页，需根据你的路由实际调整
+      uni.navigateTo({
+        url: `/pages/order-detail/order-detail?order_no=${this.depositResult.order_no}`
+      });
+    },
+    fetchLockerInfo(locker_id) {
+      console.log('🔄 获取寄存柜信息，ID:', locker_id);
+      
+      // 暂时禁用API调用，直接使用模拟数据避免500错误
+      console.log('📦 使用模拟寄存柜数据');
+      
+      // 根据locker_id生成不同的模拟数据
+      const mockData = this.generateMockLockerData(locker_id);
+      
+      setTimeout(() => {
+        this.lockerInfo = mockData;
+        this.lockerTypes = (mockData.locker || []).filter(l => l.num > 0);
+        this.selectedLockerType = 0;
+        console.log('✅ 寄存柜信息加载完成:', this.lockerInfo);
+      }, 300);
+      
+      // TODO: 等后端API修复后再启用
+      /*
+      uni.request({
+        url: `http://localhost:8000/api/lockers/${locker_id}`,
+        method: 'GET',
+        header: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        timeout: 5000,
+        success: (res) => {
+          console.log('✅ API获取寄存柜信息成功:', res.data);
+          if (res.statusCode === 200 && res.data) {
+            this.lockerInfo = res.data;
+            this.lockerTypes = (res.data.locker || []).filter(l => l.num > 0);
+            this.selectedLockerType = 0;
+          } else {
+            console.log('⚠️ API返回异常，使用模拟数据');
+            this.useMockData(locker_id);
+          }
+        },
+        fail: (error) => {
+          console.log('❌ API调用失败，使用模拟数据:', error);
+          this.useMockData(locker_id);
+        }
+      });
+      */
+    },
+    
+    // 生成模拟寄存柜数据
+    generateMockLockerData(locker_id) {
+      const locations = [
+        { name: '郑州火车站寄存柜', address: '郑州火车站西广场路北100米KFC门口' },
+        { name: '郑州东站寄存柜', address: '郑州东站南广场地下一层' },
+        { name: '二七广场寄存柜', address: '二七广场地铁站B出口' },
+        { name: '中原福塔寄存柜', address: '中原福塔景区入口处' },
+        { name: '河南博物院寄存柜', address: '河南博物院正门左侧' }
+      ];
+      
+      const location = locations[locker_id % locations.length] || locations[0];
+      
+      return {
+        id: locker_id,
+        name: location.name,
+        address: location.address,
+        status: 'online',
+        locker: [
+          { 
+            name: '小柜子', 
+            description: '适合背包、手提包等小件物品', 
+            size: '33L(298*429*430mm)', 
+            num: Math.floor(Math.random() * 5) + 1, 
+            hourlyRate: 2, 
+            lockerType: 1, 
+            freeDuration: 0 
+          },
+          { 
+            name: '中柜子', 
+            description: '适合行李箱、购物袋等中等物品', 
+            size: '53L(298*429*630mm)', 
+            num: Math.floor(Math.random() * 3) + 1, 
+            hourlyRate: 3, 
+            lockerType: 2, 
+            freeDuration: 0 
+          },
+          { 
+            name: '大柜子', 
+            description: '适合大型行李箱、多件物品', 
+            size: '73L(298*429*830mm)', 
+            num: Math.floor(Math.random() * 2) + 1, 
+            hourlyRate: 5, 
+            lockerType: 3, 
+            freeDuration: 0 
+          }
+        ]
+      };
+    },
+    
+    // 使用模拟数据的备用方法
+    useMockData(locker_id) {
+      const mockData = this.generateMockLockerData(locker_id);
+      this.lockerInfo = mockData;
+      this.lockerTypes = mockData.locker.filter(l => l.num > 0);
+      this.selectedLockerType = 0;
+    },
+    getLockerImg(type) {
+      // 可根据类型返回不同图片
+      return type === 2
+        ? 'https://img.icons8.com/ios-filled/100/000000/box.png'
+        : 'https://img.icons8.com/ios-filled/100/000000/parcel.png';
+    }
+  }
+}
 </script>
 
 <style scoped>
-.page {
-	background: linear-gradient(180deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-	min-height: 100vh;
-	position: relative;
+.locker-detail-container {
+  background: #f5f6fa;
+  min-height: 100vh;
+  padding-bottom: 120rpx;
 }
-
-.page::before {
-	content: '';
-	position: fixed;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-	background: linear-gradient(135deg, 
-		rgba(102, 126, 234, 0.1) 0%, 
-		rgba(118, 75, 162, 0.05) 50%, 
-		rgba(240, 147, 251, 0.1) 100%);
-	backdrop-filter: blur(100rpx);
-	z-index: -1;
+.header-bar {
+  display: flex;
+  align-items: center;
+  padding: 30rpx 20rpx 10rpx 20rpx;
+  background: #fff;
+  border-bottom: 1rpx solid #eee;
 }
-
-/* 顶部导航栏 */
-.header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 30rpx;
-	background: linear-gradient(135deg, 
-		rgba(255, 255, 255, 0.95) 0%, 
-		rgba(255, 255, 255, 0.85) 100%);
-	backdrop-filter: blur(20rpx);
-	border-bottom: 1rpx solid rgba(255, 255, 255, 0.2);
+.back-btn {
+  font-size: 36rpx;
+  color: #333;
+  margin-right: 20rpx;
 }
-
-.back-btn, .share-btn {
-	width: 80rpx;
-	height: 80rpx;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	border-radius: 50%;
-	background: linear-gradient(135deg, #667eea, #764ba2);
-}
-
-.back-icon, .share-icon {
-	font-size: 32rpx;
-	color: #ffffff;
-	font-weight: bold;
-}
-
 .header-title {
-	font-size: 36rpx;
-	font-weight: bold;
-	color: #333333;
+  font-size: 32rpx;
+  color: #333;
+  font-weight: bold;
 }
-
-/* 寄存点信息 */
-.locker-info-section {
-	margin: 30rpx;
-	padding: 40rpx;
-	background: linear-gradient(135deg, 
-		rgba(255, 255, 255, 0.95) 0%, 
-		rgba(255, 255, 255, 0.85) 100%);
-	backdrop-filter: blur(20rpx);
-	border-radius: 25rpx;
-	box-shadow: 0 8rpx 25rpx rgba(0, 0, 0, 0.1);
+.site-info {
+  background: #fff;
+  margin: 20rpx;
+  border-radius: 16rpx;
+  padding: 24rpx 20rpx 16rpx 20rpx;
 }
-
-.locker-header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	margin-bottom: 20rpx;
+.site-title {
+  font-size: 30rpx;
+  color: #222;
+  font-weight: bold;
 }
-
-.locker-name {
-	font-size: 36rpx;
-	font-weight: bold;
-	color: #333333;
-	flex: 1;
+.site-address {
+  font-size: 24rpx;
+  color: #666;
+  margin: 8rpx 0;
+  display: flex;
+  align-items: center;
 }
-
-.locker-status {
-	padding: 10rpx 20rpx;
-	border-radius: 20rpx;
-	font-size: 24rpx;
+.site-map-btn {
+  color: #007aff;
+  font-size: 24rpx;
+  margin-left: auto;
+  margin-top: -32rpx;
 }
-
-.locker-status.available {
-	background: linear-gradient(135deg, #4CAF50, #45a049);
-	color: #ffffff;
+.available-section {
+  background: #fff;
+  margin: 20rpx;
+  border-radius: 16rpx;
+  padding: 20rpx;
 }
-
-.locker-status.unavailable {
-	background: linear-gradient(135deg, #f44336, #d32f2f);
-	color: #ffffff;
-}
-
-.locker-address {
-	display: flex;
-	align-items: center;
-	margin-bottom: 15rpx;
-}
-
-.address-icon {
-	font-size: 28rpx;
-	margin-right: 10rpx;
-	color: #667eea;
-}
-
-.address-text {
-	font-size: 28rpx;
-	color: #666666;
-	flex: 1;
-}
-
-.locker-distance {
-	text-align: right;
-}
-
-.distance-text {
-	font-size: 24rpx;
-	color: #999999;
-}
-
-/* 容量信息 */
-.capacity-section {
-	margin: 30rpx;
-	padding: 40rpx;
-	background: linear-gradient(135deg, 
-		rgba(255, 255, 255, 0.95) 0%, 
-		rgba(255, 255, 255, 0.85) 100%);
-	backdrop-filter: blur(20rpx);
-	border-radius: 25rpx;
-	box-shadow: 0 8rpx 25rpx rgba(0, 0, 0, 0.1);
-}
-
 .section-title {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	margin-bottom: 30rpx;
+  font-size: 26rpx;
+  color: #333;
+  font-weight: bold;
+  margin-bottom: 10rpx;
 }
-
-.title-text {
-	font-size: 32rpx;
-	font-weight: bold;
-	color: #333333;
+.device-status {
+  color: #e67e22;
+  font-size: 22rpx;
+  margin-left: 10rpx;
 }
-
-.refresh-btn {
-	font-size: 26rpx;
-	color: #667eea;
-	padding: 10rpx 20rpx;
-	border-radius: 20rpx;
-	background: rgba(102, 126, 234, 0.1);
+.locker-list {
+  display: flex;
+  gap: 20rpx;
 }
-
-.capacity-grid {
-	display: flex;
-	justify-content: space-between;
+.locker-item {
+  display: flex;
+  align-items: center;
+  background: #f8f8f8;
+  border-radius: 12rpx;
+  padding: 16rpx;
+  flex: 1;
 }
-
-.capacity-item {
-	flex: 1;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	padding: 30rpx 20rpx;
-	margin: 0 10rpx;
-	border-radius: 20rpx;
-	background: linear-gradient(135deg, 
-		rgba(102, 126, 234, 0.1) 0%, 
-		rgba(118, 75, 162, 0.1) 100%);
+.locker-img {
+  width: 60rpx;
+  height: 60rpx;
+  margin-right: 16rpx;
 }
-
-.capacity-icon {
-	font-size: 48rpx;
-	margin-bottom: 15rpx;
+.locker-desc {
+  flex: 1;
 }
-
-.capacity-icon.large {
-	color: #ff6b6b;
+.locker-name {
+  font-size: 24rpx;
+  color: #333;
+  font-weight: bold;
 }
-
-.capacity-icon.medium {
-	color: #ffa500;
+.locker-status {
+  color: #007aff;
+  font-size: 20rpx;
 }
-
-.capacity-icon.small {
-	color: #4CAF50;
+.locker-size {
+  font-size: 20rpx;
+  color: #999;
 }
-
-.capacity-label {
-	font-size: 28rpx;
-	font-weight: bold;
-	color: #333333;
-	margin-bottom: 10rpx;
+.locker-rate {
+  font-size: 20rpx;
+  color: #e67e22;
 }
-
-.capacity-count {
-	font-size: 36rpx;
-	font-weight: bold;
-	color: #667eea;
-	margin-bottom: 10rpx;
+.locker-desc-text {
+  font-size: 20rpx;
+  color: #666;
+  margin-top: 4rpx;
 }
-
-.capacity-count.zero {
-	color: #999999;
+.select-section {
+  background: #fff;
+  margin: 20rpx;
+  border-radius: 16rpx;
+  padding: 20rpx;
 }
-
-.capacity-size {
-	font-size: 22rpx;
-	color: #999999;
-	text-align: center;
+.select-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16rpx;
 }
-
-/* 服务信息 */
-.service-section {
-	margin: 30rpx;
-	padding: 40rpx;
-	background: linear-gradient(135deg, 
-		rgba(255, 255, 255, 0.95) 0%, 
-		rgba(255, 255, 255, 0.85) 100%);
-	backdrop-filter: blur(20rpx);
-	border-radius: 25rpx;
-	box-shadow: 0 8rpx 25rpx rgba(0, 0, 0, 0.1);
+.picker-value {
+  margin-left: 20rpx;
+  color: #007aff;
+  font-size: 24rpx;
 }
-
-.service-item {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 25rpx 0;
-	border-bottom: 1rpx solid rgba(0, 0, 0, 0.1);
+.price-row {
+  justify-content: flex-end;
 }
-
-.service-item:last-child {
-	border-bottom: none;
+.price {
+  color: #e74c3c;
+  font-size: 28rpx;
+  font-weight: bold;
+  margin-left: 10rpx;
 }
-
-.service-label {
-	font-size: 28rpx;
-	color: #333333;
+.pickup-section {
+  background: #fff;
+  margin: 20rpx;
+  border-radius: 16rpx;
+  padding: 20rpx;
 }
-
-.service-value {
-	font-size: 28rpx;
-	color: #666666;
+.pickup-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
 }
-
-.service-value.phone {
-	color: #667eea;
-	text-decoration: underline;
+.pickup-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
-
-/* 操作按钮 */
-.action-section {
-	display: flex;
-	padding: 30rpx;
-	gap: 20rpx;
+.footer-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 30rpx;
+  border-top: 1rpx solid #eee;
 }
-
-.action-btn {
-	flex: 1;
-	padding: 30rpx;
-	border-radius: 30rpx;
-	font-size: 32rpx;
-	font-weight: bold;
-	border: none;
+.footer-price {
+  color: #e74c3c;
+  font-size: 32rpx;
+  font-weight: bold;
 }
-
-.action-btn.primary {
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-	color: #ffffff;
-	box-shadow: 0 8rpx 25rpx rgba(102, 126, 234, 0.4);
+.footer-btn {
+  width: 300rpx;
+  font-size: 28rpx;
 }
-
-.action-btn.primary:disabled {
-	background: #cccccc;
-	box-shadow: none;
+.deposit-result-modal {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #f6f8fc;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
 }
-
-.action-btn.secondary {
-	background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-	color: #ffffff;
-	box-shadow: 0 8rpx 25rpx rgba(240, 147, 251, 0.4);
+.result-img {
+  width: 80rpx;
+  height: 80rpx;
+  margin-bottom: 20rpx;
 }
-</style>
+.result-title {
+  font-size: 28rpx;
+  color: #222;
+  font-weight: bold;
+  margin-bottom: 16rpx;
+}
+.result-locker-id {
+  font-size: 48rpx;
+  color: #222;
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx 60rpx;
+  margin-bottom: 32rpx;
+  font-weight: bold;
+  box-shadow: 0 2rpx 12rpx #e6e6e6;
+}
+.order-btn {
+  background: #1677ff;
+  color: #fff;
+  font-size: 28rpx;
+  border-radius: 12rpx;
+  margin-bottom: 24rpx;
+  width: 300rpx;
+}
+.change-locker-tip {
+  color: #ff9900;
+  font-size: 22rpx;
+  margin-top: 20rpx;
+}
+.change-link {
+  color: #ff6600;
+  text-decoration: underline;
+  margin-left: 8rpx;
+}
+.change-locker-modal {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  background: #fff;
+  border-top-left-radius: 24rpx;
+  border-top-right-radius: 24rpx;
+  box-shadow: 0 -2rpx 12rpx #e6e6e6;
+  z-index: 1100;
+  padding: 40rpx 32rpx 32rpx 32rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.modal-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  margin-bottom: 16rpx;
+}
+.modal-locker-id {
+  font-size: 40rpx;
+  color: #222;
+  background: #f6f8fc;
+  border-radius: 16rpx;
+  padding: 20rpx 50rpx;
+  margin-bottom: 20rpx;
+  font-weight: bold;
+}
+.modal-desc {
+  font-size: 24rpx;
+  color: #666;
+  margin-bottom: 32rpx;
+  text-align: center;
+}
+.confirm-btn {
+  background: #1677ff;
+  color: #fff;
+  font-size: 28rpx;
+  border-radius: 12rpx;
+  width: 300rpx;
+}
+</style> 

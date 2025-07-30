@@ -241,6 +241,25 @@ const API = {
 		});
 	},
 	
+	// 首页相关API
+	
+	// 获取首页附近寄存点
+	getHomeNearbyLockers(params) {
+		const queryString = new URLSearchParams(params).toString();
+		return apiRequest({
+			endpoint: `${API_CONFIG.ENDPOINTS.NEARBY_CITY_LOCKER_POINTS}?${queryString}`,
+			method: 'GET'
+		});
+	},
+	
+	// 获取首页热门地点（基于城市）
+	getHomeHotspots(cityName) {
+		return apiRequest({
+			endpoint: `${API_CONFIG.ENDPOINTS.NEARBY_SEARCH}?city_name=${encodeURIComponent(cityName)}&limit=4`,
+			method: 'GET'
+		});
+	},
+	
 	// 搜索城市
 	searchCities(params) {
 		const queryString = new URLSearchParams(params).toString();

@@ -1,6 +1,439 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="GoORMHelperCache">
+    <option name="schemaMapping">
+      <map>
+        <entry key="CabinetCell">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/internal/data/cabinet_cell.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="CabinetGroup">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/internal/data/cabinet_group.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="CreateHomeReply">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/home.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="CreateHomeRequest">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/home.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="CreateLocalReply">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/home.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="CreateLocalRequest">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/home.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="CreateOrderReply">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/order.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="CreateOrderRequest">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/order.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="DeleteHomeReply">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/home.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="DeleteHomeRequest">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/home.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="DeleteOrderReply">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/order.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="DeleteOrderRequest">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/order.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="GetHomeReply">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/home.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="GetHomeRequest">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/home.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="GetOrderReply">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/order.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="GetOrderRequest">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/order.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="HomeHTTPClientImpl">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/home_http.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="ListHomeReply">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/home.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="ListHomeRequest">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/home.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="ListOrderReply">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/order.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="ListOrderRequest">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/order.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="ManageOrderSearchReply">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/order.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="ManageOrderSearchRequest">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/order.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="OrderHTTPClientImpl">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/order_http.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="OrderInfo">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/order.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="ShowOrderReply">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/order.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="ShowOrderRequest">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/order.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="UnimplementedHomeServer">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/home_grpc.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="UnimplementedOrderServer">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/order_grpc.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="UpdateHomeReply">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/home.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="UpdateHomeRequest">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/home.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="UpdateOrderReply">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/order.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="UpdateOrderRequest">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/order.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="homeClient">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/home_grpc.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="orderClient">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/order_grpc.pb.go" />
+            </set>
+          </value>
+        </entry>
+        <entry key="x">
+          <value>
+            <set>
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/home.pb.go" />
+              <option value="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/order.pb.go" />
+            </set>
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="scannedPathMapping">
+      <map>
+        <entry key="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/home.pb.go">
+          <value>
+            <ScannedPath>
+              <option name="lastModified" value="1753863070320" />
+              <option name="schema">
+                <list>
+                  <option value="CreateHomeRequest" />
+                  <option value="CreateHomeReply" />
+                  <option value="UpdateHomeRequest" />
+                  <option value="UpdateHomeReply" />
+                  <option value="DeleteHomeRequest" />
+                  <option value="DeleteHomeReply" />
+                  <option value="GetHomeRequest" />
+                  <option value="GetHomeReply" />
+                  <option value="ListHomeRequest" />
+                  <option value="ListHomeReply" />
+                  <option value="CreateLocalRequest" />
+                  <option value="CreateLocalReply" />
+                  <option value="x" />
+                </list>
+              </option>
+            </ScannedPath>
+          </value>
+        </entry>
+        <entry key="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/home_grpc.pb.go">
+          <value>
+            <ScannedPath>
+              <option name="lastModified" value="1753863120655" />
+              <option name="schema">
+                <list>
+                  <option value="homeClient" />
+                  <option value="UnimplementedHomeServer" />
+                </list>
+              </option>
+            </ScannedPath>
+          </value>
+        </entry>
+        <entry key="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/home_http.pb.go">
+          <value>
+            <ScannedPath>
+              <option name="lastModified" value="1753863168648" />
+              <option name="schema">
+                <list>
+                  <option value="HomeHTTPClientImpl" />
+                </list>
+              </option>
+            </ScannedPath>
+          </value>
+        </entry>
+        <entry key="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/order.pb.go">
+          <value>
+            <ScannedPath>
+              <option name="lastModified" value="1753880518605" />
+              <option name="schema">
+                <list>
+                  <option value="ManageOrderSearchRequest" />
+                  <option value="ManageOrderSearchReply" />
+                  <option value="OrderInfo" />
+                  <option value="CreateOrderRequest" />
+                  <option value="CreateOrderReply" />
+                  <option value="UpdateOrderRequest" />
+                  <option value="UpdateOrderReply" />
+                  <option value="DeleteOrderRequest" />
+                  <option value="DeleteOrderReply" />
+                  <option value="GetOrderRequest" />
+                  <option value="GetOrderReply" />
+                  <option value="ListOrderRequest" />
+                  <option value="ListOrderReply" />
+                  <option value="ShowOrderRequest" />
+                  <option value="ShowOrderReply" />
+                  <option value="x" />
+                </list>
+              </option>
+            </ScannedPath>
+          </value>
+        </entry>
+        <entry key="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/order_grpc.pb.go">
+          <value>
+            <ScannedPath>
+              <option name="lastModified" value="1753880626041" />
+              <option name="schema">
+                <list>
+                  <option value="orderClient" />
+                  <option value="UnimplementedOrderServer" />
+                </list>
+              </option>
+            </ScannedPath>
+          </value>
+        </entry>
+        <entry key="file://$PROJECT_DIR$/../ito-deposit/api/helloworld/v1/order_http.pb.go">
+          <value>
+            <ScannedPath>
+              <option name="lastModified" value="1753881302109" />
+              <option name="schema">
+                <list>
+                  <option value="OrderHTTPClientImpl" />
+                </list>
+              </option>
+            </ScannedPath>
+          </value>
+        </entry>
+        <entry key="file://$PROJECT_DIR$/../ito-deposit/internal/data/cabinet_cell.go">
+          <value>
+            <ScannedPath>
+              <option name="lastModified" value="1753882541730" />
+              <option name="schema">
+                <list>
+                  <option value="CabinetCell" />
+                </list>
+              </option>
+            </ScannedPath>
+          </value>
+        </entry>
+        <entry key="file://$PROJECT_DIR$/../ito-deposit/internal/data/cabinet_group.go">
+          <value>
+            <ScannedPath>
+              <option name="lastModified" value="1753882541757" />
+              <option name="schema">
+                <list>
+                  <option value="CabinetGroup" />
+                </list>
+              </option>
+            </ScannedPath>
+          </value>
+        </entry>
+        <entry key="file://$PROJECT_DIR$/../ito-deposit/internal/server/http.go">
+          <value>
+            <ScannedPath>
+              <option name="lastModified" value="1753863213469" />
+            </ScannedPath>
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="tableStructMapping">
+      <map>
+        <entry key="cabinet_cell" value="CabinetCell" />
+        <entry key="cabinet_group" value="CabinetGroup" />
+        <entry key="create_home_reply" value="CreateHomeReply" />
+        <entry key="create_home_request" value="CreateHomeRequest" />
+        <entry key="create_local_reply" value="CreateLocalReply" />
+        <entry key="create_local_request" value="CreateLocalRequest" />
+        <entry key="create_order_reply" value="CreateOrderReply" />
+        <entry key="create_order_request" value="CreateOrderRequest" />
+        <entry key="delete_home_reply" value="DeleteHomeReply" />
+        <entry key="delete_home_request" value="DeleteHomeRequest" />
+        <entry key="delete_order_reply" value="DeleteOrderReply" />
+        <entry key="delete_order_request" value="DeleteOrderRequest" />
+        <entry key="get_home_reply" value="GetHomeReply" />
+        <entry key="get_home_request" value="GetHomeRequest" />
+        <entry key="get_order_reply" value="GetOrderReply" />
+        <entry key="get_order_request" value="GetOrderRequest" />
+        <entry key="home_client" value="homeClient" />
+        <entry key="home_http_client_impl" value="HomeHTTPClientImpl" />
+        <entry key="list_home_reply" value="ListHomeReply" />
+        <entry key="list_home_request" value="ListHomeRequest" />
+        <entry key="list_order_reply" value="ListOrderReply" />
+        <entry key="list_order_request" value="ListOrderRequest" />
+        <entry key="manage_order_search_reply" value="ManageOrderSearchReply" />
+        <entry key="manage_order_search_request" value="ManageOrderSearchRequest" />
+        <entry key="order_client" value="orderClient" />
+        <entry key="order_http_client_impl" value="OrderHTTPClientImpl" />
+        <entry key="order_info" value="OrderInfo" />
+        <entry key="show_order_reply" value="ShowOrderReply" />
+        <entry key="show_order_request" value="ShowOrderRequest" />
+        <entry key="unimplemented_home_server" value="UnimplementedHomeServer" />
+        <entry key="unimplemented_order_server" value="UnimplementedOrderServer" />
+        <entry key="update_home_reply" value="UpdateHomeReply" />
+        <entry key="update_home_request" value="UpdateHomeRequest" />
+        <entry key="update_order_reply" value="UpdateOrderReply" />
+        <entry key="update_order_request" value="UpdateOrderRequest" />
+        <entry key="x" value="x" />
+      </map>
+    </option>
     <option name="lastTimeChecked" value="1753860664691" />
   </component>
 </project>

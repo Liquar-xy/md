@@ -8,12 +8,6 @@
 			}
 		},
 		{
-			"path": "pages/index/index",
-			"style": {
-				"navigationBarTitleText": "便捷储物舱"
-			}
-		},
-		{
 			"path": "pages/order-detail/order-detail",
 			"style": {
 				"navigationBarTitleText": "订单详情",
@@ -117,13 +111,6 @@
 			}
 		},
 		{
-			"path": "pages/admin/admin",
-			"style": {
-				"navigationBarTitleText": "管理员后台",
-				"navigationStyle": "custom"
-			}
-		},
-		{
 			"path": "pages/admin/profile",
 			"style": {
 				"navigationBarTitleText": "个人信息",
@@ -136,14 +123,73 @@
 				"navigationBarTitleText": "全部订单",
 				"navigationStyle": "custom"
 			}
-		}
-	],
-	"globalStyle": {
-		"navigationBarTextStyle": "black",
-		"navigationBarTitleText": "智能寄存柜",
-		"navigationBarBackgroundColor": "#F8F8F8",
-		"backgroundColor": "#F8F8F8"
-	},
+		},
+      {
+        "path": "pages/admin/login",
+        "style": {
+          "navigationBarTitleText": "管理员登录",
+          "navigationStyle": "custom"
+        }
+      },
+      {
+        "path": "pages/admin/admin",
+        "style": {
+          "navigationBarTitleText": "管理员",
+          "navigationStyle": "custom"
+        }
+      },
+      {
+        "path": "pages/index/index",
+        "style": {
+          "navigationBarTitleText": "uni-app"
+        }
+      },
+      {
+        "path": "pages/orders/orders",
+        "style": {
+          "navigationBarTitleText": ""
+        }
+      },
+      {
+        "path": "pages/show/show",
+        "style": {
+          "navigationBarTitleText": ""
+        }
+      },
+      {
+        "path": "pages/point/point",
+        "style": {
+          "navigationBarTitleText": "我的网点"
+        }
+      },
+      {
+        "path": "pages/point-detail/point-detail",
+        "style": {
+          "navigationBarTitleText": "网点详情",
+          "navigationStyle": "custom"
+        }
+      },
+      {
+        "path": "pages/point-edit/point-edit",
+        "style": {
+          "navigationBarTitleText": "我的网点",
+          "navigationStyle": "custom"
+        }
+      },
+      {
+        "path": "pages/price-rule/price-rule",
+        "style": {
+          "navigationBarTitleText": "收费规则",
+          "navigationStyle": "custom"
+        }
+      }
+    ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "uni-app",
+    "navigationBarBackgroundColor": "#F8F8F8",
+    "backgroundColor": "#F8F8F8"
+  },
 	"tabBar": {
 		"color": "#8E8E93",
 		"selectedColor": "#007AFF",

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>存储测试</title>
+    <style>
+        body { padding: 20px; font-family: Arial; }
+        .result { margin: 10px 0; padding: 10px; background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <h2>存储测试</h2>
+    
+    <button onclick="testLogin()">测试登录</button>
+    <button onclick="checkStorage()">检查存储</button>
+    <button onclick="clearStorage()">清除存储</button>
+    
+    <div id="result" class="result"></div>
+
+    <script>
+        function testLogin() {
+            const data = {
+                Mobile: '13800138000',
+                Password: '123456',
+                SmsCode: '1234'
+            };
+            
+            document.getElementById('result').innerHTML = '登录中...';
+            
+            fetch('http://localhost:8000/admin/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams(data)
+            })
+            .then(res => res.json())
+            .then(data => {
+                console.log('登录响应:', data);
+                
+                if (data.code === 200 || data.code === "200") {
+                    // 保存登录信息
+                    const adminId = data.id || '13800138000';
+                    const adminToken = data.token || 'test-token-' + Date.now();
+                    
+                    localStorage.setItem('adminToken', adminToken);
+                    localStorage.setItem('adminId', String(adminId));
+                    localStorage.setItem('adminMobile', '13800138000');
+                    
+                    document.getElementById('result').innerHTML = 
+                        '✅ 登录成功!<br>' +
+                        'ID: ' + adminId + '<br>' +
+                        'Token: ' + adminToken + '<br>' +
+                        '已保存到localStorage';
+                } else {
+                    document.getElementById('result').innerHTML = 
+                        '❌ 登录失败: ' + (data.msg || '未知错误');
+                }
+            })
+            .catch(err => {
+                document.getElementById('result').innerHTML = '❌ 请求失败: ' + err.message;
+            });
+        }
+        
+        function checkStorage() {
+            const adminToken = localStorage.getItem('adminToken');
+            const adminId = localStorage.getItem('adminId');
+            const adminMobile = localStorage.getItem('adminMobile');
+            
+            document.getElementById('result').innerHTML = 
+                '📋 存储状态:<br>' +
+                'adminToken: ' + (adminToken || '未找到') + '<br>' +
+                'adminId: ' + (adminId || '未找到') + '<br>' +
+                'adminMobile: ' + (adminMobile || '未找到') + '<br>' +
+                '登录状态: ' + (adminToken || adminId || adminMobile ? '已登录' : '未登录');
+        }
+        
+        function clearStorage() {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminId');
+            localStorage.removeItem('adminMobile');
+            document.getElementById('result').innerHTML = '🗑️ 已清除所有数据';
+        }
+        
+        // 页面加载时检查存储
+        window.onload = function() {
+            checkStorage();
+        };
+    </script>
+</body>
+</html> 

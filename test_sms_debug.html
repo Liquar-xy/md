@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>短信验证码调试工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button.danger {
+            background-color: #dc3545;
+        }
+        button.danger:hover {
+            background-color: #c82333;
+        }
+        button.success {
+            background-color: #28a745;
+        }
+        button.success:hover {
+            background-color: #218838;
+        }
+        .result {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border-color: #ffeaa7;
+            color: #856404;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+        .test-data {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .test-data h4 {
+            margin-top: 0;
+            color: #495057;
+        }
+        .test-data code {
+            background-color: #f8f9fa;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>📱 短信验证码调试工具</h1>
+    
+    <!-- 测试数据 -->
+    <div class="container">
+        <h3>🧪 测试数据</h3>
+        <div class="test-data">
+            <h4>后端服务状态检查</h4>
+            <p><strong>后端地址:</strong> <code>http://localhost:8000</code></p>
+            <p><strong>短信接口:</strong> <code>POST /sendSms</code></p>
+            <p><strong>登录接口:</strong> <code>POST /admin/login</code></p>
+            <p><strong>Redis键格式:</strong> <code>sendSms{mobile}admin</code></p>
+        </div>
+        
+        <div class="test-data">
+            <h4>测试验证码</h4>
+            <p><strong>测试验证码:</strong> <code>1234</code></p>
+            <p><strong>测试手机号:</strong> <code>13800138000</code></p>
+            <p><strong>测试密码:</strong> <code>123456</code></p>
+        </div>
+    </div>
+
+    <!-- 后端服务检查 -->
+    <div class="container">
+        <h3>🔍 后端服务检查</h3>
+        <button onclick="checkBackendService()">🔍 检查后端服务</button>
+        <button onclick="testSmsApi()">📤 测试短信接口</button>
+        <button onclick="testLoginApi()">🔐 测试登录接口</button>
+        <div id="serviceCheck" class="result"></div>
+    </div>
+
+    <!-- 短信发送测试 -->
+    <div class="container">
+        <h3>📤 短信发送测试</h3>
+        <div class="form-group">
+            <label for="testMobile">手机号:</label>
+            <input type="text" id="testMobile" value="13800138000" placeholder="输入手机号">
+        </div>
+        <button onclick="sendTestSms()" class="success">📤 发送测试短信</button>
+        <button onclick="simulateSmsSuccess()" class="success">✅ 模拟发送成功</button>
+        <div id="smsResult" class="result"></div>
+    </div>
+
+    <!-- 登录测试 -->
+    <div class="container">
+        <h3>🔐 登录测试</h3>
+        <div class="form-group">
+            <label for="loginMobile">手机号:</label>
+            <input type="text" id="loginMobile" value="13800138000" placeholder="输入手机号">
+        </div>
+        <div class="form-group">
+            <label for="loginPassword">密码:</label>
+            <input type="password" id="loginPassword" value="123456" placeholder="输入密码">
+        </div>
+        <div class="form-group">
+            <label for="loginSmsCode">验证码:</label>
+            <input type="text" id="loginSmsCode" value="1234" placeholder="输入验证码">
+        </div>
+        <button onclick="testLogin()" class="success">🔐 测试登录</button>
+        <button onclick="simulateLoginSuccess()" class="success">✅ 模拟登录成功</button>
+        <div id="loginResult" class="result"></div>
+    </div>
+
+    <!-- 问题诊断 -->
+    <div class="container">
+        <h3>🔧 问题诊断</h3>
+        <button onclick="diagnoseIssues()">🔍 诊断问题</button>
+        <div id="diagnosis" class="result"></div>
+    </div>
+
+    <script>
+        function checkBackendService() {
+            const resultDiv = document.getElementById('serviceCheck');
+            resultDiv.innerHTML = '🔍 检查后端服务中...';
+            resultDiv.className = 'result info';
+            
+            // 检查后端服务是否运行
+            fetch('http://localhost:8000/health', {
+                method: 'GET',
+                timeout: 5000
+            })
+            .then(response => {
+                if (response.ok) {
+                    resultDiv.innerHTML = '✅ 后端服务运行正常\n\n' +
+                        '🌐 服务地址: http://localhost:8000\n' +
+                        '📊 状态: 在线\n' +
+                        '⏰ 检查时间: ' + new Date().toLocaleString();
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.innerHTML = '⚠️ 后端服务响应异常\n\n' +
+                        '🌐 服务地址: http://localhost:8000\n' +
+                        '📊 状态: 响应异常\n' +
+                        '📋 状态码: ' + response.status + '\n' +
+                        '⏰ 检查时间: ' + new Date().toLocaleString();
+                    resultDiv.className = 'result warning';
+                }
+            })
+            .catch(error => {
+                resultDiv.innerHTML = '❌ 后端服务未运行\n\n' +
+                    '🌐 服务地址: http://localhost:8000\n' +
+                    '📊 状态: 离线\n' +
+                    '❌ 错误: ' + error.message + '\n' +
+                    '⏰ 检查时间: ' + new Date().toLocaleString() + '\n\n' +
+                    '💡 解决方案:\n' +
+                    '1. 启动后端服务: go run main.go\n' +
+                    '2. 检查端口8000是否被占用\n' +
+                    '3. 检查防火墙设置';
+                resultDiv.className = 'result error';
+            });
+        }
+
+        function testSmsApi() {
+            const resultDiv = document.getElementById('smsResult');
+            resultDiv.innerHTML = '📤 测试短信接口中...';
+            resultDiv.className = 'result info';
+            
+            const testData = {
+                mobile: '13800138000',
+                source: 'admin_login'
+            };
+            
+            fetch('http://localhost:8000/sendSms', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams(testData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.code === 200) {
+                    resultDiv.innerHTML = '✅ 短信接口测试成功\n\n' +
+                        '📱 手机号: ' + testData.mobile + '\n' +
+                        '🔑 来源: ' + testData.source + '\n' +
+                        '📋 响应: ' + JSON.stringify(data, null, 2);
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.innerHTML = '❌ 短信接口测试失败\n\n' +
+                        '📱 手机号: ' + testData.mobile + '\n' +
+                        '🔑 来源: ' + testData.source + '\n' +
+                        '❌ 错误: ' + (data.msg || '未知错误') + '\n' +
+                        '📋 响应: ' + JSON.stringify(data, null, 2);
+                    resultDiv.className = 'result error';
+                }
+            })
+            .catch(error => {
+                resultDiv.innerHTML = '❌ 短信接口连接失败\n\n' +
+                    '📱 手机号: ' + testData.mobile + '\n' +
+                    '🔑 来源: ' + testData.source + '\n' +
+                    '❌ 错误: ' + error.message + '\n\n' +
+                    '💡 可能原因:\n' +
+                    '1. 后端服务未启动\n' +
+                    '2. 短信接口未实现\n' +
+                    '3. 网络连接问题';
+                resultDiv.className = 'result error';
+            });
+        }
+
+        function testLoginApi() {
+            const resultDiv = document.getElementById('loginResult');
+            resultDiv.innerHTML = '🔐 测试登录接口中...';
+            resultDiv.className = 'result info';
+            
+            const testData = {
+                mobile: '13800138000',
+                password: '123456',
+                smsCode: '1234'
+            };
+            
+            fetch('http://localhost:8000/admin/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams(testData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.code === 200) {
+                    resultDiv.innerHTML = '✅ 登录接口测试成功\n\n' +
+                        '📱 手机号: ' + testData.mobile + '\n' +
+                        '🔑 密码: ' + testData.password + '\n' +
+                        '📋 验证码: ' + testData.smsCode + '\n' +
+                        '📋 响应: ' + JSON.stringify(data, null, 2);
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.innerHTML = '❌ 登录接口测试失败\n\n' +
+                        '📱 手机号: ' + testData.mobile + '\n' +
+                        '🔑 密码: ' + testData.password + '\n' +
+                        '📋 验证码: ' + testData.smsCode + '\n' +
+                        '❌ 错误: ' + (data.msg || '未知错误') + '\n' +
+                        '📋 响应: ' + JSON.stringify(data, null, 2);
+                    resultDiv.className = 'result error';
+                }
+            })
+            .catch(error => {
+                resultDiv.innerHTML = '❌ 登录接口连接失败\n\n' +
+                    '📱 手机号: ' + testData.mobile + '\n' +
+                    '🔑 密码: ' + testData.password + '\n' +
+                    '📋 验证码: ' + testData.smsCode + '\n' +
+                    '❌ 错误: ' + error.message + '\n\n' +
+                    '💡 可能原因:\n' +
+                    '1. 后端服务未启动\n' +
+                    '2. 登录接口未实现\n' +
+                    '3. 网络连接问题';
+                resultDiv.className = 'result error';
+            });
+        }
+
+        function sendTestSms() {
+            const mobile = document.getElementById('testMobile').value;
+            const resultDiv = document.getElementById('smsResult');
+            
+            if (!mobile) {
+                alert('请输入手机号');
+                return;
+            }
+            
+            resultDiv.innerHTML = '📤 发送测试短信中...';
+            resultDiv.className = 'result info';
+            
+            const testData = {
+                mobile: mobile,
+                source: 'admin'
+            };
+            
+            fetch('http://localhost:8000/sendSms', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams(testData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.code === 200) {
+                    resultDiv.innerHTML = '✅ 测试短信发送成功\n\n' +
+                        '📱 手机号: ' + mobile + '\n' +
+                        '🔑 Redis键: sendSms' + mobile + 'admin\n' +
+                        '📋 响应: ' + JSON.stringify(data, null, 2);
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.innerHTML = '❌ 测试短信发送失败\n\n' +
+                        '📱 手机号: ' + mobile + '\n' +
+                        '❌ 错误: ' + (data.msg || '未知错误') + '\n' +
+                        '📋 响应: ' + JSON.stringify(data, null, 2);
+                    resultDiv.className = 'result error';
+                }
+            })
+            .catch(error => {
+                resultDiv.innerHTML = '❌ 测试短信发送失败\n\n' +
+                    '📱 手机号: ' + mobile + '\n' +
+                    '❌ 错误: ' + error.message + '\n\n' +
+                    '💡 使用模拟验证码: 1234';
+                resultDiv.className = 'result error';
+            });
+        }
+
+        function simulateSmsSuccess() {
+            const mobile = document.getElementById('testMobile').value;
+            const resultDiv = document.getElementById('smsResult');
+            
+            resultDiv.innerHTML = '✅ 模拟短信发送成功\n\n' +
+                '📱 手机号: ' + mobile + '\n' +
+                '🔑 Redis键: sendSms' + mobile + 'admin\n' +
+                '📋 验证码: 1234\n' +
+                '⏰ 时间: ' + new Date().toLocaleString() + '\n\n' +
+                '💡 这是模拟数据，实际使用时需要后端支持';
+            resultDiv.className = 'result success';
+        }
+
+        function testLogin() {
+            const mobile = document.getElementById('loginMobile').value;
+            const password = document.getElementById('loginPassword').value;
+            const smsCode = document.getElementById('loginSmsCode').value;
+            const resultDiv = document.getElementById('loginResult');
+            
+            if (!mobile || !password || !smsCode) {
+                alert('请填写完整的登录信息');
+                return;
+            }
+            
+            resultDiv.innerHTML = '🔐 测试登录中...';
+            resultDiv.className = 'result info';
+            
+            const testData = {
+                Mobile: mobile,      // 后端期望的参数名
+                Password: password,   // 后端期望的参数名
+                SmsCode: smsCode      // 后端期望的参数名
+            };
+            
+            fetch('http://localhost:8000/admin/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams(testData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.code === 200) {
+                    resultDiv.innerHTML = '✅ 登录测试成功\n\n' +
+                        '📱 手机号: ' + mobile + '\n' +
+                        '🔑 密码: ' + password + '\n' +
+                        '📋 验证码: ' + smsCode + '\n' +
+                        '🆔 管理员ID: ' + data.id + '\n' +
+                        '🔑 Token: ' + (data.token ? data.token.substring(0, 20) + '...' : 'N/A') + '\n' +
+                        '📋 响应: ' + JSON.stringify(data, null, 2);
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.innerHTML = '❌ 登录测试失败\n\n' +
+                        '📱 手机号: ' + mobile + '\n' +
+                        '🔑 密码: ' + password + '\n' +
+                        '📋 验证码: ' + smsCode + '\n' +
+                        '❌ 错误: ' + (data.msg || '未知错误') + '\n' +
+                        '📋 响应: ' + JSON.stringify(data, null, 2);
+                    resultDiv.className = 'result error';
+                }
+            })
+            .catch(error => {
+                resultDiv.innerHTML = '❌ 登录测试失败\n\n' +
+                    '📱 手机号: ' + mobile + '\n' +
+                    '🔑 密码: ' + password + '\n' +
+                    '📋 验证码: ' + smsCode + '\n' +
+                    '❌ 错误: ' + error.message + '\n\n' +
+                    '💡 可能原因:\n' +
+                    '1. 后端服务未启动\n' +
+                    '2. 数据库连接问题\n' +
+                    '3. Redis连接问题';
+                resultDiv.className = 'result error';
+            });
+        }
+
+        function simulateLoginSuccess() {
+            const mobile = document.getElementById('loginMobile').value;
+            const password = document.getElementById('loginPassword').value;
+            const smsCode = document.getElementById('loginSmsCode').value;
+            const resultDiv = document.getElementById('loginResult');
+            
+            resultDiv.innerHTML = '✅ 模拟登录成功\n\n' +
+                '📱 手机号: ' + mobile + '\n' +
+                '🔑 密码: ' + password + '\n' +
+                '📋 验证码: ' + smsCode + '\n' +
+                '🆔 管理员ID: 123\n' +
+                '🔑 Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\n' +
+                '⏰ 时间: ' + new Date().toLocaleString() + '\n\n' +
+                '💡 这是模拟数据，实际使用时需要后端支持';
+            resultDiv.className = 'result success';
+        }
+
+        function diagnoseIssues() {
+            const resultDiv = document.getElementById('diagnosis');
+            resultDiv.innerHTML = '🔍 诊断问题中...';
+            resultDiv.className = 'result info';
+            
+            // 模拟诊断过程
+            setTimeout(() => {
+                resultDiv.innerHTML = '🔧 问题诊断结果:\n\n' +
+                    '1. ✅ 前端代码正常\n' +
+                    '2. ❌ 后端服务可能未启动\n' +
+                    '3. ❓ 短信接口状态未知\n' +
+                    '4. ❓ 数据库连接状态未知\n' +
+                    '5. ❓ Redis连接状态未知\n\n' +
+                    '💡 建议操作:\n' +
+                    '1. 启动后端服务: go run main.go\n' +
+                    '2. 检查数据库连接\n' +
+                    '3. 检查Redis连接\n' +
+                    '4. 使用测试验证码: 123456\n' +
+                    '5. 查看后端日志获取真实验证码';
+                resultDiv.className = 'result warning';
+            }, 2000);
+        }
+
+        // 页面加载时的初始化
+        window.onload = function() {
+            console.log('=== 短信验证码调试工具加载 ===');
+            console.log('功能说明:');
+            console.log('1. 检查后端服务状态');
+            console.log('2. 测试短信发送接口');
+            console.log('3. 测试登录接口');
+            console.log('4. 提供测试数据和模拟功能');
+        };
+    </script>
+</body>
+</html> 

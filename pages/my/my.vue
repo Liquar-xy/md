@@ -17,21 +17,9 @@
 		
 		<!-- 我的订单区域 -->
 		<view class="orders-section">
-			<view class="section-header">
+			<view class="section-header" @click="handleViewAllOrders">
 				<text class="section-title">我的订单</text>
-				<text class="view-all" @click="handleViewAllOrders">全部订单></text>
-			</view>
-			<view class="order-card" @click="handleOrderClick">
-				<view class="order-content">
-					<view class="order-image">
-						<image src="/static/locker-image.jpg" class="locker-image" mode="aspectFill"></image>
-					</view>
-					<view class="order-info">
-						<text class="order-title">上海高铁站寄存柜</text>
-						<text class="order-detail">寄存柜: 21号柜 (大)</text>
-						<text class="order-location">上海高铁站西广场路北100米KFC门口</text>
-					</view>
-				</view>
+				<text class="view-all">全部订单></text>
 			</view>
 		</view>
 		
@@ -163,71 +151,14 @@ export default {
 		
 		// 查看全部订单
 		handleViewAllOrders() {
-			console.log('获取全部订单列表');
-			uni.showLoading({
-				title: '加载中...'
-			});
-			
-			// 获取用户数据
-			let userData = null;
-			try {
-				const userDataStr = uni.getStorageSync('userData');
-				if (userDataStr) {
-					userData = JSON.parse(userDataStr);
-				}
-			} catch (e) {
-				console.log('获取用户数据失败:', e);
-			}
-			
-			// 调用后端list接口
-			uni.request({
-				url: 'http://localhost:8000/list',
-				method: 'POST',
-				data: {
-					userId: userData?.userId || '1',
-					page: 1,
-					pageSize: 20
-				},
-				header: {
-					'Content-Type': 'application/x-www-form-urlencoded'
-				},
-				success: (res) => {
-					uni.hideLoading();
-					console.log('订单列表响应:', res.data);
-					
-					if (res.data && res.data.code === 200) {
-						// 跳转到订单列表页面，传递订单数据
-						uni.navigateTo({
-							url: '/pages/order-list/order-list',
-							success: () => {
-								// 通过事件总线传递数据
-								uni.$emit('orderListData', res.data.data || []);
-							}
-						});
-					} else {
-						uni.showToast({
-							title: res.data?.msg || '获取订单失败',
-							icon: 'none'
-						});
-					}
-				},
-				fail: (err) => {
-					uni.hideLoading();
-					console.log('获取订单列表失败:', err);
-					uni.showToast({
-						title: '网络错误，请重试',
-						icon: 'none'
-					});
-				}
+			console.log('跳转到订单页面');
+			// 直接跳转到订单页面
+			uni.navigateTo({
+				url: '/pages/orders/orders'
 			});
 		},
 		
-		// 点击订单卡片
-		handleOrderClick() {
-			uni.navigateTo({
-				url: '/pages/order-detail/order-detail'
-			});
-		},
+
 		
 		// 去取出
 		handleRetrieve() {
@@ -448,6 +379,12 @@ export default {
 	justify-content: space-between;
 	align-items: center;
 	padding: 30rpx 40rpx 20rpx;
+	cursor: pointer;
+	transition: background-color 0.2s;
+}
+
+.section-header:active {
+	background-color: #f5f5f5;
 }
 
 .section-title {
@@ -461,71 +398,7 @@ export default {
 	color: #666666;
 }
 
-.order-card {
-	background-color: #ffffff;
-	margin: 0 40rpx 40rpx;
-	padding: 30rpx;
-	border-radius: 16rpx;
-	box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
-}
 
-.order-content {
-	display: flex;
-	align-items: flex-start;
-}
-
-.order-image {
-	width: 120rpx;
-	height: 120rpx;
-	background-color: #f0f0f0;
-	border-radius: 12rpx;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	margin-right: 20rpx;
-	flex-shrink: 0;
-}
-
-.locker-image {
-	width: 100%;
-	height: 100%;
-	border-radius: 12rpx;
-}
-
-.order-info {
-	flex: 1;
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-	min-height: 120rpx;
-	position: relative;
-}
-
-.order-title {
-	font-size: 32rpx;
-	color: #333333;
-	font-weight: bold;
-	display: block;
-	margin-bottom: 8rpx;
-	line-height: 1.2;
-}
-
-.order-detail {
-	font-size: 28rpx;
-	color: #666666;
-	display: block;
-	margin-bottom: 8rpx;
-	line-height: 1.2;
-}
-
-.order-location {
-	font-size: 24rpx;
-	color: #999999;
-	line-height: 1.3;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
 
 /* 服务区域 */
 .services-section {
