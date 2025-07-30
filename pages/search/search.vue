@@ -272,15 +272,26 @@
 		},
 		
 		onLoad(options) {
-			console.log('搜索页面加载');
+			console.log('🔍 搜索页面加载成功');
+			console.log('🔍 页面参数:', options);
+			
+			// 显示页面加载成功的提示
+			this.searchStatus = '页面加载完成';
 			
 			// 获取当前选择的城市
-			const selectedCity = uni.getStorageSync('selectedCity');
-			if (selectedCity) {
-				this.currentCity = selectedCity.name;
-				this.searchStatus = `正在${selectedCity.name}为您搜索寄存点`;
-			} else {
-				this.searchStatus = `正在${this.currentCity}为您搜索寄存点`;
+			try {
+				const selectedCity = uni.getStorageSync('selectedCity');
+				if (selectedCity) {
+					this.currentCity = selectedCity.name;
+					this.searchStatus = `正在${selectedCity.name}为您搜索寄存点`;
+					console.log('✅ 获取到选择的城市:', selectedCity.name);
+				} else {
+					this.searchStatus = `正在${this.currentCity}为您搜索寄存点`;
+					console.log('⚠️ 未找到选择的城市，使用默认城市:', this.currentCity);
+				}
+			} catch (error) {
+				console.error('❌ 获取城市信息失败:', error);
+				this.searchStatus = '获取城市信息失败';
 			}
 			
 			// 初始化分类数据
@@ -514,8 +525,10 @@
 			
 			// 调用真实后端API
 			callRealBackendAPI(keyword, cityCoords) {
+				// 统一的API基础URL
+				const API_BASE_URL = 'http://localhost:8000';
 				// 使用搜索接口而不是地图接口
-				const apiUrl = 'http://localhost:8000/api/nearby/city/search';
+				const apiUrl = `${API_BASE_URL}/api/nearby/city/search`;
 				
 				// 构建查询参数（GET请求）
 				const queryParams = new URLSearchParams({
@@ -557,6 +570,16 @@
 						try {
 							if (res.statusCode === 200 && res.data) {
 								this.handleSearchSuccess(res.data, keyword);
+							} else if (res.statusCode === 401) {
+								console.log('⚠️ API需要认证，后端服务可能需要重启');
+								this.searchStatus = '正在连接服务器，请稍后重试...';
+								// 显示友好提示
+								uni.showToast({
+									title: '正在连接服务器...',
+									icon: 'loading',
+									duration: 2000
+								});
+								this.handleSearchWithMockData(keyword);
 							} else {
 								console.log('⚠️ API返回非200状态码，使用模拟数据');
 								this.handleSearchWithMockData(keyword);
@@ -575,6 +598,15 @@
 						});
 						
 						this.isSearching = false;
+						this.searchStatus = '网络连接失败，显示模拟数据';
+						
+						// 显示网络错误提示
+						uni.showToast({
+							title: '网络连接失败',
+							icon: 'none',
+							duration: 2000
+						});
+						
 						this.handleSearchWithMockData(keyword);
 					}
 				});
@@ -930,6 +962,15 @@
 				console.log('🧪 开始测试搜索功能');
 				console.log('🧪 当前searchResults:', this.searchResults);
 				console.log('🧪 当前searchResults.length:', this.searchResults.length);
+				
+				// 显示测试开始提示
+				uni.showToast({
+					title: '开始测试搜索',
+					icon: 'loading',
+					duration: 1000
+				});
+				
+				this.searchStatus = '正在测试搜索功能...';
 				
 				// 直接设置一些测试数据
 				const testResults = [

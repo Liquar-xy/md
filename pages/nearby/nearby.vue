@@ -22,7 +22,7 @@
 		<!-- 地图容器 -->
 		<view class="map-container">
 			<!-- 简化的地图显示区域 -->
-			<view class="map-placeholder" v-if="!mapReady">
+			<view class="map-placeholder" v-if="!mapReady && !mapError">
 				<view class="placeholder-content">
 					<text class="placeholder-icon">🗺️</text>
 					<text class="placeholder-text">{{loadingText}}</text>
@@ -31,7 +31,7 @@
 			</view>
 			
 			<!-- 百度地图容器 -->
-			<view id="baiduMapContainer" class="baidu-map-container" v-show="mapReady"></view>
+			<view id="baiduMapContainer" class="baidu-map-container" v-show="!mapError"></view>
 			
 			<!-- 地图控制按钮 -->
 			<view class="map-controls">
@@ -711,10 +711,28 @@
 					const script = document.createElement('script');
 					script.type = 'text/javascript';
 					script.src = `https://api.map.baidu.com/api?v=3.0&ak=${BAIDU_MAP_AK}&callback=initBaiduMapCallback`;
-					script.onerror = () => reject(new Error('百度地图API加载失败'));
+					script.onerror = () => {
+					console.error('❌ 百度地图API加载失败');
+					this.mapError = true;
+					this.mapErrorMessage = '百度地图API加载失败，请检查网络连接';
+					this.mapStatus = 'API加载失败';
+					reject(new Error('百度地图API加载失败'));
+				};
+					
+					// 设置超时
+					const timeout = setTimeout(() => {
+						console.error('❌ 百度地图API加载超时');
+						this.mapError = true;
+						this.mapErrorMessage = '百度地图API加载超时，请重试';
+						this.mapStatus = 'API加载超时';
+						reject(new Error('百度地图API加载超时'));
+					}, 10000);
 					
 					window.initBaiduMapCallback = () => {
 						console.log('✅ 百度地图API加载完成');
+						clearTimeout(timeout);
+						delete window.initBaiduMapCallback;
+						this.mapStatus = 'API加载完成';
 						resolve();
 					};
 					
@@ -731,6 +749,18 @@
 					const mapContainer = document.getElementById('baiduMapContainer');
 					if (!mapContainer) {
 						throw new Error('地图容器未找到');
+					}
+					
+					// 调试信息：检查容器尺寸
+					const rect = mapContainer.getBoundingClientRect();
+					console.log('地图容器尺寸:', {
+						width: rect.width,
+						height: rect.height,
+						visible: rect.width > 0 && rect.height > 0
+					});
+					
+					if (rect.width === 0 || rect.height === 0) {
+						console.warn('⚠️ 地图容器尺寸为0，可能影响地图显示');
 					}
 					
 					this.mapInstance = new BMap.Map(mapContainer);
@@ -1051,6 +1081,15 @@
 						
 						if (res.statusCode === 200 && res.data) {
 							this.handleNearbyLockersSuccess(res.data);
+						} else if (res.statusCode === 401) {
+							console.error('❌ API需要认证，后端服务可能需要重启');
+							this.handleNearbyLockersError('正在连接服务器，请稍后重试...');
+							// 显示友好提示
+							uni.showToast({
+								title: '正在连接服务器...',
+								icon: 'loading',
+								duration: 2000
+							});
 						} else {
 							console.error('❌ 接口返回错误:', res.statusCode);
 							this.handleNearbyLockersError('接口返回错误: ' + res.statusCode);
@@ -1059,6 +1098,12 @@
 					fail: (error) => {
 						console.error('❌ 附近寄存点接口调用失败:', error);
 						this.handleNearbyLockersError('网络请求失败: ' + (error.errMsg || '未知错误'));
+						// 显示网络错误提示
+						uni.showToast({
+							title: '网络连接失败',
+							icon: 'none',
+							duration: 2000
+						});
 					}
 				});
 			},
@@ -1587,11 +1632,13 @@
 		flex: 1;
 		position: relative;
 		background-color: #E5E5E5;
+		min-height: 400px; /* 确保最小高度 */
 	}
 	
 	.baidu-map-container {
 		width: 100%;
 		height: 100%;
+		min-height: 400px; /* 确保最小高度 */
 		border-radius: 0;
 		background-color: #E5E5E5;
 		position: relative;

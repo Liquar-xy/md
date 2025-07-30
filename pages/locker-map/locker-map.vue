@@ -46,6 +46,10 @@
 					<text class="btn-icon">📋</text>
 					<text class="btn-text">列表</text>
 				</view>
+				<view class="control-btn debug-btn" @click="testAPI" style="background: #FF6B35;">
+					<text class="btn-icon">🔧</text>
+					<text class="btn-text">测试API</text>
+				</view>
 			</view>
 		</view>
 		
@@ -412,6 +416,12 @@
 					}
 				});
 				
+				// 显示调用信息
+				console.log('🔍 API调用详情:');
+				console.log('- 城市名称:', this.currentCity);
+				console.log('- 边界坐标:', bounds);
+				console.log('- 完整URL:', fullUrl);
+				
 				// 设置较短的超时时间，快速失败
 				uni.request({
 					url: fullUrl,
@@ -432,19 +442,59 @@
 						
 						if (res.statusCode === 200 && res.data) {
 							this.handleLockersDataSuccess(res.data);
+						} else if (res.statusCode === 401) {
+							console.log('⚠️ API需要认证，后端服务可能需要重启');
+							this.loadingText = '正在连接服务器，请稍后重试...';
+							// 显示友好提示
+							uni.showToast({
+								title: '正在连接服务器...',
+								icon: 'loading',
+								duration: 3000
+							});
+							// 延迟后使用模拟数据
+							setTimeout(() => {
+								this.handleNetworkError();
+							}, 3000);
 						} else {
-							console.log('⚠️ API返回非200状态码，使用模拟数据');
+							console.log('⚠️ API返回非200状态码:', res.statusCode);
+							console.log('⚠️ 错误响应数据:', res.data);
+							this.loadingText = `服务器返回错误: ${res.statusCode}`;
+							
+							// 显示具体的错误信息
+							let errorMsg = `服务器错误 (${res.statusCode})`;
+							if (res.data && res.data.message) {
+								errorMsg += `: ${res.data.message}`;
+							} else if (res.data && res.data.error) {
+								errorMsg += `: ${res.data.error}`;
+							}
+							
+							uni.showModal({
+								title: '请求失败',
+								content: errorMsg,
+								showCancel: false,
+								confirmText: '确定'
+							});
+							
 							this.handleNetworkError();
 						}
 					},
 					fail: (error) => {
-						console.log('⚠️ API调用失败，自动使用模拟数据:', error);
+						console.log('⚠️ API调用失败:', error);
 						console.log('错误详情:', {
 							errMsg: error.errMsg,
 							statusCode: error.statusCode,
 							data: error.data
 						});
 						this.isLoading = false;
+						this.loadingText = '网络连接失败，显示模拟数据';
+						
+						// 显示网络错误提示
+						uni.showToast({
+							title: '网络连接失败',
+							icon: 'none',
+							duration: 2000
+						});
+						
 						this.handleNetworkError();
 					}
 				});
@@ -464,8 +514,17 @@
 						lockersData = data.points;
 					} else if (data.clusters && Array.isArray(data.clusters)) {
 						// 地图API返回的聚合数据，需要展开
-						console.log('⚠️ 收到聚合数据，但当前版本不支持聚合显示，使用模拟数据');
-						this.handleNetworkError();
+						console.log('⚠️ 收到聚合数据，但当前版本不支持聚合显示');
+						this.loadingText = '不支持聚合数据显示';
+						this.isLoading = false;
+						this.lockers = [];
+						this.totalLockers = 0;
+						
+						uni.showToast({
+							title: '数据格式不支持',
+							icon: 'none',
+							duration: 2000
+						});
 						return;
 					} else if (data.data && Array.isArray(data.data)) {
 						lockersData = data.data;
@@ -508,8 +567,17 @@
 							duration: 2000
 						});
 					} else {
-						console.log('⚠️ 处理后无有效寄存点数据，使用模拟数据');
-						this.handleNetworkError();
+						console.log('⚠️ 处理后无有效寄存点数据');
+						this.loadingText = '未找到寄存点数据';
+						this.isLoading = false;
+						this.lockers = [];
+						this.totalLockers = 0;
+						
+						uni.showToast({
+							title: '未找到寄存点',
+							icon: 'none',
+							duration: 2000
+						});
 					}
 					
 				} catch (error) {
@@ -629,38 +697,38 @@
 			
 			// 处理网络错误，使用模拟数据
 			handleNetworkError() {
-				console.log('🔄 API不可用，使用模拟寄存点数据');
-				this.loadingText = '正在加载模拟数据...';
+				console.log('❌ 后端API调用失败');
+				this.loadingText = '后端服务连接失败';
+				this.isLoading = false;
 				
-				// 模拟加载延迟，提供更好的用户体验
-				setTimeout(() => {
-					const selectedCity = uni.getStorageSync('selectedCity');
-					const cityCoords = selectedCity?.coordinates || {
-						longitude: 113.6253,
-						latitude: 34.7466
-					};
-					
-					const mockLockers = this.generateMockLockers(cityCoords);
-					
-					this.lockers = mockLockers;
-					this.totalLockers = mockLockers.length;
-					this.isLoading = false;
-					
-					console.log(`✅ 成功加载 ${this.totalLockers} 个模拟寄存点`);
-					
-					this.displayLockersOnMap();
-					
-					// 显示友好的提示信息
-					uni.showToast({
-						title: `已加载${this.totalLockers}个寄存点`,
-						icon: 'success',
-						duration: 2000
-					});
-					
-					// 在控制台显示提示信息
-					console.log('💡 提示：当前使用模拟数据，如需真实数据请确保后端服务正常运行');
-					
-				}, 800); // 模拟加载时间
+				// 不使用模拟数据，显示错误信息
+				this.lockers = [];
+				this.totalLockers = 0;
+				
+				// 显示详细的错误提示
+				const errorContent = `无法获取${this.currentCity}的寄存点数据。\n\n可能的原因：\n1. 后端服务未启动\n2. 数据库中没有该城市的数据\n3. 网络连接问题\n\n请联系管理员或重试。`;
+				
+				uni.showModal({
+					title: '加载失败',
+					content: errorContent,
+					showCancel: true,
+					cancelText: '返回',
+					confirmText: '重试',
+					success: (res) => {
+						if (res.confirm) {
+							// 用户选择重试
+							this.refreshMap();
+						} else {
+							// 用户选择返回
+							uni.navigateBack();
+						}
+					}
+				});
+				
+				console.log('💡 调试信息:');
+				console.log('- 当前城市:', this.currentCity);
+				console.log('- API地址: http://localhost:8000/api/nearby/city/map');
+				console.log('- 建议: 检查后端服务是否运行，数据库是否有城市数据');
 			},
 			
 			// 生成模拟寄存点数据
@@ -939,6 +1007,33 @@
 			},
 			
 			// 选择寄存点
+			// 测试API调用
+			testAPI() {
+				console.log('🔧 测试API调用');
+				
+				// 获取当前城市信息
+				const selectedCity = uni.getStorageSync('selectedCity');
+				const cityCoords = selectedCity?.coordinates || {
+					longitude: 113.6253,
+					latitude: 34.7466
+				};
+				
+				const debugInfo = `当前城市: ${this.currentCity}\n坐标: ${cityCoords.longitude}, ${cityCoords.latitude}\nAPI: /api/nearby/city/map`;
+				
+				uni.showModal({
+					title: '测试API',
+					content: debugInfo + '\n\n是否重新调用后端API？',
+					showCancel: true,
+					cancelText: '取消',
+					confirmText: '测试',
+					success: (res) => {
+						if (res.confirm) {
+							this.refreshMap();
+						}
+					}
+				});
+			},
+			
 			selectLocker(locker) {
 				console.log('📍 选择寄存点:', locker.name);
 				this.selectedLocker = locker;

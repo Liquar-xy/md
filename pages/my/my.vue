@@ -113,7 +113,7 @@ export default {
 		checkLoginStatus() {
 			const token = uni.getStorageSync('token');
 			const userData = uni.getStorageSync('userData');
-			
+
 			if (!token || !userData) {
 				console.log('用户未登录，跳转到登录页');
 				this.isLoggedIn = false;
@@ -122,11 +122,11 @@ export default {
 				});
 				return;
 			}
-			
+
 			// 加载用户数据
 			this.loadUserData(userData);
 		},
-		
+
 		// 加载用户数据
 		loadUserData(userData) {
 			try {
@@ -135,7 +135,7 @@ export default {
 					this.phoneNumber = userData.phone || '';
 					this.avatarUrl = userData.avatar || '';
 					this.isLoggedIn = true;
-					
+
 					console.log('用户数据加载成功:', {
 						username: this.username,
 						phone: this.phoneNumber
@@ -299,28 +299,28 @@ export default {
 							uni.removeStorageSync('userData');
 							uni.removeStorageSync('loginTime');
 							uni.removeStorageSync('selectedCity');
-							
+
 							console.log('登录数据已清除');
-							
+
 							// 重置页面数据
 							this.isLoggedIn = false;
 							this.username = '';
 							this.phoneNumber = '';
 							this.avatarUrl = '';
-							
+
 							uni.showToast({
 								title: '已退出登录',
 								icon: 'success',
 								duration: 1500
 							});
-							
+
 							// 延迟跳转到登录页
 							setTimeout(() => {
 								uni.reLaunch({
 									url: '/pages/login/login'
 								});
 							}, 1500);
-							
+
 						} catch (e) {
 							console.error('清除登录数据失败:', e);
 							uni.showToast({
@@ -332,9 +332,7 @@ export default {
 				}
 			});
 		},
-		
 
-		
 		// 底部导航事件
 		handleHomeClick() {
 			uni.switchTab({
@@ -343,7 +341,7 @@ export default {
 		},
 		
 		handleOrdersClick() {
-			uni.switchTab({
+			uni.navigateTo({
 				url: '/pages/order-detail/order-detail'
 			});
 		},
@@ -352,7 +350,7 @@ export default {
 			// 当前就在我的页面，不需要跳转
 			console.log('当前在我的页面');
 		}
-	 }
+	}
 }
 </script>
 
@@ -375,8 +373,8 @@ export default {
 	left: 0;
 	width: 100%;
 	height: 100%;
-	background: linear-gradient(180deg, 
-		rgba(248, 250, 255, 0.85) 0%, 
+	background: linear-gradient(180deg,
+		rgba(248, 250, 255, 0.85) 0%,
 		rgba(245, 245, 245, 0.9) 100%);
 	z-index: -1;
 	backdrop-filter: blur(2rpx);

@@ -493,21 +493,48 @@
 			// 加载城市列表
 			async loadCities() {
 				this.isLoading = true;
-				this.loadingText = '正在加载城市列表...';
+				this.loadingText = '正在从数据库加载城市列表...';
 				
 				try {
-					// 首先尝试从API获取
+					// 优先从后端数据库获取真实数据
 					const cities = await this.getCitiesFromAPI();
 					this.cities = cities;
 					this.hotCities = this.getHotCities(cities);
-					console.log('✅ 从API加载城市列表成功:', cities.length, '个城市');
+					
+					console.log('✅ 从数据库加载城市列表成功:', cities.length, '个城市');
+					
+					// 显示成功提示
+					if (cities.length > 0) {
+						uni.showToast({
+							title: `已加载${cities.length}个城市`,
+							icon: 'success',
+							duration: 1500
+						});
+					}
 				} catch (error) {
-					console.error('从API获取城市列表失败:', error);
-					// 使用默认城市列表
+					console.error('从数据库获取城市列表失败:', error);
+					
+					// 显示友好的错误提示
+					if (error.message.includes('认证')) {
+						console.log('🔄 API需要认证，请确保后端服务已重启');
+						uni.showToast({
+							title: '连接服务器中...',
+							icon: 'loading',
+							duration: 2000
+						});
+					} else {
+						uni.showToast({
+							title: '网络连接失败，使用离线数据',
+							icon: 'none',
+							duration: 2000
+						});
+					}
+					
+					// 使用默认城市列表作为后备
 					const defaultCities = this.getDefaultCities();
 					this.cities = defaultCities;
 					this.hotCities = this.getHotCities(defaultCities);
-					console.log('✅ 使用默认城市列表:', defaultCities.length, '个城市');
+					console.log('⚠️ 使用后备城市列表:', defaultCities.length, '个城市');
 				} finally {
 					this.isLoading = false;
 				}
@@ -516,7 +543,8 @@
 			// 调用后端API获取城市列表
 			getCitiesFromAPI() {
 				return new Promise((resolve, reject) => {
-					const apiUrl = 'http://localhost:8000/api/cities';
+					// 请求更多数据：页码1，每页50条
+					const apiUrl = 'http://localhost:8000/api/cities?page=1&page_size=50';
 					
 					console.log('📡 调用后端城市列表接口:', apiUrl);
 					
@@ -527,19 +555,20 @@
 							'Content-Type': 'application/json',
 							'Accept': 'application/json'
 						},
-						timeout: 8000,
+						timeout: 10000, // 增加超时时间
 						success: (res) => {
 							console.log('=== 后端城市列表接口响应 ===');
 							console.log('HTTP状态码:', res.statusCode);
 							console.log('响应数据:', res.data);
-							console.log('响应数据类型:', typeof res.data);
-							console.log('响应数据结构:', Object.keys(res.data || {}));
 							
 							if (res.statusCode === 200 && res.data) {
 								// 处理后端返回的城市数据
 								const processedCities = this.processBackendCities(res.data);
 								console.log('✅ 处理后的城市数据:', processedCities.length, '个城市');
 								resolve(processedCities);
+							} else if (res.statusCode === 401) {
+								console.log('⚠️ API需要认证，后端服务可能需要重启以应用白名单更改');
+								reject(new Error('API需要认证，请重启后端服务'));
 							} else {
 								console.log('⚠️ API返回非200状态码，使用默认数据');
 								reject(new Error(`API请求失败: ${res.statusCode}`));
@@ -702,53 +731,36 @@
 			// 获取热门城市
 			getHotCities(cities) {
 				// 根据寄存点数量和城市等级筛选热门城市
-				const hotCityNames = ['北京', '上海', '广州', '深圳', '杭州', '南京', '成都', '武汉', '西安', '郑州', '重庆', '天津'];
+				const hotCityNames = [
+					'北京', '上海', '广州', '深圳', '杭州', '南京', 
+					'成都', '武汉', '西安', '郑州', '重庆', '天津',
+					'苏州', '长沙', '青岛', '大连', '宁波', '厦门'
+				];
 				
 				return cities
 					.filter(city => hotCityNames.includes(city.name))
 					.sort((a, b) => (b.lockerCount || 0) - (a.lockerCount || 0))
-					.slice(0, 12);
+					.slice(0, 18);
 			},
 			
-			// 获取默认城市列表（扩展版）
+			// 获取默认城市列表（仅作为后备数据）
 			getDefaultCities() {
 				return [
-					// 一线城市
-					{ id: 1, name: '北京', code: 'beijing', pinyin: 'beijing', firstLetter: 'B', lockerCount: 328, level: 1, description: '首都，政治文化中心' },
-					{ id: 2, name: '上海', code: 'shanghai', pinyin: 'shanghai', firstLetter: 'S', lockerCount: 445, level: 1, description: '经济金融中心' },
-					{ id: 3, name: '广州', code: 'guangzhou', pinyin: 'guangzhou', firstLetter: 'G', lockerCount: 267, level: 1, description: '华南地区中心城市' },
-					{ id: 4, name: '深圳', code: 'shenzhen', pinyin: 'shenzhen', firstLetter: 'S', lockerCount: 312, level: 1, description: '科技创新之城' },
-					
-					// 新一线城市
-					{ id: 5, name: '杭州', code: 'hangzhou', pinyin: 'hangzhou', firstLetter: 'H', lockerCount: 198, level: 2, description: '电商之都，西湖美景' },
-					{ id: 6, name: '南京', code: 'nanjing', pinyin: 'nanjing', firstLetter: 'N', lockerCount: 156, level: 2, description: '六朝古都，教育名城' },
-					{ id: 7, name: '成都', code: 'chengdu', pinyin: 'chengdu', firstLetter: 'C', lockerCount: 189, level: 2, description: '天府之国，美食之都' },
-					{ id: 8, name: '武汉', code: 'wuhan', pinyin: 'wuhan', firstLetter: 'W', lockerCount: 134, level: 2, description: '九省通衢，教育重镇' },
-					{ id: 9, name: '西安', code: 'xian', pinyin: 'xian', firstLetter: 'X', lockerCount: 123, level: 2, description: '千年古都，丝路起点' },
-					{ id: 10, name: '重庆', code: 'chongqing', pinyin: 'chongqing', firstLetter: 'C', lockerCount: 167, level: 2, description: '山城火锅，网红之都' },
-					{ id: 11, name: '天津', code: 'tianjin', pinyin: 'tianjin', firstLetter: 'T', lockerCount: 98, level: 2, description: '海河之滨，近代名城' },
-					{ id: 12, name: '苏州', code: 'suzhou', pinyin: 'suzhou', firstLetter: 'S', lockerCount: 145, level: 2, description: '园林之城，丝绸之府' },
-					
-					// 二线城市
-					{ id: 13, name: '郑州', code: 'zhengzhou', pinyin: 'zhengzhou', firstLetter: 'Z', lockerCount: 156, level: 3, description: '中原腹地，交通枢纽' },
-					{ id: 14, name: '长沙', code: 'changsha', pinyin: 'changsha', firstLetter: 'C', lockerCount: 112, level: 3, description: '娱乐之都，湘菜故乡' },
-					{ id: 15, name: '青岛', code: 'qingdao', pinyin: 'qingdao', firstLetter: 'Q', lockerCount: 89, level: 3, description: '海滨城市，啤酒之城' },
-					{ id: 16, name: '大连', code: 'dalian', pinyin: 'dalian', firstLetter: 'D', lockerCount: 76, level: 3, description: '浪漫之都，海港名城' },
-					{ id: 17, name: '宁波', code: 'ningbo', pinyin: 'ningbo', firstLetter: 'N', lockerCount: 67, level: 3, description: '港口城市，商贸重镇' },
-					{ id: 18, name: '厦门', code: 'xiamen', pinyin: 'xiamen', firstLetter: 'X', lockerCount: 78, level: 3, description: '鹭岛风光，经济特区' },
-					{ id: 19, name: '济南', code: 'jinan', pinyin: 'jinan', firstLetter: 'J', lockerCount: 65, level: 3, description: '泉城济南，历史名城' },
-					{ id: 20, name: '哈尔滨', code: 'haerbin', pinyin: 'haerbin', firstLetter: 'H', lockerCount: 54, level: 3, description: '冰雪之城，东方莫斯科' },
-					
-					// 其他城市
-					{ id: 21, name: '昆明', code: 'kunming', pinyin: 'kunming', firstLetter: 'K', lockerCount: 43, level: 4, description: '春城昆明，四季如春' },
-					{ id: 22, name: '福州', code: 'fuzhou', pinyin: 'fuzhou', firstLetter: 'F', lockerCount: 38, level: 4, description: '榕城福州，闽都文化' },
-					{ id: 23, name: '石家庄', code: 'shijiazhuang', pinyin: 'shijiazhuang', firstLetter: 'S', lockerCount: 32, level: 4, description: '燕赵大地，省会城市' },
-					{ id: 24, name: '邢台', code: 'xingtai', pinyin: 'xingtai', firstLetter: 'X', lockerCount: 28, level: 4, description: '牛城邢台，历史古城' },
-					{ id: 25, name: '太原', code: 'taiyuan', pinyin: 'taiyuan', firstLetter: 'T', lockerCount: 29, level: 4, description: '龙城太原，煤都山西' },
-					{ id: 26, name: '长春', code: 'changchun', pinyin: 'changchun', firstLetter: 'C', lockerCount: 26, level: 4, description: '汽车城，电影城' }
+					// 主要城市作为后备数据
+					{ id: 1, name: '北京', code: 'beijing', pinyin: 'beijing', firstLetter: 'B', lockerCount: 0, level: 1, description: '首都，政治文化中心' },
+					{ id: 2, name: '上海', code: 'shanghai', pinyin: 'shanghai', firstLetter: 'S', lockerCount: 0, level: 1, description: '经济金融中心' },
+					{ id: 3, name: '广州', code: 'guangzhou', pinyin: 'guangzhou', firstLetter: 'G', lockerCount: 0, level: 1, description: '华南地区中心城市' },
+					{ id: 4, name: '深圳', code: 'shenzhen', pinyin: 'shenzhen', firstLetter: 'S', lockerCount: 0, level: 1, description: '科技创新之城' },
+					{ id: 5, name: '杭州', code: 'hangzhou', pinyin: 'hangzhou', firstLetter: 'H', lockerCount: 0, level: 2, description: '电商之都，西湖美景' },
+					{ id: 6, name: '南京', code: 'nanjing', pinyin: 'nanjing', firstLetter: 'N', lockerCount: 0, level: 2, description: '六朝古都，教育名城' },
+					{ id: 7, name: '成都', code: 'chengdu', pinyin: 'chengdu', firstLetter: 'C', lockerCount: 0, level: 2, description: '天府之国，美食之都' },
+					{ id: 8, name: '武汉', code: 'wuhan', pinyin: 'wuhan', firstLetter: 'W', lockerCount: 0, level: 2, description: '九省通衢，教育重镇' },
+					{ id: 9, name: '西安', code: 'xian', pinyin: 'xian', firstLetter: 'X', lockerCount: 0, level: 2, description: '千年古都，丝路起点' },
+					{ id: 10, name: '郑州', code: 'zhengzhou', pinyin: 'zhengzhou', firstLetter: 'Z', lockerCount: 0, level: 3, description: '中原腹地，交通枢纽' }
 				].map(city => ({
 					...city,
-					coordinates: this.getCityCoordinates(city.code)
+					coordinates: this.getCityCoordinates(city.code),
+					status: 'active'
 				}));
 			},
 			
@@ -780,14 +792,38 @@
 					'xiamen': { longitude: 118.1689, latitude: 24.4797 },
 					'jinan': { longitude: 117.0009, latitude: 36.6758 },
 					'haerbin': { longitude: 126.6424, latitude: 45.7560 },
-					
-					// 其他城市
 					'kunming': { longitude: 102.8329, latitude: 24.8801 },
 					'fuzhou': { longitude: 119.3063, latitude: 26.0745 },
 					'shijiazhuang': { longitude: 114.5149, latitude: 38.0428 },
-					'xingtai': { longitude: 114.5086, latitude: 37.0682 },
 					'taiyuan': { longitude: 112.5489, latitude: 37.8706 },
-					'changchun': { longitude: 125.3245, latitude: 43.8171 }
+					'changchun': { longitude: 125.3245, latitude: 43.8171 },
+					
+					// 三线城市
+					'shenyang': { longitude: 123.4315, latitude: 41.8057 },
+					'wuxi': { longitude: 120.3019, latitude: 31.5747 },
+					'wenzhou': { longitude: 120.6994, latitude: 27.9944 },
+					'hefei': { longitude: 117.2272, latitude: 31.8206 },
+					'nanchang': { longitude: 115.8921, latitude: 28.6765 },
+					'guiyang': { longitude: 106.7135, latitude: 26.5783 },
+					'nanning': { longitude: 108.3669, latitude: 22.8170 },
+					'haikou': { longitude: 110.3312, latitude: 20.0311 },
+					'lanzhou': { longitude: 103.8236, latitude: 36.0581 },
+					'yinchuan': { longitude: 106.2309, latitude: 38.4872 },
+					'xining': { longitude: 101.7782, latitude: 36.6171 },
+					'wulumuqi': { longitude: 87.6177, latitude: 43.7928 },
+					'lasa': { longitude: 91.1322, latitude: 29.6544 },
+					'huhehaote': { longitude: 111.7519, latitude: 40.8427 },
+					'zhuhai': { longitude: 113.5767, latitude: 22.2707 },
+					'shantou': { longitude: 116.7081, latitude: 23.3839 },
+					'foshan': { longitude: 113.1220, latitude: 23.0291 },
+					'dongguan': { longitude: 113.7518, latitude: 23.0489 },
+					'zhongshan': { longitude: 113.3823, latitude: 22.5211 },
+					'huizhou': { longitude: 114.4152, latitude: 23.1115 },
+					'jiangmen': { longitude: 113.0946, latitude: 22.5901 },
+					'zhanjiang': { longitude: 110.3594, latitude: 21.2707 },
+					'maoming': { longitude: 110.9255, latitude: 21.6687 },
+					'zhaoqing': { longitude: 112.4444, latitude: 23.0786 },
+					'qingyuan': { longitude: 113.0510, latitude: 23.7016 }
 				};
 				
 				return coordinates[cityCode] || { longitude: 116.4074, latitude: 39.9042 };
@@ -1010,7 +1046,7 @@
 			rgba(255, 255, 255, 0.95) 0%, 
 			rgba(255, 255, 255, 0.85) 100%);
 		backdrop-filter: blur(20rpx);
-		box-shadow: 0 8rp
+		box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.1);
 	}
 	
 	.header-content {

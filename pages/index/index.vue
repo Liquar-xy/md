@@ -3,8 +3,12 @@
 		<!-- 顶部图片区域 -->
 		<view class="header-section">
 			<image class="header-image" src="/static/首页顶图.png" mode="aspectFill"></image>
+			<view class="header-overlay">
+				<text class="header-title">便捷储物舱</text>
+				<text class="header-subtitle">智能寄存，安全可靠</text>
+			</view>
 		</view>
-		
+
 		<!-- 城市选择和我的附近 -->
 		<view class="location-section">
 			<view class="city-selector" @click="selectCity">
@@ -17,33 +21,29 @@
 				<text class="nearby-text">我的附近</text>
 			</view>
 		</view>
-		
+
 		<!-- 搜索框 -->
 		<view class="search-section">
 			<view class="search-box" @click="openSearch">
 				<view class="search-placeholder-container">
-					<text class="search-text-1">搜索</text>
-					<text class="search-text-2">火车站</text>
-					<text class="search-text-3">/</text>
-					<text class="search-text-4">地铁站</text>
-					<text class="search-text-5">/</text>
-					<text class="search-text-6">景点</text>
+					<text class="search-icon">🔍</text>
+					<text class="search-text">搜索火车站/地铁站/景点</text>
 				</view>
 			</view>
 		</view>
-		
+
 		<!-- 热门地点 -->
 		<view class="hotspots-section">
 			<view class="hotspot-item" v-for="(item, index) in hotspots" :key="index" @click="selectHotspot(item)">
 				<text class="hotspot-text">{{item}}</text>
 			</view>
 		</view>
-		
+
 		<!-- 查询寄存点按钮 -->
 		<view class="query-section">
 			<button class="query-btn" @click="queryLockers">查询寄存点</button>
 		</view>
-		
+
 		<!-- 功能入口 -->
 		<view class="features-section">
 			<view class="feature-item" @click="goToOrders">
@@ -58,32 +58,33 @@
 				<view class="feature-icon guide-icon">📖</view>
 				<text class="feature-text guide-text">寄存指南</text>
 			</view>
-			<view class="feature-item developing" @click="goToCoupons">
+			<view class="feature-item" @click="goToCoupons">
 				<view class="feature-icon coupons-icon">🎫</view>
 				<text class="feature-text coupons-text">优惠卡券</text>
-				<text class="developing-tag">开发中</text>
-			</view>
-			<view class="feature-item admin-entry" @click="goToAdmin" @longpress="showAdminOptions">
-				<view class="feature-icon admin-icon">🔐</view>
-				<text class="feature-text admin-text">管理员</text>
-				<text class="admin-tag">后台</text>
 			</view>
 		</view>
-		
+
 		<!-- 交易保障 -->
 		<view class="guarantee-section">
 			<view class="guarantee-icon">✓</view>
 			<text class="guarantee-text">小程序交易保障</text>
-			<text class="guarantee-desc">先行赔付·消费者权益</text>
 		</view>
-		
+
+		<!-- 线上寄存优惠券 -->
+		<view class="coupon-banner">
+			<view class="coupon-content">
+				<text class="coupon-title">线上寄存优惠券</text>
+				<text class="coupon-subtitle">新人专享 无门槛优惠券大礼包！</text>
+			</view>
+		</view>
+
 		<!-- 附近寄存点 -->
 		<view class="nearby-lockers-section">
 			<view class="section-title">
 				<text class="title-text">附近寄存点</text>
 				<text class="more-btn" v-if="nearbyLockers.length > 1" @click="viewAllNearby">查看全部</text>
 			</view>
-			
+
 			<!-- 最近的寄存点 -->
 			<view class="locker-item" v-if="nearestLocker" @click="selectLocker(nearestLocker)">
 				<image class="locker-image" src="/static/locker-image.jpg" mode="aspectFill"></image>
@@ -97,11 +98,11 @@
 					</view>
 				</view>
 			</view>
-			
+
 			<!-- 其他附近寄存点（最多显示2个） -->
-			<view 
-				class="locker-item" 
-				v-for="(locker, index) in nearbyLockers.slice(1, 3)" 
+			<view
+				class="locker-item"
+				v-for="(locker, index) in nearbyLockers.slice(1, 3)"
 				:key="locker.id"
 				@click="selectLocker(locker)"
 			>
@@ -116,15 +117,15 @@
 					</view>
 				</view>
 			</view>
-			
+
 			<!-- 无寄存点提示 -->
 			<view class="no-locker" v-if="!nearestLocker && nearbyLockers.length === 0">
 				<view class="no-locker-icon">📍</view>
 				<text class="no-locker-text">{{noLockerMessage}}</text>
-				
+
 				<!-- 加载动画 -->
 				<view class="loading-spinner" v-if="isLoadingNearby"></view>
-				
+
 				<!-- 操作按钮 -->
 				<view class="no-locker-actions" v-if="!isLoadingNearby">
 					<button class="retry-btn" @click="refreshNearbyLockers">重新搜索</button>
@@ -136,1733 +137,932 @@
 </template>
 
 <script>
-	export default {
-		data() {
-			return {
-				currentCity: '郑州',
-				hotspots: ['郑州站', '郑州东站', '二七广场', '中原福塔'],
-				nearestLocker: null,
-				nearbyLockers: [], // 存储所有附近寄存点
-				noLockerMessage: '正在获取附近寄存点...', // 无寄存点时的提示信息
-				isLoadingNearby: true, // 是否正在加载附近寄存点
-				updateTimer: null,
-				
-				// 各城市的热门地点配置
-				cityHotspots: {
-					'郑州': ['郑州站', '郑州东站', '二七广场', '中原福塔'],
-					'北京': ['北京站', '北京西站', '天安门', '故宫'],
-					'上海': ['上海站', '上海虹桥站', '外滩', '东方明珠'],
-					'广州': ['广州站', '广州南站', '珠江新城', '天河城'],
-					'深圳': ['深圳站', '深圳北站', '华强北', '世界之窗'],
-					'杭州': ['杭州站', '杭州东站', '西湖', '钱江新城'],
-					'南京': ['南京站', '南京南站', '夫子庙', '中山陵'],
-					'武汉': ['武汉站', '汉口站', '黄鹤楼', '江汉路'],
-					'成都': ['成都站', '成都东站', '春熙路', '宽窄巷子'],
-					'西安': ['西安站', '西安北站', '钟楼', '大雁塔'],
-					'重庆': ['重庆站', '重庆北站', '解放碑', '洪崖洞'],
-					'天津': ['天津站', '天津西站', '天津之眼', '古文化街'],
-					'苏州': ['苏州站', '苏州北站', '观前街', '拙政园'],
-					'青岛': ['青岛站', '青岛北站', '栈桥', '五四广场'],
-					'大连': ['大连站', '大连北站', '星海广场', '老虎滩'],
-					'厦门': ['厦门站', '厦门北站', '鼓浪屿', '中山路'],
-					'长沙': ['长沙站', '长沙南站', '五一广场', '橘子洲'],
-					'昆明': ['昆明站', '昆明南站', '翠湖', '金马碧鸡坊'],
-					'济南': ['济南站', '济南西站', '趵突泉', '大明湖'],
-					'哈尔滨': ['哈尔滨站', '哈尔滨西站', '中央大街', '太阳岛'],
-					'石家庄': ['石家庄站', '石家庄北站', '正定古城', '赵州桥'],
-					'太原': ['太原站', '太原南站', '晋祠', '五台山'],
-					'沈阳': ['沈阳站', '沈阳北站', '故宫', '中街'],
-					'长春': ['长春站', '长春西站', '净月潭', '伪满皇宫'],
-					'合肥': ['合肥站', '合肥南站', '包公园', '三河古镇'],
-					'福州': ['福州站', '福州南站', '三坊七巷', '鼓山'],
-					'南昌': ['南昌站', '南昌西站', '滕王阁', '八一广场'],
-					'贵阳': ['贵阳站', '贵阳北站', '甲秀楼', '青岩古镇'],
-					'兰州': ['兰州站', '兰州西站', '中山桥', '白塔山'],
-					'银川': ['银川站', '银川河东机场', '西夏王陵', '沙湖'],
-					'西宁': ['西宁站', '西宁机场', '塔尔寺', '青海湖'],
-					'乌鲁木齐': ['乌鲁木齐站', '地窝堡机场', '红山公园', '大巴扎'],
-					'拉萨': ['拉萨站', '贡嘎机场', '布达拉宫', '大昭寺'],
-					'呼和浩特': ['呼和浩特站', '白塔机场', '大召寺', '内蒙古博物院'],
-					'南宁': ['南宁站', '南宁东站', '青秀山', '邕江'],
-					'海口': ['海口站', '美兰机场', '骑楼老街', '万绿园'],
-					'三亚': ['三亚站', '凤凰机场', '天涯海角', '亚龙湾'],
-					'澳门': ['澳门关闸', '澳门机场', '大三巴', '威尼斯人'],
-					'香港': ['红磡站', '香港机场', '维多利亚港', '中环'],
-					'台北': ['台北车站', '桃园机场', '101大楼', '西门町']
-				}
+export default {
+	data() {
+		return {
+			currentCity: '郑州',
+			hotspots: ['郑州站', '郑州东站', '二七广场', '中原福塔'],
+			nearestLocker: null,
+			nearbyLockers: [], // 存储所有附近寄存点
+			noLockerMessage: '正在获取附近寄存点...', // 无寄存点时的提示信息
+			isLoadingNearby: true, // 是否正在加载附近寄存点
+			updateTimer: null,
+
+			// 各城市的热门地点配置
+			cityHotspots: {
+				'郑州': ['郑州站', '郑州东站', '二七广场', '中原福塔'],
+				'郑州市': ['郑州站', '郑州东站', '二七广场', '中原福塔'],
+				'石家庄': ['石家庄站', '石家庄北站', '正定机场', '万达广场'],
+				'石家庄市': ['石家庄站', '石家庄北站', '正定机场', '万达广场'],
+				'北京': ['北京站', '北京西站', '天安门', '故宫'],
+				'北京市': ['北京站', '北京西站', '天安门', '故宫'],
+				'上海': ['上海站', '上海虹桥站', '外滩', '东方明珠'],
+				'上海市': ['上海站', '上海虹桥站', '外滩', '东方明珠'],
+				'广州': ['广州站', '广州南站', '珠江新城', '天河城'],
+				'广州市': ['广州站', '广州南站', '珠江新城', '天河城'],
+				'深圳': ['深圳站', '深圳北站', '华强北', '世界之窗'],
+				'深圳市': ['深圳站', '深圳北站', '华强北', '世界之窗'],
+				'杭州': ['杭州站', '杭州东站', '西湖', '钱江新城'],
+				'杭州市': ['杭州站', '杭州东站', '西湖', '钱江新城'],
+				'南京': ['南京站', '南京南站', '夫子庙', '中山陵'],
+				'南京市': ['南京站', '南京南站', '夫子庙', '中山陵'],
+				'武汉': ['武汉站', '汉口站', '黄鹤楼', '江汉路'],
+				'武汉市': ['武汉站', '汉口站', '黄鹤楼', '江汉路'],
+				'成都': ['成都站', '成都东站', '春熙路', '宽窄巷子'],
+				'成都市': ['成都站', '成都东站', '春熙路', '宽窄巷子'],
+				'西安': ['西安站', '西安北站', '钟楼', '大雁塔'],
+				'西安市': ['西安站', '西安北站', '钟楼', '大雁塔'],
+				'天津': ['天津站', '天津西站', '天津之眼', '古文化街'],
+				'天津市': ['天津站', '天津西站', '天津之眼', '古文化街'],
+				'重庆': ['重庆站', '重庆北站', '解放碑', '洪崖洞'],
+				'重庆市': ['重庆站', '重庆北站', '解放碑', '洪崖洞'],
+				'沈阳': ['沈阳站', '沈阳北站', '故宫', '中街'],
+				'沈阳市': ['沈阳站', '沈阳北站', '故宫', '中街'],
+				'长春': ['长春站', '长春西站', '伪满皇宫', '重庆路'],
+				'长春市': ['长春站', '长春西站', '伪满皇宫', '重庆路'],
+				'哈尔滨': ['哈尔滨站', '哈尔滨西站', '中央大街', '太阳岛'],
+				'哈尔滨市': ['哈尔滨站', '哈尔滨西站', '中央大街', '太阳岛'],
+				'济南': ['济南站', '济南西站', '趵突泉', '大明湖'],
+				'济南市': ['济南站', '济南西站', '趵突泉', '大明湖'],
+				'青岛': ['青岛站', '青岛北站', '栈桥', '五四广场'],
+				'青岛市': ['青岛站', '青岛北站', '栈桥', '五四广场'],
+				'合肥': ['合肥站', '合肥南站', '天鹅湖', '万达茂'],
+				'合肥市': ['合肥站', '合肥南站', '天鹅湖', '万达茂'],
+				'福州': ['福州站', '福州南站', '三坊七巷', '西湖公园'],
+				'福州市': ['福州站', '福州南站', '三坊七巷', '西湖公园'],
+				'厦门': ['厦门站', '厦门北站', '鼓浪屿', '中山路'],
+				'厦门市': ['厦门站', '厦门北站', '鼓浪屿', '中山路'],
+				'南昌': ['南昌站', '南昌西站', '滕王阁', '八一广场'],
+				'南昌市': ['南昌站', '南昌西站', '滕王阁', '八一广场'],
+				'长沙': ['长沙站', '长沙南站', '橘子洲', '太平街'],
+				'长沙市': ['长沙站', '长沙南站', '橘子洲', '太平街'],
+				'昆明': ['昆明站', '昆明南站', '滇池', '翠湖公园'],
+				'昆明市': ['昆明站', '昆明南站', '滇池', '翠湖公园'],
+				'贵阳': ['贵阳站', '贵阳北站', '甲秀楼', '花果园'],
+				'贵阳市': ['贵阳站', '贵阳北站', '甲秀楼', '花果园'],
+				'兰州': ['兰州站', '兰州西站', '中山桥', '白塔山'],
+				'兰州市': ['兰州站', '兰州西站', '中山桥', '白塔山'],
+				'银川': ['银川站', '银川河东站', '鼓楼', '南门广场'],
+				'银川市': ['银川站', '银川河东站', '鼓楼', '南门广场'],
+				'西宁': ['西宁站', '西宁西站', '塔尔寺', '中心广场'],
+				'西宁市': ['西宁站', '西宁西站', '塔尔寺', '中心广场'],
+				'乌鲁木齐': ['乌鲁木齐站', '乌鲁木齐南站', '红山公园', '大巴扎'],
+				'乌鲁木齐市': ['乌鲁木齐站', '乌鲁木齐南站', '红山公园', '大巴扎'],
+				'拉萨': ['拉萨站', '拉萨西站', '布达拉宫', '大昭寺'],
+				'拉萨市': ['拉萨站', '拉萨西站', '布达拉宫', '大昭寺'],
+				'呼和浩特': ['呼和浩特站', '呼和浩特东站', '大召寺', '内蒙古博物院'],
+				'呼和浩特市': ['呼和浩特站', '呼和浩特东站', '大召寺', '内蒙古博物院']
 			}
-		},
-		onLoad() {
-			try {
-				console.log('首页加载完成');
-				
-				// 检查登录状态
-				if (!this.checkLoginStatus()) {
-					return; // 如果未登录，会跳转到登录页，不继续执行
-				}
-				
-				// 初始化时检查已选择的城市
-				const selectedCity = uni.getStorageSync('selectedCity');
-				if (selectedCity) {
-					this.currentCity = selectedCity.name;
-				}
-				
-				// 初始化热门地点
+		}
+	},
+	
+	onLoad() {
+		console.log('🚀 首页加载');
+		
+		// 获取当前选择的城市
+		const selectedCity = uni.getStorageSync('selectedCity');
+		console.log('📍 初始加载时的城市:', selectedCity);
+		
+		if (selectedCity && selectedCity.name) {
+			console.log('🔄 设置城市为:', selectedCity.name);
+			this.currentCity = selectedCity.name;
+		} else {
+			console.log('⚠️ 使用默认城市: 郑州');
+			this.currentCity = '郑州';
+		}
+		
+		// 更新热门地点
+		this.updateHotspots();
+		
+		// 获取附近寄存点
+		this.loadNearbyLockers();
+		
+		// 添加延迟强制更新，确保热门地点正确显示
+		setTimeout(() => {
+			console.log('🔄 延迟强制更新热门地点');
+			this.updateHotspots();
+		}, 100);
+	},
+	
+	onShow() {
+		console.log('🔄 首页onShow触发');
+		
+		// 页面显示时检查城市是否变化
+		const selectedCity = uni.getStorageSync('selectedCity');
+		console.log('📍 存储中的城市:', selectedCity);
+		console.log('📍 当前显示城市:', this.currentCity);
+		console.log('📍 当前热门地点:', this.hotspots);
+		
+		if (selectedCity && selectedCity.name) {
+			if (selectedCity.name !== this.currentCity) {
+				console.log('🔄 城市变化:', this.currentCity, '->', selectedCity.name);
+				this.currentCity = selectedCity.name;
 				this.updateHotspots();
-				
-				this.loadNearestLocker();
-				this.startRealTimeUpdate();
-			} catch (error) {
-				console.error('❌ 首页加载时发生错误:', error);
-				// 设置默认状态
-				this.currentCity = '郑州';
-				this.isLoadingNearby = false;
-				this.noLockerMessage = '页面加载出现问题，请刷新重试';
+				this.loadNearbyLockers();
+			} else {
+				console.log('✅ 城市未变化，但强制更新热门地点');
+				// 即使城市未变化，也强制更新一次热门地点，确保显示正确
+				this.updateHotspots();
+			}
+		} else {
+			console.log('⚠️ 未找到选中城市，使用默认城市');
+			this.updateHotspots();
+		}
+		
+		// 添加延迟检查，确保热门地点已更新
+		setTimeout(() => {
+			console.log('🔍 延迟检查 - 当前城市:', this.currentCity);
+			console.log('🔍 延迟检查 - 热门地点:', this.hotspots);
+		}, 500);
+	},
+	
+	onUnload() {
+		// 清理定时器
+		if (this.updateTimer) {
+			clearInterval(this.updateTimer);
+		}
+	},
+	
+	methods: {
+		// 更新热门地点
+		updateHotspots() {
+			console.log('🔄 更新热门地点，当前城市:', this.currentCity);
+			
+			// 获取城市的核心名称（去掉"市"、"省"等后缀）
+			const cleanCityName = this.getCleanCityName(this.currentCity);
+			console.log('🔍 清理后的城市名称:', cleanCityName);
+			
+			// 根据当前城市获取对应的热门地点
+			let cityHotspots = this.cityHotspots[this.currentCity] || this.cityHotspots[cleanCityName];
+			
+			// 如果还是找不到，尝试模糊匹配
+			if (!cityHotspots) {
+				cityHotspots = this.findCityHotspotsByFuzzyMatch(cleanCityName);
+			}
+			
+			if (cityHotspots && cityHotspots.length > 0) {
+				this.hotspots = [...cityHotspots];
+				console.log('✅ 热门地点已更新:', this.hotspots);
+			} else {
+				// 使用默认的郑州热门地点
+				this.hotspots = [...this.cityHotspots['郑州']];
+				console.log('⚠️ 未找到匹配城市，使用默认热门地点:', this.hotspots);
 			}
 		},
-		onShow() {
-			try {
-				// 页面显示时重新加载数据，确保从其他页面返回时数据正确
-				console.log('首页显示');
-				
-				// 检查城市是否发生变化
-				const selectedCity = uni.getStorageSync('selectedCity');
-				if (selectedCity) {
-					const cityChanged = selectedCity.name !== this.currentCity;
-					this.currentCity = selectedCity.name;
-					
-					// 如果城市发生变化，更新热门地点
-					if (cityChanged) {
-						console.log('🏙️ 首页检测到城市变化，更新热门地点');
-						this.updateHotspots();
-					}
-					
-					// 如果城市发生变化或者没有寄存点数据，重新加载
-					if (cityChanged || !this.nearestLocker) {
-						console.log('🏙️ 首页检测到城市变化或无数据，重新加载寄存点');
-						this.loadNearestLocker();
-					}
-				} else if (!this.nearestLocker) {
-					this.loadNearestLocker();
-				}
-				
-				// 确保页面滚动到顶部
-				uni.pageScrollTo({
-					scrollTop: 0,
-					duration: 0
-				});
-			} catch (error) {
-				console.error('❌ 首页显示时发生错误:', error);
-				// 设置默认状态
-				this.currentCity = '郑州';
-				this.isLoadingNearby = false;
-			}
+		
+		// 获取清理后的城市名称
+		getCleanCityName(cityName) {
+			if (!cityName) return '';
+			// 移除常见的城市后缀
+			return cityName.replace(/[市省区县]/g, '');
 		},
-		onUnload() {
-			// 页面卸载时清除定时器
-			if (this.updateTimer) {
-				clearInterval(this.updateTimer);
+		
+		// 通过模糊匹配查找城市热门地点
+		findCityHotspotsByFuzzyMatch(cleanCityName) {
+			console.log('🔍 尝试模糊匹配城市:', cleanCityName);
+			
+			// 遍历所有配置的城市，寻找匹配的
+			for (const configCity in this.cityHotspots) {
+				const cleanConfigCity = this.getCleanCityName(configCity);
+				if (cleanConfigCity === cleanCityName || configCity.includes(cleanCityName) || cleanCityName.includes(cleanConfigCity)) {
+					console.log('✅ 模糊匹配成功:', configCity);
+					return this.cityHotspots[configCity];
+				}
 			}
+			
+			console.log('❌ 模糊匹配失败');
+			return null;
 		},
-		methods: {
-			// 更新热门地点
-			updateHotspots() {
-				console.log('🔄 更新热门地点，当前城市:', this.currentCity);
-				
-				// 根据当前城市获取对应的热门地点
-				const cityHotspots = this.cityHotspots[this.currentCity];
-				
-				if (cityHotspots && cityHotspots.length > 0) {
-					this.hotspots = [...cityHotspots]; // 使用展开运算符创建新数组
-					console.log('✅ 热门地点已更新:', this.hotspots);
-				} else {
-					// 如果没有找到对应城市的热门地点，自动生成
-					console.log('⚠️ 未找到城市热门地点配置，自动生成热门地点');
-					this.hotspots = this.generateHotspotsForCity(this.currentCity);
-					console.log('✅ 自动生成热门地点:', this.hotspots);
-					
-					// 将生成的热门地点保存到配置中，避免重复生成
-					this.cityHotspots[this.currentCity] = [...this.hotspots];
-					console.log('💾 热门地点配置已保存到缓存');
+		
+		// 选择城市
+		selectCity() {
+			uni.navigateTo({
+				url: '/pages/city-select/city-select?from=index'
+			});
+		},
+		
+		// 找附近
+		findNearby() {
+			uni.navigateTo({
+				url: '/pages/nearby/nearby'
+			});
+		},
+		
+		// 打开搜索
+		openSearch() {
+			uni.navigateTo({
+				url: '/pages/search/search'
+			});
+		},
+		
+		// 选择热门地点
+		selectHotspot(hotspot) {
+			console.log('选择热门地点:', hotspot);
+			uni.navigateTo({
+				url: `/pages/search/search?keyword=${encodeURIComponent(hotspot)}`
+			});
+		},
+		
+		// 查询寄存点
+		queryLockers() {
+			uni.navigateTo({
+				url: '/pages/locker-map/locker-map'
+			});
+		},
+		
+		// 功能入口
+		goToOrders() {
+			uni.navigateTo({
+				url: '/pages/order-detail/order-detail'
+			});
+		},
+		
+		goToService() {
+			uni.navigateTo({
+				url: '/pages/customer-service/customer-service'
+			});
+		},
+		
+		goToGuide() {
+			uni.navigateTo({
+				url: '/pages/user-guide/user-guide'
+			});
+		},
+		
+		goToCoupons() {
+			uni.navigateTo({
+				url: '/pages/coupons/coupons'
+			});
+		},
+		
+		// 查看全部附近寄存点
+		viewAllNearby() {
+			uni.navigateTo({
+				url: '/pages/nearby/nearby'
+			});
+		},
+		
+		// 选择寄存点
+		selectLocker(locker) {
+			console.log('选择寄存点:', locker);
+			uni.navigateTo({
+				url: `/pages/locker-detail/locker-detail?id=${locker.id}&name=${encodeURIComponent(locker.name)}&address=${encodeURIComponent(locker.address)}`
+			});
+		},
+		
+		// 加载附近寄存点
+		loadNearbyLockers() {
+			console.log('🔄 开始加载附近寄存点');
+			this.isLoadingNearby = true;
+			this.noLockerMessage = '正在获取附近寄存点...';
+			
+			// 获取用户位置
+			uni.getLocation({
+				type: 'gcj02',
+				success: (res) => {
+					console.log('📍 获取位置成功:', res);
+					this.fetchNearbyLockers(res.latitude, res.longitude);
+				},
+				fail: (err) => {
+					console.log('❌ 获取位置失败:', err);
+					// 使用默认位置（郑州）
+					this.fetchNearbyLockers(34.7466, 113.6253);
 				}
-			},
+			});
+		},
+		
+		// 获取附近寄存点数据
+		fetchNearbyLockers(latitude, longitude) {
+			console.log('📡 请求附近寄存点数据:', { latitude, longitude, city: this.currentCity });
 			
-			// 为新城市自动生成热门地点
-			generateHotspotsForCity(cityName) {
-				console.log('🎯 为城市自动生成热门地点:', cityName);
-				
-				// 移除城市名称中的"市"、"省"等后缀，获取核心城市名
-				const cleanCityName = cityName.replace(/[市省区县]/g, '');
-				
-				// 定义不同类型的热门地点模板
-				const transportHubs = [
-					`${cleanCityName}站`,
-					`${cleanCityName}东站`,
-					`${cleanCityName}西站`,
-					`${cleanCityName}南站`,
-					`${cleanCityName}北站`,
-					`${cleanCityName}火车站`,
-					`${cleanCityName}高铁站`,
-					`${cleanCityName}机场`
-				];
-				
-				const landmarks = [
-					`${cleanCityName}广场`,
-					`${cleanCityName}中心`,
-					`${cleanCityName}CBD`,
-					`${cleanCityName}商业街`,
-					`${cleanCityName}步行街`,
-					`${cleanCityName}古城`,
-					`${cleanCityName}老城区`,
-					`${cleanCityName}新区`
-				];
-				
-				const commercialAreas = [
-					`${cleanCityName}万达`,
-					`${cleanCityName}购物中心`,
-					`${cleanCityName}商场`,
-					`${cleanCityName}百货`,
-					`${cleanCityName}天地`,
-					`${cleanCityName}广场购物中心`
-				];
-				
-				const culturalSpots = [
-					`${cleanCityName}博物馆`,
-					`${cleanCityName}公园`,
-					`${cleanCityName}图书馆`,
-					`${cleanCityName}体育馆`,
-					`${cleanCityName}文化中心`,
-					`${cleanCityName}大剧院`
-				];
-				
-				// 智能选择热门地点：优先选择交通枢纽，然后是地标建筑
-				const finalHotspots = [];
-				
-				// 1. 优先选择2个交通枢纽
-				const selectedTransport = this.selectRandomItems(transportHubs, 2);
-				finalHotspots.push(...selectedTransport);
-				
-				// 2. 选择1个地标建筑
-				const selectedLandmark = this.selectRandomItems(landmarks, 1);
-				finalHotspots.push(...selectedLandmark);
-				
-				// 3. 选择1个商业区域或文化景点
-				const otherOptions = [...commercialAreas, ...culturalSpots];
-				const selectedOther = this.selectRandomItems(otherOptions, 1);
-				finalHotspots.push(...selectedOther);
-				
-				console.log('✅ 为城市生成的热门地点:', finalHotspots);
-				return finalHotspots;
-			},
+			// 统一的API基础URL
+			const API_BASE_URL = 'http://localhost:8000';
 			
-			// 从数组中随机选择指定数量的项目
-			selectRandomItems(array, count) {
-				const shuffled = [...array].sort(() => Math.random() - 0.5);
-				return shuffled.slice(0, count);
-			},
-			
-			// 检查登录状态
-			checkLoginStatus() {
-				const token = uni.getStorageSync('token');
-				const userData = uni.getStorageSync('userData');
-				
-				if (!token || !userData) {
-					console.log('用户未登录，跳转到登录页');
-					uni.reLaunch({
-						url: '/pages/login/login'
-					});
-					return false;
+			// 调用后端接口 - 修复API路径
+			uni.request({
+				url: `${API_BASE_URL}/api/nearby/city/locker-points`,
+				method: 'GET',
+				data: {
+					city: this.currentCity,
+					longitude: longitude,
+					latitude: latitude,
+					radius: 10, // 10公里范围
+					include_unavailable: false
+				},
+				header: {
+					'Content-Type': 'application/json'
+				},
+				timeout: 8000, // 8秒超时
+				success: (res) => {
+					console.log('✅ 获取附近寄存点成功:', res.data);
+					this.handleNearbyLockersSuccess(res.data);
+				},
+				fail: (err) => {
+					console.log('❌ 获取附近寄存点失败，使用模拟数据:', err);
+					// 网络失败时使用模拟数据
+					this.useMockNearbyData(latitude, longitude);
 				}
-				
-				console.log('用户已登录:', userData);
-				return true;
-			},
+			});
+		},
+		
+		// 使用模拟附近寄存点数据
+		useMockNearbyData(latitude, longitude) {
+			console.log('🎭 使用模拟附近寄存点数据');
 			
-			// 选择城市
-			selectCity() {
-				console.log('选择城市');
-				uni.navigateTo({
-					url: '/pages/city-select/city-select'
-				});
-			},
-			
-			// 查找附近
-			findNearby() {
-				console.log('跳转到附近寄存页面');
-				uni.navigateTo({
-					url: '/pages/nearby/nearby'
-				});
-			},
-			
-			// 处理定位成功
-			async handleLocationSuccess(locationRes) {
-				const { latitude, longitude } = locationRes;
-				
-				try {
-					// 1. 根据经纬度获取城市信息
-					const cityInfo = await this.getCityByLocation(latitude, longitude);
-					
-					// 2. 自动切换到定位城市
-					if (cityInfo && cityInfo.name) {
-						this.currentCity = cityInfo.name;
-						// 保存到本地存储
-						uni.setStorageSync('selectedCity', cityInfo);
-						
-						uni.showToast({
-							title: `已切换到${cityInfo.name}`,
-							icon: 'success'
-						});
-					}
-					
-					// 3. 获取附近寄存点
-					await this.loadNearbyLockers(latitude, longitude);
-					
-				} catch (error) {
-					console.error('处理定位结果失败:', error);
-					uni.showToast({
-						title: '获取附近信息失败',
-						icon: 'none'
-					});
-				}
-			},
-			
-			// 处理定位失败
-			handleLocationFail(error) {
-				let message = '定位失败';
-				
-				// 根据不同错误类型给出不同提示
-				if (error.errMsg) {
-					if (error.errMsg.includes('auth deny')) {
-						message = '请允许位置权限后重试';
-					} else if (error.errMsg.includes('timeout')) {
-						message = '定位超时，请重试';
-					}
-				}
-				
-				uni.showModal({
-					title: '定位失败',
-					content: message + '，是否手动选择城市？',
-					success: (res) => {
-						if (res.confirm) {
-							this.selectCity();
-						}
-					}
-				});
-			},
-			
-			// 根据经纬度获取城市信息
-			getCityByLocation(latitude, longitude) {
-				return new Promise((resolve, reject) => {
-					try {
-						// TODO: 调用ito-deposit后端接口，根据经纬度获取城市信息
-						const apiUrl = 'https://your-actual-api-domain.com/api/location/city';
-						
-						uni.request({
-							url: apiUrl,
-							method: 'POST',
-							data: {
-								latitude: latitude,
-								longitude: longitude
-							},
-							header: {
-								'Content-Type': 'application/json'
-							},
-							timeout: 3000, // 减少超时时间
-							success: (res) => {
-								if (res.statusCode === 200 && res.data) {
-									resolve(res.data);
-								} else {
-									console.warn('⚠️ 获取城市信息失败，使用默认城市');
-									resolve({
-										id: 1,
-										name: '郑州',
-										code: 'zhengzhou',
-										coordinates: {
-											longitude: 113.6253,
-											latitude: 34.7466
-										}
-									});
-								}
-							},
-							fail: (error) => {
-								// 如果后端接口不可用，使用默认逻辑
-								console.warn('⚠️ 后端接口不可用，使用默认城市:', error);
-								resolve({
-									id: 1,
-									name: '郑州',
-									code: 'zhengzhou',
-									coordinates: {
-										longitude: 113.6253,
-										latitude: 34.7466
-									}
-								});
-							}
-						});
-					} catch (error) {
-						console.error('❌ 获取城市信息时发生错误:', error);
-						resolve({
-							id: 1,
-							name: '郑州',
-							code: 'zhengzhou',
-							coordinates: {
-								longitude: 113.6253,
-								latitude: 34.7466
-							}
-						});
-					}
-				});
-			},
-			
-			// 加载附近寄存点
-			loadNearbyLockers(latitude, longitude) {
-				console.log('🔍 首页开始搜索附近寄存点');
-				console.log('搜索位置:', { latitude, longitude });
-				
-				return new Promise((resolve, reject) => {
-					try {
-						// 调用ito-deposit后端"我的附近"接口
-						const apiUrl = 'http://localhost:8000/api/nearby/my-nearby';
-						
-						// 构建查询参数
-						const params = new URLSearchParams({
-							longitude: longitude.toString(),
-							latitude: latitude.toString(),
-							radius: '5',    // 5公里范围
-							limit: '10'     // 最多返回10个寄存点
-						});
-						
-						const fullUrl = `${apiUrl}?${params.toString()}`;
-						console.log('📡 首页请求URL:', fullUrl);
-						
-						uni.request({
-							url: fullUrl,
-							method: 'GET',
-							header: {
-								'Content-Type': 'application/json'
-							},
-							timeout: 5000, // 减少超时时间
-							success: (res) => {
-								console.log('=== 首页附近寄存点接口响应 ===');
-								console.log('HTTP状态码:', res.statusCode);
-								console.log('响应数据:', res.data);
-								
-								if (res.statusCode === 200 && res.data) {
-									this.handleNearbyLockersSuccess(res.data, latitude, longitude);
-									resolve(res.data);
-								} else {
-									console.warn('⚠️ 首页接口返回错误:', res.statusCode);
-									this.handleNearbyLockersError('接口返回错误', latitude, longitude);
-									resolve([]); // 返回空数组而不是reject
-								}
-							},
-							fail: (error) => {
-								console.warn('⚠️ 首页附近寄存点接口调用失败，使用模拟数据:', error);
-								this.handleNearbyLockersError('网络请求失败', latitude, longitude);
-								resolve([]); // 返回空数组而不是reject
-							}
-						});
-					} catch (error) {
-						console.error('❌ 加载附近寄存点时发生错误:', error);
-						this.handleNearbyLockersError('系统错误', latitude, longitude);
-						resolve([]); // 返回空数组而不是reject
-					}
-				});
-			},
-			
-			// 处理附近寄存点成功响应
-			handleNearbyLockersSuccess(responseData, latitude, longitude) {
-				console.log('✅ 首页附近寄存点接口调用成功');
-				
-				// 提取寄存点数据
-				const nearbyPoints = responseData.nearby_points || [];
-				const totalCount = responseData.total_count || 0;
-				const searchRadius = responseData.search_radius || 5;
-				
-				console.log('📍 首页附近寄存点数据:', {
-					count: nearbyPoints.length,
-					totalCount: totalCount,
-					searchRadius: searchRadius
-				});
-				
-				// 结束加载状态
-				this.isLoadingNearby = false;
-				
-				if (nearbyPoints && nearbyPoints.length > 0) {
-					// 处理寄存点数据
-					const processedLockers = this.processNearbyLockersData(nearbyPoints);
-					
-					// 更新数据
-					this.nearbyLockers = processedLockers;
-					this.nearestLocker = processedLockers[0]; // 最近的寄存点
-					
-					console.log('✅ 首页寄存点数据处理完成:', processedLockers.length, '个');
-					
-				} else {
-					console.log('⚠️ 首页附近没有找到寄存点');
-					this.nearbyLockers = [];
-					this.nearestLocker = null;
-					
-					// 设置无寄存点提示信息
-					this.noLockerMessage = `附近${searchRadius}km内暂无寄存点`;
-				}
-			},
-			
-			// 处理附近寄存点错误
-			handleNearbyLockersError(errorMessage, latitude, longitude) {
-				console.error('❌ 首页附近寄存点加载失败:', errorMessage);
-				
-				// 结束加载状态
-				this.isLoadingNearby = false;
-				
-				// 清空数据
-				this.nearbyLockers = [];
-				this.nearestLocker = null;
-				this.noLockerMessage = '获取附近寄存点失败，请稍后重试';
-				
-				// 可以选择使用模拟数据作为备用
-				console.log('🔄 首页使用模拟数据作为备用');
-				this.loadMockNearbyData(latitude, longitude);
-			},
-			
-			// 处理寄存点数据
-			processNearbyLockersData(nearbyPoints) {
-				console.log('🔄 首页处理寄存点数据');
-				
-				return nearbyPoints.map((point, index) => {
-					return {
-						id: point.id || `point_${index + 1}`,
-						name: point.name || `寄存点${index + 1}`,
-						large: point.large_count || point.large || 0,
-						medium: point.medium_count || point.medium || 0,
-						small: point.small_count || point.small || 0,
-						address: point.address || '地址信息待完善',
-						distance: this.formatDistance(point.distance),
-						status: point.status || 'available',
-						longitude: parseFloat(point.longitude),
-						latitude: parseFloat(point.latitude)
-					};
-				});
-			},
-			
-			// 格式化距离显示
-			formatDistance(distance) {
-				if (typeof distance === 'number') {
-					if (distance < 1) {
-						return Math.round(distance * 1000) + 'm';
-					} else {
-						return distance.toFixed(1) + 'km';
-					}
-				} else if (typeof distance === 'string') {
-					return distance;
-				} else {
-					return '距离未知';
-				}
-			},
-			
-			// 加载模拟数据作为备用
-			loadMockNearbyData(latitude, longitude) {
-				console.log('🔄 首页加载模拟寄存点数据');
-				
-				// 基于用户位置生成模拟数据
-				const mockLockers = [
+			// 生成模拟数据
+			const mockData = {
+				lockers: [
 					{
-						id: 'mock_1',
-						name: '模拟寄存点1',
-						large: 3,
-						medium: 5,
-						small: 8,
-						address: '模拟地址1',
-						distance: '0.8km',
+						id: 1,
+						name: `${this.currentCity}火车站寄存点`,
+						address: `${this.currentCity}火车站西广场`,
+						longitude: longitude + 0.001,
+						latitude: latitude + 0.001,
+						large: 5,
+						medium: 8,
+						small: 12,
 						status: 'available',
-						longitude: longitude + 0.005,
-						latitude: latitude + 0.005
+						distance: '0.8km',
+						rating: 4.5,
+						price: 8,
+						openTime: '06:00-23:00'
 					},
 					{
-						id: 'mock_2',
-						name: '模拟寄存点2',
+						id: 2,
+						name: `${this.currentCity}地铁站寄存点`,
+						address: `${this.currentCity}地铁1号线A出口`,
+						longitude: longitude - 0.002,
+						latitude: latitude + 0.003,
+						large: 3,
+						medium: 6,
+						small: 10,
+						status: 'available',
+						distance: '1.2km',
+						rating: 4.3,
+						price: 6,
+						openTime: '24小时'
+					},
+					{
+						id: 3,
+						name: `${this.currentCity}商业中心寄存点`,
+						address: `${this.currentCity}万达广场B1层`,
+						longitude: longitude + 0.003,
+						latitude: latitude - 0.001,
 						large: 2,
 						medium: 4,
-						small: 6,
-						address: '模拟地址2',
-						distance: '1.5km',
+						small: 8,
 						status: 'available',
-						longitude: longitude - 0.008,
-						latitude: latitude + 0.003
+						distance: '1.5km',
+						rating: 4.7,
+						price: 10,
+						openTime: '10:00-22:00'
 					}
-				];
-				
-				this.nearbyLockers = mockLockers;
-				this.nearestLocker = mockLockers[0];
-				
-				console.log('✅ 首页模拟数据加载完成');
-			},
+				]
+			};
 			
-			// 打开搜索
-			openSearch() {
-				console.log('打开搜索');
-				uni.navigateTo({
-					url: '/pages/search/search'
-				});
-			},
+			// 延迟一下模拟网络请求
+			setTimeout(() => {
+				this.handleNearbyLockersSuccess(mockData);
+			}, 1000);
+		},
+		
+		// 处理获取附近寄存点成功
+		handleNearbyLockersSuccess(data) {
+			this.isLoadingNearby = false;
 			
-			// 选择热门地点
-			selectHotspot(hotspot) {
-				console.log('选择热门地点:', hotspot);
-				try {
-					// 跳转到搜索页面并传入关键词
-					const encodedKeyword = encodeURIComponent(hotspot);
-					uni.navigateTo({
-						url: `/pages/search/search?keyword=${encodedKeyword}`
-					});
-				} catch (error) {
-					console.error('跳转搜索页面失败:', error);
-					// 备用方案：不传参数直接跳转
-					uni.navigateTo({
-						url: '/pages/search/search'
-					});
+			try {
+				let lockers = [];
+				
+				// 处理不同的响应格式
+				if (data.lockers && Array.isArray(data.lockers)) {
+					lockers = data.lockers;
+				} else if (data.data && Array.isArray(data.data)) {
+					lockers = data.data;
+				} else if (Array.isArray(data)) {
+					lockers = data;
 				}
-			},
-			
-			// 查询寄存点
-			queryLockers() {
-				console.log('查询寄存点分布图');
-				uni.navigateTo({
-					url: '/pages/locker-map/locker-map'
-				});
-			},
-			
-			// 跳转到订单页面
-			goToOrders() {
-				uni.switchTab({
-					url: '/pages/order-detail/order-detail'
-				});
-			},
-			
-			// 跳转到客服页面
-			goToService() {
-				uni.navigateTo({
-					url: '/pages/customer-service/customer-service'
-				});
-			},
-			
-			// 跳转到指南页面
-			goToGuide() {
-				uni.navigateTo({
-					url: '/pages/user-guide/user-guide'
-				});
-			},
-			
-			// 跳转到优惠券页面
-			goToCoupons() {
-				uni.navigateTo({
-					url: '/pages/coupons/coupons'
-				});
-			},
-			
-			// 进入管理员后台
-			goToAdmin() {
-				console.log('🔐 尝试进入管理员后台');
 				
-				// 检查是否有管理员登录信息
-				try {
-					const adminData = uni.getStorageSync('adminData');
-					if (adminData) {
-						console.log('✅ 检测到管理员登录信息，直接进入后台');
-						uni.navigateTo({
-							url: '/pages/admin/admin'
-						});
-					} else {
-						console.log('⚠️ 未检测到管理员登录信息');
-						this.showAdminLoginOptions();
-					}
-				} catch (e) {
-					console.error('检查管理员登录状态失败:', e);
-					this.showAdminLoginOptions();
-				}
-			},
-			
-			// 显示管理员登录选项
-			showAdminLoginOptions() {
-				uni.showActionSheet({
-					itemList: ['管理员登录', '模拟管理员登录', '取消'],
-					success: (res) => {
-						if (res.tapIndex === 0) {
-							// 跳转到登录页面
-							uni.navigateTo({
-								url: '/pages/login/login?type=admin'
-							});
-						} else if (res.tapIndex === 1) {
-							// 模拟管理员登录
-							this.simulateAdminLogin();
-						}
-					}
-				});
-			},
-			
-			// 模拟管理员登录
-			simulateAdminLogin() {
-				console.log('🔑 模拟管理员登录');
-				
-				const adminData = {
-					userId: "1",
-					account: "admin",
-					username: "系统管理员",
-					realName: "管理员",
-					phone: "13800138000",
-					email: "admin@example.com",
-					loginType: "admin",
-					loginTime: new Date().toISOString()
-				};
-				
-				try {
-					uni.setStorageSync('adminData', JSON.stringify(adminData));
-					console.log('✅ 管理员数据已保存');
-					
-					uni.showToast({
-						title: '管理员登录成功',
-						icon: 'success',
-						success: () => {
-							setTimeout(() => {
-								uni.navigateTo({
-									url: '/pages/admin/admin'
-								});
-							}, 1500);
-						}
+				if (lockers.length > 0) {
+					// 按距离排序
+					lockers.sort((a, b) => {
+						const distanceA = parseFloat(a.distance) || 0;
+						const distanceB = parseFloat(b.distance) || 0;
+						return distanceA - distanceB;
 					});
-				} catch (e) {
-					console.error('保存管理员数据失败:', e);
-					uni.showToast({
-						title: '登录失败',
-						icon: 'none'
+					
+					this.nearestLocker = lockers[0];
+					this.nearbyLockers = lockers;
+					this.noLockerMessage = '';
+					
+					console.log('✅ 附近寄存点数据处理完成:', {
+						nearest: this.nearestLocker.name,
+						total: this.nearbyLockers.length
 					});
-				}
-			},
-			
-			// 长按显示管理员选项
-			showAdminOptions() {
-				console.log('🔧 显示管理员高级选项');
-				
-				uni.showActionSheet({
-					itemList: ['管理员后台', '个人信息', '清除登录信息', '查看登录状态'],
-					success: (res) => {
-						switch (res.tapIndex) {
-							case 0:
-								uni.navigateTo({
-									url: '/pages/admin/admin'
-								});
-								break;
-							case 1:
-								uni.navigateTo({
-									url: '/pages/admin/profile'
-								});
-								break;
-							case 2:
-								this.clearAdminData();
-								break;
-							case 3:
-								this.showAdminStatus();
-								break;
-						}
-					}
-				});
-			},
-			
-			// 清除管理员数据
-			clearAdminData() {
-				uni.showModal({
-					title: '确认清除',
-					content: '确定要清除管理员登录信息吗？',
-					success: (res) => {
-						if (res.confirm) {
-							try {
-								uni.removeStorageSync('adminData');
-								uni.showToast({
-									title: '已清除登录信息',
-									icon: 'success'
-								});
-							} catch (e) {
-								console.error('清除数据失败:', e);
-							}
-						}
-					}
-				});
-			},
-			
-			// 显示管理员状态
-			showAdminStatus() {
-				try {
-					const adminData = uni.getStorageSync('adminData');
-					if (adminData) {
-						const data = JSON.parse(adminData);
-						const status = `管理员状态：\n\n• 用户ID: ${data.userId || '未设置'}\n• 账号: ${data.account || '未设置'}\n• 用户名: ${data.username || '未设置'}\n• 登录时间: ${data.loginTime || '未设置'}`;
-						
-						uni.showModal({
-							title: '管理员信息',
-							content: status,
-							showCancel: false
-						});
-					} else {
-						uni.showModal({
-							title: '管理员状态',
-							content: '当前未登录管理员账号',
-							showCancel: false
-						});
-					}
-				} catch (e) {
-					console.error('获取管理员状态失败:', e);
-				}
-			},
-			
-			// 加载最近的寄存点
-			loadNearestLocker() {
-				console.log('🚀 首页开始基于选择城市加载寄存点数据');
-				
-				this.isLoadingNearby = true;
-				this.noLockerMessage = '正在获取城市位置...';
-				
-				// 获取用户选择的城市
-				const selectedCity = uni.getStorageSync('selectedCity');
-				if (selectedCity && selectedCity.coordinates) {
-					console.log('✅ 首页使用选择的城市:', selectedCity.name);
-					
-					this.currentCity = selectedCity.name;
-					
-					// 获取该城市的寄存点
-					this.noLockerMessage = '正在搜索城市寄存点...';
-					const { longitude, latitude } = selectedCity.coordinates;
-					this.loadNearbyLockers(latitude, longitude);
-					
 				} else {
-					console.log('🔄 首页未找到选择的城市，使用默认城市');
-					
-					// 使用默认城市（郑州）
-					const defaultCity = {
-						name: '郑州',
-						coordinates: {
-							longitude: 113.6253,
-							latitude: 34.7466
-						}
-					};
-					
-					this.currentCity = defaultCity.name;
-					uni.setStorageSync('selectedCity', defaultCity);
-					
-					this.noLockerMessage = '使用默认城市搜索寄存点...';
-					this.loadNearbyLockers(34.7466, 113.6253);
+					this.handleNearbyLockersError('暂无附近寄存点');
 				}
-			},
-			
-			// 获取当前位置
-			getCurrentLocation() {
-				return new Promise((resolve, reject) => {
-					console.log('📍 首页开始获取位置');
-					
-					// 检查浏览器是否支持定位
-					if (!navigator.geolocation) {
-						reject(new Error('浏览器不支持定位功能'));
-						return;
-					}
-					
-					navigator.geolocation.getCurrentPosition(
-						(position) => {
-							const coords = position.coords;
-							console.log('✅ 首页定位成功:', coords);
-							
-							// 使用百度地图逆地理编码获取城市信息
-							this.reverseGeocode(coords.longitude, coords.latitude).then((address) => {
-								resolve({
-									latitude: coords.latitude,
-									longitude: coords.longitude,
-									accuracy: coords.accuracy,
-									city: address.city || '未知城市',
-									address: address.address || '地址解析中...'
-								});
-							}).catch(() => {
-								// 即使地址解析失败，也返回位置信息
-								resolve({
-									latitude: coords.latitude,
-									longitude: coords.longitude,
-									accuracy: coords.accuracy,
-									city: '未知城市',
-									address: '地址解析失败'
-								});
-							});
-						},
-						(error) => {
-							console.error('❌ 首页定位失败:', error);
-							reject(error);
-						},
-						{
-							enableHighAccuracy: true,
-							timeout: 10000,
-							maximumAge: 300000 // 5分钟缓存
-						}
-					);
-				});
-			},
-			
-			// 逆地理编码获取地址信息
-			reverseGeocode(longitude, latitude) {
-				return new Promise((resolve, reject) => {
-					// 这里需要等待百度地图API加载完成
-					// 简化处理，直接返回基本信息
-					setTimeout(() => {
-						resolve({
-							city: '郑州市', // 可以根据坐标范围判断城市
-							address: '位置解析中...'
-						});
-					}, 500);
-				});
-			},
-			
-			// 开始实时更新
-			startRealTimeUpdate() {
-				// 每30秒更新一次附近寄存点信息
-				this.updateTimer = setInterval(() => {
-					this.updateLockerInfo();
-				}, 30000);
-			},
-			
-			// 更新寄存点信息
-			updateLockerInfo() {
-				if (this.nearestLocker) {
-					// 模拟实时更新柜子数量
-					this.nearestLocker.large = Math.floor(Math.random() * 10) + 1;
-					this.nearestLocker.medium = Math.floor(Math.random() * 10) + 1;
-					this.nearestLocker.small = Math.floor(Math.random() * 10) + 1;
-					
-					console.log('寄存点信息已更新');
-				}
-			},
-			
-			// 选择寄存点
-			selectLocker(locker) {
-				console.log('选择寄存点:', locker);
-				uni.navigateTo({
-					url: `/pages/locker-detail/locker-detail?id=${locker.id}`
-				});
-			},
-			
-			// 查看全部附近寄存点
-			viewAllNearby() {
-				console.log('查看全部附近寄存点');
-				// 跳转到附近寄存点页面
-				uni.navigateTo({
-					url: '/pages/nearby/nearby'
-				});
-			},
-			
-			// 重新搜索附近寄存点
-			refreshNearbyLockers() {
-				console.log('🔄 重新搜索附近寄存点');
-				
-				this.isLoadingNearby = true;
-				this.noLockerMessage = '正在重新搜索附近寄存点...';
-				
-				// 重新获取位置并搜索
-				this.loadNearestLocker();
-			},
-			
-			// 扩大搜索范围
-			expandSearchRadius() {
-				console.log('🔍 扩大搜索范围');
-				
-				uni.showModal({
-					title: '扩大搜索范围',
-					content: '是否扩大到10km范围内搜索寄存点？',
-					success: (res) => {
-						if (res.confirm) {
-							this.searchWithExpandedRadius();
-						}
-					}
-				});
-			},
-			
-			// 使用扩大的搜索范围
-			searchWithExpandedRadius() {
-				console.log('🔍 使用扩大的搜索范围搜索');
-				
-				this.isLoadingNearby = true;
-				this.noLockerMessage = '正在扩大范围搜索寄存点...';
-				
-				// 获取当前位置
-				const savedLocation = uni.getStorageSync('userLocation');
-				if (savedLocation) {
-					this.loadNearbyLockersWithRadius(savedLocation.latitude, savedLocation.longitude, 10);
-				} else {
-					// 重新获取位置
-					this.loadNearestLocker();
-				}
-			},
-			
-			// 使用指定半径搜索寄存点
-			loadNearbyLockersWithRadius(latitude, longitude, radius = 5) {
-				console.log(`🔍 搜索${radius}km范围内的寄存点`);
-				
-				try {
-					const apiUrl = 'http://localhost:8000/api/nearby/my-nearby';
-					const params = new URLSearchParams({
-						longitude: longitude.toString(),
-						latitude: latitude.toString(),
-						radius: radius.toString(),
-						limit: '10'
-					});
-					
-					const fullUrl = `${apiUrl}?${params.toString()}`;
-					console.log('📡 扩大范围请求URL:', fullUrl);
-					
-					uni.request({
-						url: fullUrl,
-						method: 'GET',
-						header: {
-							'Content-Type': 'application/json'
-						},
-						timeout: 5000, // 减少超时时间
-						success: (res) => {
-							if (res.statusCode === 200 && res.data) {
-								this.handleNearbyLockersSuccess(res.data, latitude, longitude);
-								
-								// 如果扩大范围后还是没有，显示特殊提示
-								if ((!res.data.nearby_points || res.data.nearby_points.length === 0) && radius > 5) {
-									this.noLockerMessage = `附近${radius}km内仍然没有寄存点，建议选择其他区域`;
-								}
-							} else {
-								console.warn('⚠️ 扩大范围搜索失败，使用模拟数据');
-								this.handleNearbyLockersError('扩大范围搜索失败', latitude, longitude);
-							}
-						},
-						fail: (error) => {
-							console.warn('⚠️ 扩大范围搜索网络错误，使用模拟数据:', error);
-							this.handleNearbyLockersError('扩大范围搜索网络错误', latitude, longitude);
-						}
-					});
-				} catch (error) {
-					console.error('❌ 扩大范围搜索时发生错误:', error);
-					this.handleNearbyLockersError('系统错误', latitude, longitude);
-				}
+			} catch (error) {
+				console.error('❌ 处理附近寄存点数据时出错:', error);
+				this.handleNearbyLockersError('数据处理失败');
 			}
+		},
+		
+		// 处理获取附近寄存点失败
+		handleNearbyLockersError(message, latitude, longitude) {
+			console.log('⚠️ 处理附近寄存点错误:', message);
+			this.isLoadingNearby = false;
+			
+			// 如果是网络错误，提供模拟数据作为降级方案
+			if (message && message.includes('网络') && latitude && longitude) {
+				console.log('🎭 网络错误，提供模拟数据作为降级方案');
+				this.useMockNearbyData(latitude, longitude);
+				return;
+			}
+			
+			// 其他错误情况显示错误信息
+			this.nearestLocker = null;
+			this.nearbyLockers = [];
+			this.noLockerMessage = message || '暂无附近寄存点，试试扩大搜索范围';
+		},
+		
+		// 重新搜索
+		refreshNearbyLockers() {
+			this.loadNearbyLockers();
+		},
+		
+		// 扩大搜索范围
+		expandSearchRadius() {
+			console.log('🔍 扩大搜索范围');
+			this.isLoadingNearby = true;
+			this.noLockerMessage = '正在扩大范围搜索...';
+			
+			// 获取用户位置并使用更大的搜索半径
+			uni.getLocation({
+				type: 'gcj02',
+				success: (res) => {
+					this.fetchNearbyLockersWithRadius(res.latitude, res.longitude, 50); // 50公里
+				},
+				fail: (err) => {
+					this.fetchNearbyLockersWithRadius(34.7466, 113.6253, 50);
+				}
+			});
+		},
+		
+		// 使用指定半径获取寄存点
+		fetchNearbyLockersWithRadius(latitude, longitude, radius) {
+			uni.request({
+				url: 'http://localhost:8000/api/nearby/locker-points',
+				method: 'GET',
+				data: {
+					city: this.currentCity,
+					longitude: longitude,
+					latitude: latitude,
+					radius: radius,
+					include_unavailable: false
+				},
+				header: {
+					'Content-Type': 'application/json'
+				},
+				success: (res) => {
+					this.handleNearbyLockersSuccess(res.data);
+				},
+				fail: (err) => {
+					this.handleNearbyLockersError('扩大范围搜索失败', latitude, longitude);
+				}
+			});
 		}
 	}
+}
 </script>
 
-<style>
-	.page {
-		background-image: url('/static/12.png');
-		background-size: cover;
-		background-position: center;
-		background-repeat: no-repeat;
-		background-attachment: fixed;
-		min-height: 100vh;
-		width: 100%;
-		overflow-x: hidden;
-		position: relative;
-	}
-	
-	.page::before {
-		content: '';
-		position: fixed;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		background: linear-gradient(180deg, 
-			rgba(248, 250, 255, 0.85) 0%, 
-			rgba(245, 245, 245, 0.9) 100%);
-		z-index: -1;
-		backdrop-filter: blur(2rpx);
-	}
-	
-	/* 顶部图片区域 */
-	.header-section {
-		width: 100%;
-		height: 200rpx;
-		position: relative;
-		overflow: hidden;
-		background-image: url('/static/12.png');
-		background-size: cover;
-		background-position: center;
-		background-repeat: no-repeat;
-	}
-	
-	.header-section::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		background: linear-gradient(180deg, 
-			rgba(0, 0, 0, 0.3) 0%, 
-			rgba(0, 0, 0, 0.1) 100%);
-		z-index: 1;
-	}
-	
-	.header-image {
-		width: 100%;
-		height: 100%;
-		border-radius: 0 0 30rpx 30rpx;
-		position: relative;
-		z-index: 2;
-		background: transparent;
-	}
-	
-	/* 城市选择和我的附近 */
-	.location-section {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		padding: 25rpx 30rpx;
-		background: rgba(255, 255, 255, 0.1);
-		backdrop-filter: blur(10rpx);
-		margin: 20rpx 30rpx;
-		border-radius: 24rpx;
-		box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.1);
-		border: 1rpx solid rgba(255, 255, 255, 0.2);
-	}
-	
-	.city-selector {
-		display: flex;
-		align-items: center;
-		padding: 8rpx 0;
-		transition: all 0.3s ease;
-	}
-	
-	.city-selector:active {
-		transform: scale(0.98);
-	}
-	
-	.location-icon {
-		font-size: 32rpx;
-		margin-right: 12rpx;
-		color: #007AFF;
-	}
-	
-	.city-name {
-		font-size: 32rpx;
-		color: #1A1A1A;
-		margin-right: 8rpx;
-		font-weight: 600;
-	}
-	
-	.dropdown-icon {
-		font-size: 20rpx;
-		color: #8E8E93;
-		transition: transform 0.3s ease;
-	}
-	
-	.nearby-btn {
-		display: flex;
-		align-items: center;
-		background: linear-gradient(135deg, #007AFF 0%, #5AC8FA 100%);
-		padding: 16rpx 28rpx;
-		border-radius: 50rpx;
-		box-shadow: 0 4rpx 16rpx rgba(0, 122, 255, 0.3);
-		transition: all 0.3s ease;
-	}
-	
-	.nearby-btn:active {
-		transform: scale(0.95);
-		box-shadow: 0 2rpx 8rpx rgba(0, 122, 255, 0.4);
-	}
-	
-	.nearby-icon {
-		font-size: 28rpx;
-		margin-right: 8rpx;
-	}
-	
-	.nearby-text {
-		color: #FFFFFF;
-		font-size: 28rpx;
-		font-weight: 500;
-	}
-	
-	/* 搜索框 */
-	.search-section {
-		padding: 0 30rpx;
-		margin-bottom: 25rpx;
-	}
-	
-	.search-box {
-		background: rgba(255, 255, 255, 0.15);
-		backdrop-filter: blur(10rpx);
-		padding: 28rpx 35rpx;
-		border-radius: 50rpx;
-		box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.1);
-		border: 1rpx solid rgba(255, 255, 255, 0.3);
-		position: relative;
-		transition: all 0.3s ease;
-	}
-	
-	.search-box:active {
-		transform: scale(0.98);
-		box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
-	}
-	
-	.search-box::before {
-		content: '🔍';
-		position: absolute;
-		left: 35rpx;
-		top: 50%;
-		transform: translateY(-50%);
-		font-size: 28rpx;
-		opacity: 0.6;
-	}
-	
-	.search-placeholder-container {
-		display: flex;
-		align-items: center;
-		margin-left: 50rpx;
-	}
-	
-	.search-text-1 {
-		color: #FF6B6B;
-		font-size: 28rpx;
-		font-weight: 600;
-		margin-right: 2rpx;
-	}
-	
-	.search-text-2 {
-		color: #4ECDC4;
-		font-size: 28rpx;
-		font-weight: 600;
-		margin-right: 2rpx;
-	}
-	
-	.search-text-3 {
-		color: #45B7D1;
-		font-size: 28rpx;
-		font-weight: 600;
-		margin-right: 2rpx;
-	}
-	
-	.search-text-4 {
-		color: #96CEB4;
-		font-size: 28rpx;
-		font-weight: 600;
-		margin-right: 2rpx;
-	}
-	
-	.search-text-5 {
-		color: #FFEAA7;
-		font-size: 28rpx;
-		font-weight: 600;
-		margin-right: 2rpx;
-	}
-	
-	.search-text-6 {
-		color: #DDA0DD;
-		font-size: 28rpx;
-		font-weight: 600;
-	}
-	
-	/* 热门地点 */
-	.hotspots-section {
-		display: flex;
-		flex-wrap: wrap;
-		padding: 0 30rpx;
-		gap: 12rpx;
-		margin-bottom: 30rpx;
-		justify-content: space-between;
-	}
-	
-	.hotspot-item {
-		background: rgba(255, 255, 255, 0.2);
-		backdrop-filter: blur(10rpx);
-		padding: 18rpx 24rpx;
-		border-radius: 50rpx;
-		box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
-		border: 1rpx solid rgba(255, 255, 255, 0.3);
-		flex: 1;
-		text-align: center;
-		max-width: 160rpx;
-		transition: all 0.3s ease;
-		position: relative;
-		overflow: hidden;
-	}
-	
-	.hotspot-item::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: -100%;
-		width: 100%;
-		height: 100%;
-		background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-		transition: left 0.5s ease;
-	}
-	
-	.hotspot-item:active {
-		transform: scale(0.95);
-		box-shadow: 0 2rpx 8rpx rgba(0, 122, 255, 0.15);
-	}
-	
-	.hotspot-item:active::before {
-		left: 100%;
-	}
-	
-	.hotspot-text {
-		font-size: 26rpx;
-		color: #1A1A1A;
-		text-align: center;
-		white-space: nowrap;
-		font-weight: 500;
-	}
-	
-	/* 查询按钮 */
-	.query-section {
-		padding: 0 30rpx;
-		margin-bottom: 30rpx;
-	}
-	
-	.query-btn {
-		background: linear-gradient(135deg, #007AFF 0%, #5AC8FA 100%);
-		color: #FFFFFF;
-		font-size: 34rpx;
-		border-radius: 50rpx;
-		padding: 35rpx;
-		border: none;
-		width: 100%;
-		font-weight: 600;
-		box-shadow: 0 8rpx 24rpx rgba(0, 122, 255, 0.3);
-		transition: all 0.3s ease;
-		position: relative;
-		overflow: hidden;
-	}
-	
-	.query-btn::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: -100%;
-		width: 100%;
-		height: 100%;
-		background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-		transition: left 0.5s ease;
-	}
-	
-	.query-btn:active {
-		transform: scale(0.98);
-		box-shadow: 0 4rpx 16rpx rgba(0, 122, 255, 0.4);
-	}
-	
-	.query-btn:active::before {
-		left: 100%;
-	}
-	
-	/* 功能入口 */
-	.features-section {
-		display: flex;
-		justify-content: space-around;
-		padding: 30rpx 30rpx 40rpx;
-		background-image: url('/static/12.png');
-		background-size: cover;
-		background-position: center;
-		background-repeat: no-repeat;
-		margin: 0 30rpx 30rpx;
-		border-radius: 24rpx;
-		box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
-		border: 1rpx solid rgba(0, 0, 0, 0.02);
-		position: relative;
-		overflow: hidden;
-	}
-	
-	.features-section::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		background: rgba(255, 255, 255, 0.1);
-		backdrop-filter: blur(10rpx);
-		z-index: 1;
-	}
-	
-	.features-section > * {
-		position: relative;
-		z-index: 2;
-	}
-	
-	.feature-item {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		position: relative;
-		flex: 1;
-		padding: 20rpx 10rpx;
-		border-radius: 12rpx;
-		transition: all 0.2s ease;
-	}
-	
-	.feature-item:active {
-		transform: scale(0.95);
-		background-color: rgba(0, 122, 255, 0.04);
-	}
-	
-	.feature-icon {
-		font-size: 48rpx;
-		margin-bottom: 16rpx;
-		opacity: 0.8;
-	}
-	
-	.feature-text {
-		font-size: 26rpx;
-		color: #8E8E93;
-		font-weight: 400;
-		text-align: center;
-	}
-	
-	/* 我的订单 - 红色 */
-	.orders-icon {
-		color: #FF4757;
-		text-shadow: 0 2rpx 4rpx rgba(255, 71, 87, 0.3);
-	}
-	
-	.orders-text {
-		color: #FF4757;
-		font-weight: 600;
-	}
-	
-	/* 在线客服 - 蓝色 */
-	.service-icon {
-		color: #3742FA;
-		text-shadow: 0 2rpx 4rpx rgba(55, 66, 250, 0.3);
-	}
-	
-	.service-text {
-		color: #3742FA;
-		font-weight: 600;
-	}
-	
-	/* 寄存指南 - 紫色 */
-	.guide-icon {
-		color: #8E44AD;
-		text-shadow: 0 2rpx 4rpx rgba(142, 68, 173, 0.3);
-	}
-	
-	.guide-text {
-		color: #8E44AD;
-		font-weight: 600;
-	}
-	
-	/* 优惠卡券 - 黑色 */
-	.coupons-icon {
-		color: #2C3E50;
-		text-shadow: 0 2rpx 4rpx rgba(44, 62, 80, 0.3);
-	}
-	
-	.coupons-text {
-		color: #2C3E50;
-		font-weight: 600;
-	}
-	
-	/* 管理员 - 金色 */
-	.admin-icon {
-		color: #F39C12;
-		text-shadow: 0 2rpx 4rpx rgba(243, 156, 18, 0.3);
-	}
-	
-	.admin-text {
-		color: #F39C12;
-		font-weight: 600;
-	}
-	
-	.developing {
-		opacity: 0.5;
-	}
-	
-	.developing-tag {
-		position: absolute;
-		top: 8rpx;
-		right: 8rpx;
-		background: #FF6B6B;
-		color: #FFFFFF;
-		font-size: 18rpx;
-		padding: 2rpx 6rpx;
-		border-radius: 8rpx;
-		font-weight: 400;
-		transform: scale(0.8);
-	}
-	
-	/* 管理员入口样式 */
-	.admin-entry {
-		border: 2rpx solid rgba(0, 122, 255, 0.2);
-		background: linear-gradient(135deg, rgba(0, 122, 255, 0.05) 0%, rgba(0, 122, 255, 0.02) 100%);
-	}
-	
-	.admin-entry:active {
-		background: linear-gradient(135deg, rgba(0, 122, 255, 0.1) 0%, rgba(0, 122, 255, 0.05) 100%);
-		border-color: rgba(0, 122, 255, 0.3);
-	}
-	
-	.admin-tag {
-		position: absolute;
-		top: 8rpx;
-		right: 8rpx;
-		background: #007AFF;
-		color: #FFFFFF;
-		font-size: 18rpx;
-		padding: 2rpx 6rpx;
-		border-radius: 8rpx;
-		font-weight: 400;
-		transform: scale(0.8);
-	}
-	
-	/* 交易保障 */
-	.guarantee-section {
-		display: flex;
-		align-items: center;
-		padding: 25rpx 30rpx;
-		background: rgba(82, 196, 26, 0.1);
-		backdrop-filter: blur(10rpx);
-		margin: 0 30rpx 30rpx;
-		border-radius: 20rpx;
-		box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.1);
-		border: 1rpx solid rgba(255, 255, 255, 0.3);
-	}
-	
-	.guarantee-icon {
-		width: 44rpx;
-		height: 44rpx;
-		background: linear-gradient(135deg, #52C41A 0%, #73D13D 100%);
-		color: #FFFFFF;
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 24rpx;
-		font-weight: bold;
-		margin-right: 16rpx;
-		box-shadow: 0 4rpx 12rpx rgba(82, 196, 26, 0.2);
-	}
-	
-	.guarantee-text {
-		font-size: 28rpx;
-		color: #1A1A1A;
-		margin-right: 20rpx;
-		font-weight: 600;
-	}
-	
-	.guarantee-desc {
-		font-size: 24rpx;
-		color: #52C41A;
-		font-weight: 500;
-	}
-	
-	/* 附近寄存点 */
-	.nearby-lockers-section {
-		background-image: url('/static/12.png');
-		background-size: cover;
-		background-position: center;
-		background-repeat: no-repeat;
-		margin: 0 30rpx 30rpx;
-		border-radius: 24rpx;
-		box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.06);
-		border: 1rpx solid rgba(0, 0, 0, 0.04);
-		padding-bottom: 100rpx;
-		overflow: hidden;
-		position: relative;
-	}
-	
-	.nearby-lockers-section::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		background: rgba(255, 255, 255, 0.15);
-		backdrop-filter: blur(10rpx);
-		z-index: 1;
-	}
-	
-	.nearby-lockers-section > * {
-		position: relative;
-		z-index: 2;
-	}
-	
-	.section-title {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		padding: 30rpx 30rpx 20rpx;
-		border-bottom: 1rpx solid rgba(0, 0, 0, 0.06);
-		background: linear-gradient(135deg, #FAFBFF 0%, #F5F7FA 100%);
-	}
-	
-	.title-text {
-		font-size: 32rpx;
-		color: #1A1A1A;
-		font-weight: 700;
-	}
-	
-	.more-btn {
-		font-size: 26rpx;
-		color: #007AFF;
-		padding: 8rpx 16rpx;
-		border-radius: 20rpx;
-		background-color: rgba(0, 122, 255, 0.1);
-		transition: all 0.3s ease;
-	}
-	
-	.more-btn:active {
-		background-color: rgba(0, 122, 255, 0.2);
-		transform: scale(0.95);
-	}
-	
-	.locker-item {
-		display: flex;
-		padding: 30rpx;
-		align-items: center;
-		transition: all 0.3s ease;
-		position: relative;
-	}
-	
-	.locker-item:active {
-		background-color: rgba(0, 122, 255, 0.03);
-		transform: scale(0.98);
-	}
-	
-	.locker-image {
-		width: 120rpx;
-		height: 120rpx;
-		margin-right: 30rpx;
-		border-radius: 16rpx;
-		background-color: #F5F5F5;
-		box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
-	}
-	
-	.locker-info {
-		flex: 1;
-		min-width: 0;
-		word-wrap: break-word;
-	}
-	
-	.locker-name {
-		font-size: 30rpx;
-		color: #1A1A1A;
-		font-weight: 600;
-		display: block;
-		margin-bottom: 12rpx;
-		line-height: 1.4;
-		word-wrap: break-word;
-		overflow: hidden;
-	}
-	
-	.locker-capacity {
-		font-size: 24rpx;
-		color: #007AFF;
-		display: inline-block;
-		margin-bottom: 12rpx;
-		font-weight: 500;
-		background: linear-gradient(135deg, #E3F2FD 0%, #F0F8FF 100%);
-		padding: 8rpx 16rpx;
-		border-radius: 20rpx;
-		white-space: nowrap;
-	}
-	
-	.locker-location {
-		display: flex;
-		align-items: flex-start;
-		width: 100%;
-	}
-	
-	.location-text {
-		font-size: 24rpx;
-		color: #8E8E93;
-		margin-left: 8rpx;
-		flex: 1;
-		line-height: 1.4;
-		word-wrap: break-word;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-	
-	.distance {
-		font-size: 22rpx;
-		color: #007AFF;
-		background-color: rgba(0, 122, 255, 0.1);
-		padding: 4rpx 8rpx;
-		border-radius: 12rpx;
-		margin-left: 12rpx;
-		white-space: nowrap;
-	}
-	
-	.no-locker {
-		padding: 60rpx 30rpx;
-		text-align: center;
-		background: rgba(255, 255, 255, 0.1);
-		backdrop-filter: blur(10rpx);
-		border-radius: 15rpx;
-		margin: 20rpx;
-		border: 1rpx solid rgba(255, 255, 255, 0.2);
-	}
-	
-	.no-locker-icon {
-		font-size: 60rpx;
-		margin-bottom: 20rpx;
-		opacity: 0.6;
-	}
-	
-	.no-locker-text {
-		font-size: 28rpx;
-		color: #8E8E93;
-		margin-bottom: 30rpx;
-		line-height: 1.5;
-	}
-	
-	.no-locker-actions {
-		display: flex;
-		justify-content: center;
-		gap: 20rpx;
-	}
-	
-	.retry-btn, .expand-btn {
-		padding: 20rpx 30rpx;
-		border-radius: 25rpx;
-		font-size: 26rpx;
-		border: none;
-		min-width: 160rpx;
-	}
-	
-	.retry-btn {
-		background-color: #007AFF;
-		color: white;
-	}
-	
-	.expand-btn {
-		background-color: #FF6B35;
-		color: white;
-	}
-	
-	.retry-btn:active, .expand-btn:active {
-		transform: scale(0.95);
-	}
-	
-	.loading-spinner {
-		width: 40rpx;
-		height: 40rpx;
-		border: 3rpx solid #E5E5E5;
-		border-top: 3rpx solid #007AFF;
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-		margin: 20rpx auto;
-	}
-	
-	@keyframes spin {
-		0% { transform: rotate(0deg); }
-		100% { transform: rotate(360deg); }
-	}
-	
-	/* 添加一些微动画效果 */
-	@keyframes fadeInUp {
-		from {
-			opacity: 0;
-			transform: translateY(30rpx);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
+<style scoped>
+.page {
+	background: linear-gradient(180deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+	min-height: 100vh;
+	position: relative;
+}
+
+.page::before {
+	content: '';
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: linear-gradient(135deg, 
+		rgba(102, 126, 234, 0.1) 0%, 
+		rgba(118, 75, 162, 0.05) 50%, 
+		rgba(240, 147, 251, 0.1) 100%);
+	backdrop-filter: blur(100rpx);
+	z-index: -1;
+}
+
+/* 顶部图片区域 */
+.header-section {
+	position: relative;
+	height: 280rpx;
+	overflow: hidden;
+}
+
+.header-image {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.header-overlay {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: linear-gradient(135deg, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.1));
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+}
+
+.header-title {
+	font-size: 48rpx;
+	font-weight: bold;
+	color: #ffffff;
+	margin-bottom: 10rpx;
+	text-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.3);
+}
+
+.header-subtitle {
+	font-size: 28rpx;
+	color: #ffffff;
+	opacity: 0.9;
+	text-shadow: 0 1rpx 2rpx rgba(0, 0, 0, 0.3);
+}
+
+/* 城市选择和我的附近 */
+.location-section {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 30rpx;
+	background: linear-gradient(135deg, 
+		rgba(255, 255, 255, 0.95) 0%, 
+		rgba(255, 255, 255, 0.85) 100%);
+	backdrop-filter: blur(20rpx);
+	border-bottom: 1rpx solid rgba(255, 255, 255, 0.2);
+}
+
+.city-selector {
+	display: flex;
+	align-items: center;
+	padding: 15rpx 25rpx;
+	background: linear-gradient(135deg, #667eea, #764ba2);
+	border-radius: 25rpx;
+	box-shadow: 0 4rpx 15rpx rgba(102, 126, 234, 0.3);
+}
+
+.location-icon {
+	font-size: 28rpx;
+	margin-right: 10rpx;
+	color: #ffffff;
+}
+
+.city-name {
+	font-size: 28rpx;
+	font-weight: bold;
+	color: #ffffff;
+	margin-right: 10rpx;
+}
+
+.dropdown-icon {
+	font-size: 24rpx;
+	color: #ffffff;
+}
+
+.nearby-btn {
+	display: flex;
+	align-items: center;
+	padding: 15rpx 25rpx;
+	background: linear-gradient(135deg, #f093fb, #f5576c);
+	border-radius: 25rpx;
+	box-shadow: 0 4rpx 15rpx rgba(240, 147, 251, 0.3);
+}
+
+.nearby-icon {
+	font-size: 28rpx;
+	margin-right: 8rpx;
+	color: #ffffff;
+}
+
+.nearby-text {
+	font-size: 28rpx;
+	color: #ffffff;
+	font-weight: 500;
+}
+
+/* 搜索框 */
+.search-section {
+	padding: 30rpx;
+	background: linear-gradient(135deg, 
+		rgba(255, 255, 255, 0.95) 0%, 
+		rgba(255, 255, 255, 0.85) 100%);
+	backdrop-filter: blur(20rpx);
+}
+
+.search-box {
+	display: flex;
+	align-items: center;
+	padding: 25rpx 30rpx;
+	background: linear-gradient(135deg, 
+		rgba(255, 255, 255, 0.9) 0%, 
+		rgba(255, 255, 255, 0.7) 100%);
+	border-radius: 30rpx;
+	border: 2rpx solid rgba(102, 126, 234, 0.2);
+	box-shadow: 0 8rpx 25rpx rgba(0, 0, 0, 0.1);
+}
+
+.search-placeholder-container {
+	display: flex;
+	align-items: center;
+	flex: 1;
+}
+
+.search-icon {
+	font-size: 32rpx;
+	color: #667eea;
+	margin-right: 15rpx;
+}
+
+.search-text {
+	font-size: 28rpx;
+	color: #999999;
+}
+
+/* 热门地点 */
+.hotspots-section {
+	display: flex;
+	flex-wrap: wrap;
+	padding: 20rpx 30rpx;
+	background: linear-gradient(135deg, 
+		rgba(255, 255, 255, 0.95) 0%, 
+		rgba(255, 255, 255, 0.85) 100%);
+	backdrop-filter: blur(20rpx);
+}
+
+.hotspot-item {
+	margin: 10rpx;
+	padding: 15rpx 25rpx;
+	background: linear-gradient(135deg, 
+		rgba(102, 126, 234, 0.1) 0%, 
+		rgba(118, 75, 162, 0.1) 100%);
+	border-radius: 25rpx;
+	border: 1rpx solid rgba(102, 126, 234, 0.2);
+}
+
+.hotspot-text {
+	font-size: 26rpx;
+	color: #667eea;
+	font-weight: 500;
+}
+
+/* 查询按钮 */
+.query-section {
+	padding: 30rpx;
+	background: linear-gradient(135deg, 
+		rgba(255, 255, 255, 0.95) 0%, 
+		rgba(255, 255, 255, 0.85) 100%);
+	backdrop-filter: blur(20rpx);
+}
+
+.query-btn {
+	width: 100%;
+	padding: 30rpx;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	color: #ffffff;
+	border: none;
+	border-radius: 30rpx;
+	font-size: 32rpx;
+	font-weight: bold;
+	box-shadow: 0 8rpx 25rpx rgba(102, 126, 234, 0.4);
+}
+
+/* 功能入口 */
+.features-section {
+	display: flex;
+	justify-content: space-around;
+	padding: 40rpx 30rpx;
+	background: linear-gradient(135deg, 
+		rgba(255, 255, 255, 0.95) 0%, 
+		rgba(255, 255, 255, 0.85) 100%);
+	backdrop-filter: blur(20rpx);
+	margin-top: 20rpx;
+}
+
+.feature-item {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 20rpx;
+	border-radius: 20rpx;
+	transition: all 0.3s ease;
+}
+
+.feature-icon {
+	font-size: 48rpx;
+	margin-bottom: 15rpx;
+	padding: 20rpx;
+	border-radius: 50%;
+	background: linear-gradient(135deg, #f093fb, #f5576c);
+	color: #ffffff;
+	box-shadow: 0 6rpx 20rpx rgba(240, 147, 251, 0.3);
+}
+
+.feature-text {
+	font-size: 24rpx;
+	color: #333333;
+	font-weight: 500;
+}
+
+/* 交易保障 */
+.guarantee-section {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 30rpx;
+	background: linear-gradient(135deg, 
+		rgba(255, 255, 255, 0.95) 0%, 
+		rgba(255, 255, 255, 0.85) 100%);
+	backdrop-filter: blur(20rpx);
+	margin-top: 20rpx;
+}
+
+.guarantee-icon {
+	font-size: 32rpx;
+	color: #4CAF50;
+	margin-right: 15rpx;
+	font-weight: bold;
+}
+
+.guarantee-text {
+	font-size: 28rpx;
+	color: #666666;
+}
+
+/* 优惠券横幅 */
+.coupon-banner {
+	margin: 20rpx 30rpx;
+	padding: 30rpx;
+	background: linear-gradient(135deg, #ff6b6b, #ffa500);
+	border-radius: 20rpx;
+	box-shadow: 0 8rpx 25rpx rgba(255, 107, 107, 0.3);
+}
+
+.coupon-title {
+	font-size: 32rpx;
+	font-weight: bold;
+	color: #ffffff;
+	margin-bottom: 10rpx;
+}
+
+.coupon-subtitle {
+	font-size: 24rpx;
+	color: #ffffff;
+	opacity: 0.9;
+}
+
+/* 附近寄存点 */
+.nearby-lockers-section {
+	background: linear-gradient(135deg, 
+		rgba(255, 255, 255, 0.95) 0%, 
+		rgba(255, 255, 255, 0.85) 100%);
+	backdrop-filter: blur(20rpx);
+	margin: 20rpx 30rpx;
+	padding: 30rpx;
+	border-radius: 20rpx;
+	box-shadow: 0 8rpx 25rpx rgba(0, 0, 0, 0.1);
+}
+
+.section-title {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 30rpx;
+}
+
+.title-text {
+	font-size: 32rpx;
+	font-weight: bold;
+	color: #333333;
+}
+
+.more-btn {
+	font-size: 26rpx;
+	color: #667eea;
+}
+
+.locker-item {
+	display: flex;
+	padding: 25rpx 0;
+	border-bottom: 1rpx solid rgba(0, 0, 0, 0.1);
+}
+
+.locker-item:last-child {
+	border-bottom: none;
+}
+
+.locker-image {
+	width: 120rpx;
+	height: 120rpx;
+	border-radius: 15rpx;
+	margin-right: 25rpx;
+}
+
+.locker-info {
+	flex: 1;
+}
+
+.locker-name {
+	font-size: 30rpx;
+	font-weight: bold;
+	color: #333333;
+	margin-bottom: 10rpx;
+}
+
+.locker-capacity {
+	font-size: 24rpx;
+	color: #666666;
+	margin-bottom: 10rpx;
+}
+
+.locker-location {
+	display: flex;
+	align-items: center;
+}
+
+.location-text {
+	font-size: 24rpx;
+	color: #999999;
+	flex: 1;
+}
+
+.distance {
+	font-size: 24rpx;
+	color: #667eea;
+	font-weight: 500;
+}
+
+/* 无寄存点提示 */
+.no-locker {
+	text-align: center;
+	padding: 60rpx 30rpx;
+}
+
+.no-locker-icon {
+	font-size: 80rpx;
+	margin-bottom: 20rpx;
+	opacity: 0.5;
+}
+
+.no-locker-text {
+	font-size: 28rpx;
+	color: #666666;
+	margin-bottom: 40rpx;
+}
+
+.loading-spinner {
+	width: 60rpx;
+	height: 60rpx;
+	border: 4rpx solid #f3f3f3;
+	border-top: 4rpx solid #667eea;
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
+	margin: 20rpx auto;
+}
+
+@keyframes spin {
+	0% { transform: rotate(0deg); }
+	100% { transform: rotate(360deg); }
+}
+
+.no-locker-actions {
+	display: flex;
+	justify-content: center;
+	gap: 20rpx;
+}
+
+.retry-btn, .expand-btn {
+	padding: 20rpx 30rpx;
+	border-radius: 25rpx;
+	font-size: 26rpx;
+	border: none;
+}
+
+.retry-btn {
+	background: #667eea;
+	color: #ffffff;
+}
+
+.expand-btn {
+	background: #f093fb;
+	color: #ffffff;
+}
 </style>

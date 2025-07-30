@@ -10,7 +10,7 @@
 				<text class="share-icon">⋯</text>
 			</view>
 		</view>
-		
+
 		<!-- 寄存点信息 -->
 		<view class="locker-info-section">
 			<view class="locker-header">
@@ -19,24 +19,24 @@
 					<text class="status-text">{{lockerInfo.status === 'available' ? '营业中' : '暂停服务'}}</text>
 				</view>
 			</view>
-			
+
 			<view class="locker-address">
 				<text class="address-icon">📍</text>
 				<text class="address-text">{{lockerInfo.address}}</text>
 			</view>
-			
+
 			<view class="locker-distance" v-if="lockerInfo.distance">
 				<text class="distance-text">距离您 {{lockerInfo.distance}}</text>
 			</view>
 		</view>
-		
+
 		<!-- 柜子容量信息 -->
 		<view class="capacity-section">
 			<view class="section-title">
 				<text class="title-text">可用柜子</text>
 				<text class="refresh-btn" @click="refreshCapacity">🔄 刷新</text>
 			</view>
-			
+
 			<view class="capacity-grid">
 				<view class="capacity-item">
 					<view class="capacity-icon large">📦</view>
@@ -44,14 +44,14 @@
 					<text class="capacity-count" :class="{ 'zero': lockerInfo.large === 0 }">{{lockerInfo.large}}</text>
 					<text class="capacity-size">适合行李箱</text>
 				</view>
-				
+
 				<view class="capacity-item">
 					<view class="capacity-icon medium">📦</view>
 					<text class="capacity-label">中柜</text>
 					<text class="capacity-count" :class="{ 'zero': lockerInfo.medium === 0 }">{{lockerInfo.medium}}</text>
 					<text class="capacity-size">适合背包</text>
 				</view>
-				
+
 				<view class="capacity-item">
 					<view class="capacity-icon small">📦</view>
 					<text class="capacity-label">小柜</text>
@@ -60,35 +60,37 @@
 				</view>
 			</view>
 		</view>
-		
-		<!-- 操作按钮 -->
-		<view class="action-section">
-			<button class="action-btn primary" @click="selectLocker" :disabled="!hasAvailableLockers">
-				{{hasAvailableLockers ? '选择此寄存点' : '暂无可用柜子'}}
-			</button>
-			
-			<view class="secondary-actions">
-				<button class="action-btn secondary" @click="showOnMap">在地图中查看</button>
-				<button class="action-btn secondary" @click="getDirections">获取路线</button>
+
+		<!-- 服务信息 -->
+		<view class="service-section">
+			<view class="section-title">
+				<text class="title-text">服务信息</text>
+			</view>
+
+			<view class="service-item">
+				<text class="service-label">营业时间</text>
+				<text class="service-value">{{lockerInfo.openTime || '24小时'}}</text>
+			</view>
+
+			<view class="service-item">
+				<text class="service-label">联系电话</text>
+				<text class="service-value phone" @click="callPhone">{{lockerInfo.mobile || '暂无'}}</text>
+			</view>
+
+			<view class="service-item">
+				<text class="service-label">收费标准</text>
+				<text class="service-value">{{lockerInfo.price || '按时计费'}}</text>
 			</view>
 		</view>
-		
-		<!-- 寄存点详细信息 -->
-		<view class="detail-section">
-			<view class="detail-item">
-				<text class="detail-label">营业时间</text>
-				<text class="detail-value">{{lockerInfo.businessHours || '24小时营业'}}</text>
-			</view>
-			
-			<view class="detail-item">
-				<text class="detail-label">联系电话</text>
-				<text class="detail-value phone" @click="callPhone">{{lockerInfo.phone || '400-123-4567'}}</text>
-			</view>
-			
-			<view class="detail-item">
-				<text class="detail-label">收费标准</text>
-				<text class="detail-value">{{lockerInfo.pricing || '小柜5元/天，中柜8元/天，大柜12元/天'}}</text>
-			</view>
+
+		<!-- 操作按钮 -->
+		<view class="action-section">
+			<button class="action-btn primary" @click="startDeposit" :disabled="!hasAvailableLocker">
+				立即寄存
+			</button>
+			<button class="action-btn secondary" @click="getDirections">
+				获取路线
+			</button>
 		</view>
 	</view>
 </template>
@@ -98,43 +100,39 @@
 		data() {
 			return {
 				lockerInfo: {
-					id: '',
-					name: '寄存点',
-					address: '地址加载中...',
-					distance: '',
+					id: 1,
+					name: '寄存点名称',
+					address: '寄存点地址',
+					status: 'available',
 					large: 0,
 					medium: 0,
 					small: 0,
-					status: 'available',
-					businessHours: '24小时营业',
-					phone: '400-123-4567',
-					pricing: '小柜5元/天，中柜8元/天，大柜12元/天'
+					distance: '',
+					openTime: '24小时',
+					mobile: '',
+					price: '按时计费'
 				}
 			}
 		},
 		
 		computed: {
-			hasAvailableLockers() {
+			hasAvailableLocker() {
 				return this.lockerInfo.large > 0 || this.lockerInfo.medium > 0 || this.lockerInfo.small > 0;
 			}
 		},
 		
 		onLoad(options) {
-			console.log('寄存点详情页面加载:', options);
+			console.log('寄存点详情页加载，参数:', options);
 			
-			// 从参数中获取寄存点信息
+			// 获取传入的参数
 			if (options.id) {
-				this.lockerInfo.id = options.id;
-			}
-			if (options.name) {
+				this.loadLockerDetail(options.id);
+			} else if (options.name && options.address) {
+				// 从搜索页面跳转过来的参数
 				this.lockerInfo.name = decodeURIComponent(options.name);
-			}
-			if (options.address) {
 				this.lockerInfo.address = decodeURIComponent(options.address);
+				this.loadLockerDetail(options.id || 1);
 			}
-			
-			// 加载详细信息
-			this.loadLockerDetail();
 		},
 		
 		methods: {
@@ -143,86 +141,147 @@
 				uni.navigateBack();
 			},
 			
-			// 加载寄存点详细信息
-			loadLockerDetail() {
-				console.log('加载寄存点详细信息:', this.lockerInfo.id);
+			// 加载寄存点详情
+			loadLockerDetail(id) {
+				console.log('加载寄存点详情:', id);
 				
-				// 调用后端接口获取详细信息
-				const apiUrl = `http://localhost:8000/api/lockers/${this.lockerInfo.id}/detail`;
+				// 显示加载状态
+				uni.showLoading({
+					title: '加载中...'
+				});
 				
+				// 统一的API基础URL
+				const API_BASE_URL = 'http://localhost:8000';
+				
+				// 调用后端接口获取详情 - 使用正确的API路径
 				uni.request({
-					url: apiUrl,
+					url: `${API_BASE_URL}/getDepositLocker?locker_id=${id}`,
 					method: 'GET',
 					header: {
 						'Content-Type': 'application/json'
 					},
 					success: (res) => {
-						console.log('寄存点详情接口响应:', res);
+						console.log('获取寄存点详情成功:', res.data);
+						uni.hideLoading();
 						
-						if (res.statusCode === 200 && res.data) {
-							this.updateLockerInfo(res.data);
+						if (res.data) {
+							// 处理后端返回的数据格式
+							this.processLockerData(res.data);
 						} else {
-							console.warn('获取寄存点详情失败，使用默认数据');
-							this.setDefaultLockerInfo();
+							this.handleLoadError('获取详情失败');
 						}
 					},
-					fail: (error) => {
-						console.error('获取寄存点详情失败:', error);
-						this.setDefaultLockerInfo();
+					fail: (err) => {
+						console.log('获取寄存点详情失败:', err);
+						uni.hideLoading();
+						this.handleLoadError('网络请求失败');
 					}
 				});
 			},
 			
-			// 更新寄存点信息
-			updateLockerInfo(data) {
+			// 处理后端返回的寄存点数据
+			processLockerData(data) {
+				console.log('处理寄存点数据:', data);
+				
+				// 根据后端返回的数据结构处理
 				this.lockerInfo = {
-					...this.lockerInfo,
-					large: data.large_count || data.large || Math.floor(Math.random() * 5) + 1,
-					medium: data.medium_count || data.medium || Math.floor(Math.random() * 8) + 2,
-					small: data.small_count || data.small || Math.floor(Math.random() * 10) + 3,
-					status: data.status || 'available',
-					businessHours: data.business_hours || '24小时营业',
-					phone: data.phone || '400-123-4567',
-					pricing: data.pricing || '小柜5元/天，中柜8元/天，大柜12元/天'
+					id: this.lockerInfo.id,
+					name: data.name || '寄存点',
+					address: data.address || '地址信息',
+					status: 'available',
+					longitude: data.longitude || 0,
+					latitude: data.latitude || 0,
+					distance: this.lockerInfo.distance,
+					openTime: '06:00-23:00',
+					mobile: '400-123-4567',
+					price: '按时计费'
 				};
+				
+				// 处理柜子信息
+				if (data.locker && Array.isArray(data.locker)) {
+					let large = 0, medium = 0, small = 0;
+					
+					data.locker.forEach(locker => {
+						if (locker.locker_type === 1 || locker.size === 'large') {
+							large += locker.num || 0;
+						} else if (locker.locker_type === 2 || locker.size === 'medium') {
+							medium += locker.num || 0;
+						} else if (locker.locker_type === 3 || locker.size === 'small') {
+							small += locker.num || 0;
+						}
+					});
+					
+					this.lockerInfo.large = large;
+					this.lockerInfo.medium = medium;
+					this.lockerInfo.small = small;
+				} else {
+					// 默认值
+					this.lockerInfo.large = 5;
+					this.lockerInfo.medium = 8;
+					this.lockerInfo.small = 12;
+				}
+				
+				console.log('处理后的寄存点信息:', this.lockerInfo);
 			},
 			
-			// 设置默认寄存点信息
-			setDefaultLockerInfo() {
+			// 处理加载错误
+			handleLoadError(message) {
+				// 使用模拟数据
 				this.lockerInfo = {
-					...this.lockerInfo,
-					large: Math.floor(Math.random() * 5) + 1,
-					medium: Math.floor(Math.random() * 8) + 2,
-					small: Math.floor(Math.random() * 10) + 3,
-					status: 'available'
+					id: 1,
+					name: '郑州东站寄存点',
+					address: '郑州市金水区郑东新区郑州东站西广场',
+					status: 'available',
+					large: 5,
+					medium: 8,
+					small: 12,
+					distance: '1.2km',
+					openTime: '06:00-23:00',
+					mobile: '400-123-4567',
+					price: '大柜8元/小时，中柜6元/小时，小柜4元/小时'
 				};
+				
+				uni.showToast({
+					title: message + '，使用模拟数据',
+					icon: 'none',
+					duration: 2000
+				});
 			},
 			
 			// 刷新容量信息
 			refreshCapacity() {
-				console.log('刷新柜子容量');
-				
-				uni.showLoading({
-					title: '刷新中...'
-				});
-				
-				// 模拟刷新延迟
-				setTimeout(() => {
-					this.lockerInfo.large = Math.floor(Math.random() * 5) + 1;
-					this.lockerInfo.medium = Math.floor(Math.random() * 8) + 2;
-					this.lockerInfo.small = Math.floor(Math.random() * 10) + 3;
-					
-					uni.hideLoading();
-					uni.showToast({
-						title: '容量已更新',
-						icon: 'success'
-					});
-				}, 1000);
+				console.log('刷新容量信息');
+				this.loadLockerDetail(this.lockerInfo.id);
 			},
 			
-			// 选择寄存点
-			selectLocker() {
-				if (!this.hasAvailableLockers) {
+			// 拨打电话
+			callPhone() {
+				if (!this.lockerInfo.mobile) {
+					uni.showToast({
+						title: '暂无联系电话',
+						icon: 'none'
+					});
+					return;
+				}
+				
+				uni.makePhoneCall({
+					phoneNumber: this.lockerInfo.mobile,
+					success: () => {
+						console.log('拨打电话成功');
+					},
+					fail: (error) => {
+						console.error('拨打电话失败:', error);
+						uni.showToast({
+							title: '拨打电话失败',
+							icon: 'none'
+						});
+					}
+				});
+			},
+			
+			// 开始寄存
+			startDeposit() {
+				if (!this.hasAvailableLocker) {
 					uni.showToast({
 						title: '暂无可用柜子',
 						icon: 'none'
@@ -230,17 +289,18 @@
 					return;
 				}
 				
-				console.log('选择寄存点:', this.lockerInfo);
-				
-				// 跳转到预订页面或其他相关页面
-				uni.showModal({
-					title: '选择寄存点',
-					content: `确定选择"${this.lockerInfo.name}"进行寄存吗？`,
+				// 跳转到寄存页面或显示寄存选项
+				uni.showActionSheet({
+					itemList: ['大柜寄存', '中柜寄存', '小柜寄存'],
 					success: (res) => {
-						if (res.confirm) {
-							// 这里可以跳转到预订页面
+						const types = ['large', 'medium', 'small'];
+						const selectedType = types[res.tapIndex];
+						
+						if (this.lockerInfo[selectedType] > 0) {
+							this.processDeposit(selectedType);
+						} else {
 							uni.showToast({
-								title: '功能开发中',
+								title: '该类型柜子暂无库存',
 								icon: 'none'
 							});
 						}
@@ -248,41 +308,67 @@
 				});
 			},
 			
-			// 在地图中查看
-			showOnMap() {
-				console.log('在地图中查看寄存点');
+			// 处理寄存
+			processDeposit(type) {
+				console.log('处理寄存:', type);
 				
-				// 跳转到附近页面，并定位到该寄存点
-				uni.navigateTo({
-					url: `/pages/nearby/nearby?lockerID=${this.lockerInfo.id}`
-				});
-			},
-			
-			// 获取路线
-			getDirections() {
-				console.log('获取路线到寄存点');
-				
-				uni.showActionSheet({
-					itemList: ['使用高德地图导航', '使用百度地图导航', '使用腾讯地图导航'],
+				// 这里可以跳转到寄存确认页面或直接处理寄存逻辑
+				uni.showModal({
+					title: '确认寄存',
+					content: `确定要使用${type === 'large' ? '大' : type === 'medium' ? '中' : '小'}柜进行寄存吗？`,
 					success: (res) => {
-						const mapNames = ['高德地图', '百度地图', '腾讯地图'];
-						uni.showToast({
-							title: `使用${mapNames[res.tapIndex]}导航`,
-							icon: 'none'
-						});
-						// 这里可以调用相应的地图导航功能
+						if (res.confirm) {
+							// 执行寄存逻辑
+							this.executeDeposit(type);
+						}
 					}
 				});
 			},
 			
-			// 拨打电话
-			callPhone() {
-				uni.makePhoneCall({
-					phoneNumber: this.lockerInfo.phone,
+			// 执行寄存
+			executeDeposit(type) {
+				uni.showLoading({
+					title: '正在寄存...'
+				});
+				
+				// 模拟寄存请求
+				setTimeout(() => {
+					uni.hideLoading();
+					
+					// 模拟成功
+					const orderNo = 'DP' + Date.now();
+					
+					uni.showModal({
+						title: '寄存成功',
+						content: `订单号：${orderNo}\n请妥善保管取件码`,
+						showCancel: false,
+						success: () => {
+							// 跳转到订单详情或我的页面
+							uni.navigateTo({
+								url: '/pages/order-detail/order-detail'
+							});
+						}
+					});
+				}, 2000);
+			},
+			
+			// 获取路线
+			getDirections() {
+				console.log('获取路线到:', this.lockerInfo.address);
+				
+				// 调用地图应用获取路线
+				uni.openLocation({
+					latitude: 34.7466, // 示例坐标
+					longitude: 113.6253,
+					name: this.lockerInfo.name,
+					address: this.lockerInfo.address,
+					success: () => {
+						console.log('打开地图成功');
+					},
 					fail: (error) => {
-						console.error('拨打电话失败:', error);
+						console.error('打开地图失败:', error);
 						uni.showToast({
-							title: '拨打电话失败',
+							title: '打开地图失败',
 							icon: 'none'
 						});
 					}
@@ -292,289 +378,293 @@
 	}
 </script>
 
-<style>
-	.page {
-		background-color: #F5F5F5;
-		min-height: 100vh;
-	}
-	
-	/* 顶部导航栏 */
-	.header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 20rpx 30rpx;
-		background-color: #FFFFFF;
-		border-bottom: 1rpx solid #E5E5E5;
-	}
-	
-	.back-btn, .share-btn {
-		width: 60rpx;
-		height: 60rpx;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-	
-	.back-icon, .share-icon {
-		font-size: 36rpx;
-		color: #333333;
-	}
-	
-	.header-title {
-		font-size: 32rpx;
-		color: #333333;
-		font-weight: 600;
-		flex: 1;
-		text-align: center;
-	}
-	
-	/* 寄存点信息 */
-	.locker-info-section {
-		background-color: #FFFFFF;
-		padding: 30rpx;
-		margin-bottom: 20rpx;
-	}
-	
-	.locker-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		margin-bottom: 20rpx;
-	}
-	
-	.locker-name {
-		font-size: 36rpx;
-		color: #333333;
-		font-weight: 700;
-		flex: 1;
-	}
-	
-	.locker-status {
-		padding: 8rpx 16rpx;
-		border-radius: 20rpx;
-		background-color: #E8F5E8;
-	}
-	
-	.locker-status.unavailable {
-		background-color: #FFE8E8;
-	}
-	
-	.status-text {
-		font-size: 24rpx;
-		color: #52C41A;
-		font-weight: 500;
-	}
-	
-	.locker-status.unavailable .status-text {
-		color: #FF4D4F;
-	}
-	
-	.locker-address {
-		display: flex;
-		align-items: flex-start;
-		margin-bottom: 16rpx;
-	}
-	
-	.address-icon {
-		font-size: 28rpx;
-		color: #007AFF;
-		margin-right: 12rpx;
-		margin-top: 4rpx;
-	}
-	
-	.address-text {
-		font-size: 28rpx;
-		color: #666666;
-		line-height: 1.5;
-		flex: 1;
-	}
-	
-	.locker-distance {
-		margin-top: 16rpx;
-	}
-	
-	.distance-text {
-		font-size: 26rpx;
-		color: #007AFF;
-		background-color: rgba(0, 122, 255, 0.1);
-		padding: 6rpx 16rpx;
-		border-radius: 20rpx;
-	}
-	
-	/* 容量信息 */
-	.capacity-section {
-		background-color: #FFFFFF;
-		padding: 30rpx;
-		margin-bottom: 20rpx;
-	}
-	
-	.section-title {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		margin-bottom: 30rpx;
-	}
-	
-	.title-text {
-		font-size: 32rpx;
-		color: #333333;
-		font-weight: 600;
-	}
-	
-	.refresh-btn {
-		font-size: 26rpx;
-		color: #007AFF;
-		padding: 8rpx 16rpx;
-		border-radius: 20rpx;
-		background-color: rgba(0, 122, 255, 0.1);
-	}
-	
-	.capacity-grid {
-		display: flex;
-		justify-content: space-between;
-		gap: 20rpx;
-	}
-	
-	.capacity-item {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		padding: 30rpx 20rpx;
-		background-color: #F8F9FA;
-		border-radius: 16rpx;
-		border: 2rpx solid transparent;
-		transition: all 0.3s ease;
-	}
-	
-	.capacity-icon {
-		font-size: 48rpx;
-		margin-bottom: 16rpx;
-	}
-	
-	.capacity-icon.large {
-		color: #FF6B6B;
-	}
-	
-	.capacity-icon.medium {
-		color: #4ECDC4;
-	}
-	
-	.capacity-icon.small {
-		color: #45B7D1;
-	}
-	
-	.capacity-label {
-		font-size: 28rpx;
-		color: #333333;
-		font-weight: 600;
-		margin-bottom: 8rpx;
-	}
-	
-	.capacity-count {
-		font-size: 36rpx;
-		color: #007AFF;
-		font-weight: 700;
-		margin-bottom: 8rpx;
-	}
-	
-	.capacity-count.zero {
-		color: #999999;
-	}
-	
-	.capacity-size {
-		font-size: 22rpx;
-		color: #999999;
-		text-align: center;
-	}
-	
-	/* 操作按钮 */
-	.action-section {
-		padding: 30rpx;
-	}
-	
-	.action-btn {
-		width: 100%;
-		padding: 30rpx;
-		border-radius: 50rpx;
-		font-size: 32rpx;
-		font-weight: 600;
-		border: none;
-		margin-bottom: 20rpx;
-		transition: all 0.3s ease;
-	}
-	
-	.action-btn.primary {
-		background: linear-gradient(135deg, #007AFF 0%, #5AC8FA 100%);
-		color: #FFFFFF;
-		box-shadow: 0 8rpx 24rpx rgba(0, 122, 255, 0.3);
-	}
-	
-	.action-btn.primary:disabled {
-		background: #CCCCCC;
-		color: #999999;
-		box-shadow: none;
-	}
-	
-	.action-btn.primary:active:not(:disabled) {
-		transform: scale(0.98);
-	}
-	
-	.secondary-actions {
-		display: flex;
-		gap: 20rpx;
-	}
-	
-	.action-btn.secondary {
-		flex: 1;
-		background-color: #FFFFFF;
-		color: #007AFF;
-		border: 2rpx solid #007AFF;
-		font-size: 28rpx;
-		padding: 24rpx;
-		margin-bottom: 0;
-	}
-	
-	.action-btn.secondary:active {
-		background-color: #007AFF;
-		color: #FFFFFF;
-	}
-	
-	/* 详细信息 */
-	.detail-section {
-		background-color: #FFFFFF;
-		padding: 30rpx;
-		margin-bottom: 40rpx;
-	}
-	
-	.detail-item {
-		display: flex;
-		align-items: flex-start;
-		padding: 20rpx 0;
-		border-bottom: 1rpx solid #F0F0F0;
-	}
-	
-	.detail-item:last-child {
-		border-bottom: none;
-	}
-	
-	.detail-label {
-		font-size: 28rpx;
-		color: #666666;
-		width: 160rpx;
-		flex-shrink: 0;
-	}
-	
-	.detail-value {
-		font-size: 28rpx;
-		color: #333333;
-		flex: 1;
-		line-height: 1.5;
-	}
-	
-	.detail-value.phone {
-		color: #007AFF;
-		text-decoration: underline;
-	}
+<style scoped>
+.page {
+	background: linear-gradient(180deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+	min-height: 100vh;
+	position: relative;
+}
+
+.page::before {
+	content: '';
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: linear-gradient(135deg, 
+		rgba(102, 126, 234, 0.1) 0%, 
+		rgba(118, 75, 162, 0.05) 50%, 
+		rgba(240, 147, 251, 0.1) 100%);
+	backdrop-filter: blur(100rpx);
+	z-index: -1;
+}
+
+/* 顶部导航栏 */
+.header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 30rpx;
+	background: linear-gradient(135deg, 
+		rgba(255, 255, 255, 0.95) 0%, 
+		rgba(255, 255, 255, 0.85) 100%);
+	backdrop-filter: blur(20rpx);
+	border-bottom: 1rpx solid rgba(255, 255, 255, 0.2);
+}
+
+.back-btn, .share-btn {
+	width: 80rpx;
+	height: 80rpx;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 50%;
+	background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+.back-icon, .share-icon {
+	font-size: 32rpx;
+	color: #ffffff;
+	font-weight: bold;
+}
+
+.header-title {
+	font-size: 36rpx;
+	font-weight: bold;
+	color: #333333;
+}
+
+/* 寄存点信息 */
+.locker-info-section {
+	margin: 30rpx;
+	padding: 40rpx;
+	background: linear-gradient(135deg, 
+		rgba(255, 255, 255, 0.95) 0%, 
+		rgba(255, 255, 255, 0.85) 100%);
+	backdrop-filter: blur(20rpx);
+	border-radius: 25rpx;
+	box-shadow: 0 8rpx 25rpx rgba(0, 0, 0, 0.1);
+}
+
+.locker-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 20rpx;
+}
+
+.locker-name {
+	font-size: 36rpx;
+	font-weight: bold;
+	color: #333333;
+	flex: 1;
+}
+
+.locker-status {
+	padding: 10rpx 20rpx;
+	border-radius: 20rpx;
+	font-size: 24rpx;
+}
+
+.locker-status.available {
+	background: linear-gradient(135deg, #4CAF50, #45a049);
+	color: #ffffff;
+}
+
+.locker-status.unavailable {
+	background: linear-gradient(135deg, #f44336, #d32f2f);
+	color: #ffffff;
+}
+
+.locker-address {
+	display: flex;
+	align-items: center;
+	margin-bottom: 15rpx;
+}
+
+.address-icon {
+	font-size: 28rpx;
+	margin-right: 10rpx;
+	color: #667eea;
+}
+
+.address-text {
+	font-size: 28rpx;
+	color: #666666;
+	flex: 1;
+}
+
+.locker-distance {
+	text-align: right;
+}
+
+.distance-text {
+	font-size: 24rpx;
+	color: #999999;
+}
+
+/* 容量信息 */
+.capacity-section {
+	margin: 30rpx;
+	padding: 40rpx;
+	background: linear-gradient(135deg, 
+		rgba(255, 255, 255, 0.95) 0%, 
+		rgba(255, 255, 255, 0.85) 100%);
+	backdrop-filter: blur(20rpx);
+	border-radius: 25rpx;
+	box-shadow: 0 8rpx 25rpx rgba(0, 0, 0, 0.1);
+}
+
+.section-title {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 30rpx;
+}
+
+.title-text {
+	font-size: 32rpx;
+	font-weight: bold;
+	color: #333333;
+}
+
+.refresh-btn {
+	font-size: 26rpx;
+	color: #667eea;
+	padding: 10rpx 20rpx;
+	border-radius: 20rpx;
+	background: rgba(102, 126, 234, 0.1);
+}
+
+.capacity-grid {
+	display: flex;
+	justify-content: space-between;
+}
+
+.capacity-item {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 30rpx 20rpx;
+	margin: 0 10rpx;
+	border-radius: 20rpx;
+	background: linear-gradient(135deg, 
+		rgba(102, 126, 234, 0.1) 0%, 
+		rgba(118, 75, 162, 0.1) 100%);
+}
+
+.capacity-icon {
+	font-size: 48rpx;
+	margin-bottom: 15rpx;
+}
+
+.capacity-icon.large {
+	color: #ff6b6b;
+}
+
+.capacity-icon.medium {
+	color: #ffa500;
+}
+
+.capacity-icon.small {
+	color: #4CAF50;
+}
+
+.capacity-label {
+	font-size: 28rpx;
+	font-weight: bold;
+	color: #333333;
+	margin-bottom: 10rpx;
+}
+
+.capacity-count {
+	font-size: 36rpx;
+	font-weight: bold;
+	color: #667eea;
+	margin-bottom: 10rpx;
+}
+
+.capacity-count.zero {
+	color: #999999;
+}
+
+.capacity-size {
+	font-size: 22rpx;
+	color: #999999;
+	text-align: center;
+}
+
+/* 服务信息 */
+.service-section {
+	margin: 30rpx;
+	padding: 40rpx;
+	background: linear-gradient(135deg, 
+		rgba(255, 255, 255, 0.95) 0%, 
+		rgba(255, 255, 255, 0.85) 100%);
+	backdrop-filter: blur(20rpx);
+	border-radius: 25rpx;
+	box-shadow: 0 8rpx 25rpx rgba(0, 0, 0, 0.1);
+}
+
+.service-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 25rpx 0;
+	border-bottom: 1rpx solid rgba(0, 0, 0, 0.1);
+}
+
+.service-item:last-child {
+	border-bottom: none;
+}
+
+.service-label {
+	font-size: 28rpx;
+	color: #333333;
+}
+
+.service-value {
+	font-size: 28rpx;
+	color: #666666;
+}
+
+.service-value.phone {
+	color: #667eea;
+	text-decoration: underline;
+}
+
+/* 操作按钮 */
+.action-section {
+	display: flex;
+	padding: 30rpx;
+	gap: 20rpx;
+}
+
+.action-btn {
+	flex: 1;
+	padding: 30rpx;
+	border-radius: 30rpx;
+	font-size: 32rpx;
+	font-weight: bold;
+	border: none;
+}
+
+.action-btn.primary {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	color: #ffffff;
+	box-shadow: 0 8rpx 25rpx rgba(102, 126, 234, 0.4);
+}
+
+.action-btn.primary:disabled {
+	background: #cccccc;
+	box-shadow: none;
+}
+
+.action-btn.secondary {
+	background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+	color: #ffffff;
+	box-shadow: 0 8rpx 25rpx rgba(240, 147, 251, 0.4);
+}
 </style>
