@@ -63,6 +63,13 @@
       }
     },
     {
+      "path": "pages/admin/login",
+      "style": {
+        "navigationBarTitleText": "管理员登录",
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/admin/admin",
       "style": {
         "navigationBarTitleText": "管理员",
@@ -99,6 +106,33 @@
       "path": "pages/show/show",
       "style": {
         "navigationBarTitleText": ""
+      }
+    },
+    {
+      "path": "pages/point/point",
+      "style": {
+        "navigationBarTitleText": "我的网点"
+      }
+    },
+    {
+      "path": "pages/point-detail/point-detail",
+      "style": {
+        "navigationBarTitleText": "网点详情",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/point-edit/point-edit",
+      "style": {
+        "navigationBarTitleText": "我的网点",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/price-rule/price-rule",
+      "style": {
+        "navigationBarTitleText": "收费规则",
+        "navigationStyle": "custom"
       }
     }
   ],

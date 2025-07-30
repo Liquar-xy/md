@@ -166,7 +166,7 @@ export default {
           Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTM3NTUyNDMsImlkIjoiMTIzIiwieW91cl9jdXN0b21fY2xhaW0iOiJ5b3VyX2N1c3RvbV92YWx1ZSJ9.qcdoe8dSYtfQBZgCP30Yln4r8z9ovPDEF1fNVlviWX4'
         },
         success: (res) => {
-          if (res.data && res.data.code === 200) {
+          if (res.data && (res.data.code === 200 || res.data.code === "200")) {
             this.depositResult = {
               order_no: res.data.data.orderNo,
               locker_id: res.data.data.lockerId
@@ -189,7 +189,7 @@ export default {
           Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTM3NTUyNDMsImlkIjoiMTIzIiwieW91cl9jdXN0b21fY2xhaW0iOiJ5b3VyX2N1c3RvbV92YWx1ZSJ9.qcdoe8dSYtfQBZgCP30Yln4r8z9ovPDEF1fNVlviWX4'
         },
         success: (res) => {
-          if (res.data && res.data.code === 200) {
+          if (res.data && (res.data.code === 200 || res.data.code === "200")) {
             this.newLockerId = res.data.lockerId;
             this.showChangeLocker = true;
           } else {

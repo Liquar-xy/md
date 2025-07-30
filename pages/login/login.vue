@@ -243,12 +243,11 @@ export default {
 			let loginUrl, loginData;
 			
 			if (this.loginType === 'admin') {
-				// 管理员登录接口
-				loginUrl = 'http://localhost:8000/adminLogin';
+				// 管理员登录接口 - 使用正确的路由
+				loginUrl = 'http://localhost:8000/admin';
 				loginData = {
-					mobile: this.account,
-					password: this.password,
-					smsCode: this.verifyCode
+					admin_id: this.account,
+					locker_point_id: '1' // 默认网点ID，可以根据需要修改
 				};
 			} else {
 				// 用户登录接口
@@ -261,9 +260,14 @@ export default {
 				};
 			}
 			
+			console.log('=== 管理员登录请求详情 ===');
 			console.log('登录类型:', this.loginType);
 			console.log('登录接口:', loginUrl);
 			console.log('登录请求参数:', loginData);
+			console.log('请求参数详情:');
+			console.log('  mobile:', loginData.mobile);
+			console.log('  password:', loginData.password);
+			console.log('  smsCode:', loginData.smsCode);
 			
 			uni.request({
 				url: loginUrl,
@@ -274,11 +278,17 @@ export default {
 				},
 				success: (res) => {
 					uni.hideLoading();
-					console.log('登录响应:', res.data);
+					console.log('=== 管理员登录响应详情 ===');
+					console.log('完整响应:', res);
+					console.log('响应数据:', res.data);
+					console.log('响应状态码:', res.statusCode);
 					console.log('响应数据类型:', typeof res.data.code);
 					console.log('响应code值:', res.data.code);
 					console.log('响应code是否等于200:', res.data.code === 200);
 					console.log('响应code是否等于"200":', res.data.code === "200");
+					console.log('响应消息:', res.data.msg);
+					console.log('管理员ID:', res.data.id);
+					console.log('Token:', res.data.token);
 					
 					if (res.data && (res.data.code === 200 || res.data.code === "200")) {
 						// 登录成功
@@ -289,16 +299,25 @@ export default {
 						let loginData;
 						
 						if (this.loginType === 'admin') {
-							// 管理员登录数据
+							// 管理员登录数据 - 管理员接口返回的是数据统计，不是登录信息
 							loginData = {
 								username: '管理员',
 								phoneNumber: this.account,
 								account: this.account,
 								loginType: this.loginType,
-								token: res.data.token,
-								userId: res.data.id || this.account,
-								id: res.data.id || this.account,
-								isLoggedIn: true
+								token: 'admin_token_' + this.account, // 生成管理员token
+								userId: this.account,
+								id: this.account,
+								isLoggedIn: true,
+								// 保存管理员统计数据
+								adminStats: {
+									pointNum: res.data.pointNum,
+									lastOrderNum: res.data.lastOrderNum,
+									yesterdayOrderNum: res.data.yesterdayOrderNum,
+									lastOrderPrice: res.data.lastOrderPrice,
+									mouthPrice: res.data.mouthPrice,
+									monthNum: res.data.monthNum
+								}
 							};
 						} else {
 							// 用户登录数据
@@ -321,9 +340,9 @@ export default {
 							} else {
 								uni.setStorageSync('userData', JSON.stringify(loginData));
 							}
-							// 添加cookie存储token
-							document.cookie = `token=${loginData.token}; path=/; max-age=86400; SameSite=Lax`;
-							console.log('登录数据已保存到localStorage和cookie');
+							// 保存token到本地存储
+							uni.setStorageSync('token', loginData.token);
+							console.log('登录数据已保存到localStorage');
 						} catch (e) {
 							console.log('保存登录数据失败:', e);
 						}

@@ -83,14 +83,17 @@ export default {
 	},
 	
 	onLoad() {
+		console.log('订单列表页面加载');
 		// 监听订单数据传递
 		uni.$on('orderListData', (data) => {
 			console.log('接收到订单数据:', data);
-			this.orderList = data;
+			this.orderList = data || [];
+			console.log('设置订单列表:', this.orderList);
 		});
 		
 		// 如果没有接收到数据，则重新获取
 		if (this.orderList.length === 0) {
+			console.log('没有接收到订单数据，重新获取');
 			this.loadOrderList();
 		}
 	},
@@ -115,60 +118,52 @@ export default {
 				title: '加载中...'
 			});
 			
-			// 获取用户数据
-			let userData = null;
-			try {
-				const userDataStr = uni.getStorageSync('userData');
-				if (userDataStr) {
-					userData = JSON.parse(userDataStr);
+			// 临时使用模拟数据，等待后端接口完成
+			console.log('订单列表页面使用模拟数据');
+			const mockOrderData = [
+				{
+					id: '1',
+					title: '上海高铁站寄存柜',
+					location: '上海高铁站寄存柜',
+					detail: '寄存柜: 21号柜 (大)',
+					price: '15.00',
+					status: 'active',
+					createTime: '2024-01-15 14:30'
+				},
+				{
+					id: '2',
+					title: '台北车站寄存点',
+					location: '台北车站寄存点',
+					detail: '寄存柜: 15号柜 (中)',
+					price: '12.00',
+					status: 'completed',
+					createTime: '2024-01-14 10:20'
+				},
+				{
+					id: '3',
+					title: '北京机场寄存点',
+					location: '北京机场寄存点',
+					detail: '寄存柜: 8号柜 (小)',
+					price: '10.00',
+					status: 'completed',
+					createTime: '2024-01-13 09:15'
 				}
-			} catch (e) {
-				console.log('获取用户数据失败:', e);
-			}
+			];
 			
-			// 调用后端list接口
-			uni.request({
-				url: 'http://localhost:8000/list',
-				method: 'POST',
-				data: {
-					userId: userData?.userId || '1',
-					page: this.page,
-					pageSize: this.pageSize
-				},
-				header: {
-					'Content-Type': 'application/x-www-form-urlencoded'
-				},
-				success: (res) => {
-					uni.hideLoading();
-					this.loading = false;
-					console.log('订单列表响应:', res.data);
-					
-					if (res.data && res.data.code === 200) {
-						const newOrders = res.data.data || [];
-						if (this.page === 1) {
-							this.orderList = newOrders;
-						} else {
-							this.orderList = [...this.orderList, ...newOrders];
-						}
-						
-						this.hasMore = newOrders.length === this.pageSize;
-					} else {
-						uni.showToast({
-							title: res.data?.msg || '获取订单失败',
-							icon: 'none'
-						});
-					}
-				},
-				fail: (err) => {
-					uni.hideLoading();
-					this.loading = false;
-					console.log('获取订单列表失败:', err);
-					uni.showToast({
-						title: '网络错误，请重试',
-						icon: 'none'
-					});
+			// 模拟API响应
+			setTimeout(() => {
+				uni.hideLoading();
+				this.loading = false;
+				console.log('订单列表模拟数据:', mockOrderData);
+				
+				if (this.page === 1) {
+					this.orderList = mockOrderData;
+				} else {
+					this.orderList = [...this.orderList, ...mockOrderData];
 				}
-			});
+				
+				this.hasMore = false; // 模拟数据只有一页
+			}, 1000);
 		},
 		
 		// 加载更多
@@ -210,7 +205,7 @@ export default {
 							},
 							success: (res) => {
 								uni.hideLoading();
-								if (res.data && res.data.code === 200) {
+								if (res.data && (res.data.code === 200 || res.data.code === "200")) {
 									uni.showToast({
 										title: '取件成功',
 										icon: 'success'

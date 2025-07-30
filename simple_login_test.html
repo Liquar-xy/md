@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>简单登录测试</title>
+    <style>
+        body { padding: 20px; font-family: Arial; }
+        input { width: 200px; padding: 5px; margin: 5px; }
+        button { padding: 10px 20px; margin: 5px; }
+        .result { margin-top: 20px; padding: 10px; background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <h2>简单登录测试</h2>
+    
+    <div>
+        <input type="text" id="mobile" value="13800138000" placeholder="手机号">
+        <input type="password" id="password" value="123456" placeholder="密码">
+        <input type="text" id="smsCode" value="1234" placeholder="验证码">
+        <button onclick="login()">登录</button>
+    </div>
+    
+    <div id="result" class="result"></div>
+
+    <script>
+        function login() {
+            const mobile = document.getElementById('mobile').value;
+            const password = document.getElementById('password').value;
+            const smsCode = document.getElementById('smsCode').value;
+            
+            const data = {
+                Mobile: mobile,
+                Password: password,
+                SmsCode: smsCode
+            };
+            
+            document.getElementById('result').innerHTML = '登录中...';
+            
+            fetch('http://localhost:8000/admin/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams(data)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 200 || data.code === "200") {
+                    document.getElementById('result').innerHTML = 
+                        '✅ 登录成功!<br>' +
+                        'ID: ' + data.id + '<br>' +
+                        'Token: ' + (data.token ? data.token.substring(0, 20) + '...' : 'N/A');
+                } else {
+                    document.getElementById('result').innerHTML = 
+                        '❌ 登录失败: ' + (data.msg || '未知错误');
+                }
+            })
+            .catch(err => {
+                document.getElementById('result').innerHTML = '❌ 请求失败: ' + err.message;
+            });
+        }
+    </script>
+</body>
+</html> 

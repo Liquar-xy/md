@@ -142,62 +142,16 @@ export default {
 	methods: {
 		// 加载管理员数据
 		loadAdminData() {
-			console.log('开始加载管理员数据');
+			// 检查登录状态
+			const adminToken = uni.getStorageSync('adminToken');
+			const adminId = uni.getStorageSync('adminId');
+			const adminMobile = uni.getStorageSync('adminMobile');
 			
-			try {
-				const adminData = uni.getStorageSync('adminData');
-				console.log('原始adminData:', adminData);
-				
-				if (adminData) {
-					const data = JSON.parse(adminData);
-					console.log('解析后的adminData:', data);
-					console.log('data.userId:', data.userId);
-					console.log('data.account:', data.account);
-					console.log('data.id:', data.id);
-					
-					// 支持多种字段名
-					this.adminId = data.userId || data.account || data.id || '';
-					console.log('最终设置的管理员ID:', this.adminId);
-					console.log('管理员ID类型:', typeof this.adminId);
-					console.log('管理员ID是否为空:', this.adminId === '');
-					console.log('管理员ID是否为null:', this.adminId === null);
-					console.log('管理员ID是否为undefined:', this.adminId === undefined);
-				} else {
-					this.adminId = '';
-					console.log('未找到管理员数据');
-				}
-			} catch (e) {
-				console.log('获取管理员数据失败:', e);
-				this.adminId = '';
-			}
+			// 设置管理员ID
+			this.adminId = adminId || '1';
+			this.lockerPointId = '1';
 			
-			// 从本地存储获取lockerPointId，如果没有则使用默认值
-			try {
-				const lockerPointId = uni.getStorageSync('lockerPointId');
-				this.lockerPointId = lockerPointId || '1'; // 设置默认值
-				console.log('设置lockerPointId:', this.lockerPointId);
-			} catch (e) {
-				console.log('获取lockerPointId失败:', e);
-				this.lockerPointId = '1'; // 设置默认值
-			}
-			
-			// 验证必要参数
-			if (!this.adminId) {
-				console.log('缺少管理员ID，跳转到登录页面');
-				uni.showToast({
-					title: '请先登录',
-					icon: 'none',
-					success: () => {
-						setTimeout(() => {
-							uni.reLaunch({
-								url: '/pages/login/login'
-							});
-						}, 1500);
-					}
-				});
-				return;
-			}
-			
+			// 加载数据
 			this.fetchAdminData();
 		},
 		
@@ -219,14 +173,15 @@ export default {
 			
 			uni.showLoading({ title: '加载中...' });
 			
-			// 使用和你测试时相同的参数
+			// 使用登录后的管理员ID
 			const requestData = {
-				admin_id: "1",  // 使用固定的管理员ID
-				locker_point_id: "2"  // 使用固定的网点ID
+				admin_id: this.adminId,
+				locker_point_id: this.lockerPointId || "1"
 			};
 			
-			console.log('=== 使用固定参数 ===');
-			console.log('注意：使用固定参数 admin_id=1, locker_point_id=2');
+			console.log('=== 使用登录后的参数 ===');
+			console.log('管理员ID:', this.adminId);
+			console.log('网点ID:', this.lockerPointId);
 			
 			console.log('=== 请求详情 ===');
 			console.log('请求URL:', 'http://localhost:8000/admin');
@@ -324,11 +279,33 @@ export default {
 						console.log('code是否等于200:', res.data?.code === 200);
 						console.log('code是否等于"200":', res.data?.code === "200");
 						
-						uni.showToast({ 
-							title: `获取数据失败: ${res.data?.msg || '未知错误'}`, 
-							icon: 'none',
-							duration: 3000
-						});
+						// 检查是否是认证错误，如果是则提示重新登录
+						if (res.data?.code === 401 || res.data?.msg?.includes('未登录') || res.data?.msg?.includes('token')) {
+							console.log('检测到认证错误，提示重新登录');
+							uni.showModal({
+								title: '登录已过期',
+								content: '您的登录已过期，请重新登录',
+								showCancel: false,
+								success: () => {
+									// 清除登录信息
+									uni.removeStorageSync('adminToken');
+									uni.removeStorageSync('adminId');
+									uni.removeStorageSync('adminMobile');
+									
+									// 跳转到登录页面
+									uni.reLaunch({
+										url: '/pages/admin/login'
+									});
+								}
+							});
+						} else {
+							// 其他错误只显示提示，不退出登录
+							uni.showToast({ 
+								title: `获取数据失败: ${res.data?.msg || '未知错误'}`, 
+								icon: 'none',
+								duration: 3000
+							});
+						}
 					}
 				},
 				fail: (err) => {
@@ -343,6 +320,7 @@ export default {
 						console.log('可能是跨域或网络问题');
 					}
 					
+					// 不要因为API失败就退出登录，只显示错误信息
 					uni.showToast({ 
 						title: `网络请求失败: ${err.errMsg || '未知错误'}`, 
 						icon: 'none',
@@ -362,9 +340,40 @@ export default {
 		// 菜单
 		handleMenu() {
 			uni.showActionSheet({
-				itemList: ['帮助', '关于'],
+				itemList: ['退出登录', '帮助', '关于'],
 				success: (res) => {
 					console.log('选择了:', res.tapIndex);
+					if (res.tapIndex === 0) {
+						this.handleLogout();
+					}
+				}
+			});
+		},
+		
+		// 退出登录
+		handleLogout() {
+			uni.showModal({
+				title: '确认退出',
+				content: '确定要退出登录吗？',
+				success: (res) => {
+					if (res.confirm) {
+						// 清除登录信息
+						uni.removeStorageSync('adminToken');
+						uni.removeStorageSync('adminId');
+						uni.removeStorageSync('adminMobile');
+						
+						uni.showToast({
+							title: '已退出登录',
+							icon: 'success'
+						});
+						
+						// 跳转到登录页面
+						setTimeout(() => {
+							uni.reLaunch({
+								url: '/pages/admin/login'
+							});
+						}, 1500);
+					}
 				}
 			});
 		},
@@ -378,9 +387,8 @@ export default {
 		
 		// 我的网点
 		handleMySites() {
-			uni.showToast({
-				title: '我的网点',
-				icon: 'none'
+			uni.navigateTo({
+				url: '/pages/point/point'
 			});
 		},
 		

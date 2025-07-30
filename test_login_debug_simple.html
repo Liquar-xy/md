@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录调试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px; margin-bottom: 10px; }
+        .result { background: #f8f9fa; padding: 15px; margin-top: 15px; border-radius: 4px; white-space: pre-wrap; font-family: monospace; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🔐 登录调试</h2>
+        
+        <div class="form-group">
+            <label>手机号:</label>
+            <input type="text" id="mobile" value="13800138000">
+        </div>
+        
+        <div class="form-group">
+            <label>密码:</label>
+            <input type="password" id="password" value="123456">
+        </div>
+        
+        <div class="form-group">
+            <label>验证码:</label>
+            <input type="text" id="smsCode" value="1234" maxlength="4">
+        </div>
+        
+        <button onclick="testLogin()">🚀 测试登录</button>
+        <button onclick="checkStorage()">📋 检查存储</button>
+        <button onclick="clearStorage()">🗑️ 清除存储</button>
+        
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        function testLogin() {
+            const mobile = document.getElementById('mobile').value;
+            const password = document.getElementById('password').value;
+            const smsCode = document.getElementById('smsCode').value;
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '🚀 测试登录中...';
+            resultDiv.className = 'result';
+            
+            const loginData = {
+                Mobile: mobile,
+                Password: password,
+                SmsCode: smsCode
+            };
+            
+            console.log('=== 登录请求 ===');
+            console.log('请求参数:', loginData);
+            
+            fetch('http://localhost:8000/admin/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams(loginData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('=== 登录响应 ===');
+                console.log('响应数据:', data);
+                
+                if (data.code === 200 || data.code === "200") {
+                    // 模拟保存登录信息
+                    const tokenToSave = data.token || '';
+                    const idToSave = data.id ? String(data.id) : '1';
+                    const mobileToSave = mobile || '';
+                    
+                    localStorage.setItem('adminToken', tokenToSave);
+                    localStorage.setItem('adminId', idToSave);
+                    localStorage.setItem('adminMobile', mobileToSave);
+                    
+                    resultDiv.innerHTML = 
+                        '✅ 登录成功!\n\n' +
+                        '📱 手机号: ' + mobile + '\n' +
+                        '🆔 管理员ID: ' + data.id + '\n' +
+                        '🔑 Token: ' + (data.token ? data.token.substring(0, 20) + '...' : 'N/A') + '\n\n' +
+                        '💾 已保存到localStorage:\n' +
+                        'adminToken: ' + tokenToSave + '\n' +
+                        'adminId: ' + idToSave + '\n' +
+                        'adminMobile: ' + mobileToSave;
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.innerHTML = 
+                        '❌ 登录失败\n\n' +
+                        '📱 手机号: ' + mobile + '\n' +
+                        '❌ 错误: ' + (data.msg || '未知错误') + '\n' +
+                        '📋 响应: ' + JSON.stringify(data, null, 2);
+                    resultDiv.className = 'result error';
+                }
+            })
+            .catch(error => {
+                resultDiv.innerHTML = 
+                    '❌ 请求失败\n\n' +
+                    '📱 手机号: ' + mobile + '\n' +
+                    '❌ 错误: ' + error.message;
+                resultDiv.className = 'result error';
+            });
+        }
+        
+        function checkStorage() {
+            const adminToken = localStorage.getItem('adminToken');
+            const adminId = localStorage.getItem('adminId');
+            const adminMobile = localStorage.getItem('adminMobile');
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 
+                '📋 存储状态检查:\n\n' +
+                'adminToken: ' + (adminToken || '未找到') + ' (类型: ' + typeof adminToken + ')\n' +
+                'adminId: ' + (adminId || '未找到') + ' (类型: ' + typeof adminId + ')\n' +
+                'adminMobile: ' + (adminMobile || '未找到') + ' (类型: ' + typeof adminMobile + ')\n\n' +
+                '登录状态: ' + (adminToken || adminId || adminMobile ? '已登录' : '未登录');
+            resultDiv.className = 'result';
+        }
+        
+        function clearStorage() {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminId');
+            localStorage.removeItem('adminMobile');
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '🗑️ 已清除所有登录数据';
+            resultDiv.className = 'result';
+        }
+        
+        // 页面加载时检查存储
+        window.onload = function() {
+            checkStorage();
+        };
+    </script>
+</body>
+</html> 

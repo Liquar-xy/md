@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快速登录测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px; }
+        .result { background: #f8f9fa; padding: 15px; margin-top: 15px; border-radius: 4px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🔐 管理员登录测试</h2>
+        
+        <div class="form-group">
+            <label>手机号:</label>
+            <input type="text" id="mobile" value="13800138000">
+        </div>
+        
+        <div class="form-group">
+            <label>密码:</label>
+            <input type="password" id="password" value="123456">
+        </div>
+        
+        <div class="form-group">
+            <label>验证码:</label>
+            <input type="text" id="smsCode" value="1234" maxlength="4">
+        </div>
+        
+        <button onclick="testLogin()">🚀 测试登录</button>
+        <button onclick="sendSms()">📱 发送验证码</button>
+        
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        function testLogin() {
+            const mobile = document.getElementById('mobile').value;
+            const password = document.getElementById('password').value;
+            const smsCode = document.getElementById('smsCode').value;
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '🚀 测试登录中...';
+            
+            const loginData = {
+                Mobile: mobile,
+                Password: password,
+                SmsCode: smsCode
+            };
+            
+            fetch('http://localhost:8000/admin/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams(loginData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.code === 200 || data.code === "200") {
+                    resultDiv.innerHTML = '✅ 登录成功!\n\n管理员ID: ' + data.id + '\nToken: ' + (data.token ? data.token.substring(0, 20) + '...' : 'N/A');
+                } else {
+                    resultDiv.innerHTML = '❌ 登录失败\n\n错误: ' + (data.msg || '未知错误') + '\n\n响应: ' + JSON.stringify(data, null, 2);
+                }
+            })
+            .catch(error => {
+                resultDiv.innerHTML = '❌ 请求失败\n\n错误: ' + error.message;
+            });
+        }
+        
+        function sendSms() {
+            const mobile = document.getElementById('mobile').value;
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '📱 发送验证码中...';
+            
+            const smsData = {
+                mobile: mobile,
+                source: 'admin'
+            };
+            
+            fetch('http://localhost:8000/sendSms', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams(smsData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.code === 200 || data.code === "200") {
+                    resultDiv.innerHTML = '✅ 验证码发送成功!\n\nRedis键: sendSms' + mobile + 'admin';
+                } else {
+                    resultDiv.innerHTML = '❌ 验证码发送失败\n\n错误: ' + (data.msg || '未知错误');
+                }
+            })
+            .catch(error => {
+                resultDiv.innerHTML = '❌ 请求失败\n\n错误: ' + error.message;
+            });
+        }
+    </script>
+</body>
+</html> 
