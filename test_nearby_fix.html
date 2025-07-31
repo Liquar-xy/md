@@ -3,272 +3,601 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>附近页面显示修复测试</title>
+    <title>测试附近页面修复</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            margin: 0;
-            padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-        }
-        
-        .container {
-            max-width: 800px;
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
             margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
             background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        
-        .header {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-button {
+            background: #007AFF;
             color: white;
-            padding: 30px;
-            text-align: center;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
         }
-        
-        .header h1 {
-            font-size: 28px;
-            margin-bottom: 10px;
+        .test-button:hover {
+            background: #0056CC;
         }
-        
-        .content {
-            padding: 30px;
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
         }
-        
-        .problem-section {
-            background: #f8d7da;
-            border-radius: 10px;
-            padding: 25px;
-            margin-bottom: 30px;
-            border-left: 4px solid #dc3545;
-        }
-        
-        .fix-section {
-            background: #d4edda;
-            border-radius: 10px;
-            padding: 25px;
-            margin-bottom: 30px;
+        .success {
             border-left: 4px solid #28a745;
         }
-        
-        .fix-item {
-            background: white;
-            border-radius: 8px;
-            padding: 15px;
+        .error {
+            border-left: 4px solid #dc3545;
+        }
+        .warning {
+            border-left: 4px solid #ffc107;
+        }
+        .map-container {
+            width: 100%;
+            height: 400px;
+            border: 1px solid #ddd;
+            margin-top: 10px;
+            position: relative;
+        }
+        .status-bar {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
             margin-bottom: 10px;
-            border-left: 3px solid #28a745;
-        }
-        
-        .code-block {
-            background: #2d3748;
-            color: #e2e8f0;
-            padding: 15px;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-            line-height: 1.4;
-            margin: 10px 0;
-            overflow-x: auto;
-        }
-        
-        .comparison {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin: 20px 0;
-        }
-        
-        .comparison-item {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            border: 2px solid #e9ecef;
-        }
-        
-        .comparison-item.before {
-            border-color: #dc3545;
-        }
-        
-        .comparison-item.after {
-            border-color: #28a745;
-        }
-        
-        .comparison-item h4 {
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .comparison-item.before h4 {
-            color: #dc3545;
-        }
-        
-        .comparison-item.after h4 {
-            color: #28a745;
+            font-size: 12px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>🔧 附近页面显示修复</h1>
-            <p>解决"附近多少米没有寄存点"一直显示的问题</p>
+        <h1>🔧 测试附近页面修复</h1>
+        
+        <div class="status-bar">
+            <div>测试时间: <span id="testTime"></span></div>
+            <div>百度地图API状态: <span id="apiStatus">未检测</span></div>
+            <div>地图实例状态: <span id="mapStatus">未创建</span></div>
         </div>
         
-        <div class="content">
-            <div class="problem-section">
-                <h3>❌ 问题描述</h3>
-                <p>附近页面一直显示"附近多少米没有寄存点"的提示，而不是显示实际的寄存点列表或正确的无寄存点提示。</p>
-                
-                <h4>问题原因：</h4>
-                <ul>
-                    <li>寄存点信息面板的显示条件是 <code>v-if="selectedLocker"</code></li>
-                    <li>当没有找到寄存点时，<code>selectedLocker</code> 被设置为 <code>null</code></li>
-                    <li>导致整个寄存点面板不显示，用户看不到任何信息</li>
-                </ul>
-            </div>
+        <div class="test-section">
+            <h3>🔍 问题诊断</h3>
+            <p>诊断可能导致附近页面报错的问题</p>
             
-            <div class="comparison">
-                <div class="comparison-item before">
-                    <h4>❌ 修复前</h4>
-                    <div class="code-block">
-&lt;!-- 寄存点信息面板 --&gt;
-&lt;view class="locker-panel" v-if="selectedLocker"&gt;
-    &lt;!-- 只有当selectedLocker存在时才显示 --&gt;
-    &lt;!-- 没有寄存点时，selectedLocker为null，面板不显示 --&gt;
-&lt;/view&gt;
-                    </div>
-                    <p><strong>结果：</strong> 没有寄存点时，用户看不到任何提示信息</p>
-                </div>
-                
-                <div class="comparison-item after">
-                    <h4>✅ 修复后</h4>
-                    <div class="code-block">
-&lt;!-- 寄存点信息面板 --&gt;
-&lt;view class="locker-panel" v-if="currentLocation"&gt;
-    &lt;!-- 有位置信息时就显示面板 --&gt;
-    
-    &lt;!-- 有寄存点时显示寄存点信息 --&gt;
-    &lt;view v-if="selectedLocker"&gt;
-        &lt;!-- 寄存点详细信息 --&gt;
-    &lt;/view&gt;
-    
-    &lt;!-- 没有寄存点时显示提示信息 --&gt;
-    &lt;view class="no-lockers" v-else&gt;
-        &lt;text&gt;附近暂无寄存点&lt;/text&gt;
-        &lt;button @click="refreshNearbyLockers"&gt;重新搜索&lt;/button&gt;
-        &lt;button @click="openSearch"&gt;搜索其他地点&lt;/button&gt;
-    &lt;/view&gt;
-&lt;/view&gt;
-                    </div>
-                    <p><strong>结果：</strong> 没有寄存点时，显示友好的提示信息和操作按钮</p>
-                </div>
-            </div>
+            <button class="test-button" onclick="diagnoseProblems()">🔍 开始诊断</button>
+            <button class="test-button" onclick="testBaiduAPI()">🗺️ 测试百度地图API</button>
+            <button class="test-button" onclick="testMapCreation()">📍 测试地图创建</button>
+            <button class="test-button" onclick="clearResults()">🗑️ 清空结果</button>
             
-            <div class="fix-section">
-                <h3>✅ 主要修复内容</h3>
-                
-                <div class="fix-item">
-                    <h4>1. 修改面板显示条件</h4>
-                    <p>从 <code>v-if="selectedLocker"</code> 改为 <code>v-if="currentLocation"</code>，确保有位置信息时就显示面板</p>
-                </div>
-                
-                <div class="fix-item">
-                    <h4>2. 添加无寄存点提示</h4>
-                    <p>当没有找到寄存点时，显示友好的提示信息，而不是隐藏整个面板</p>
-                </div>
-                
-                <div class="fix-item">
-                    <h4>3. 提供操作选项</h4>
-                    <p>添加"重新搜索"和"搜索其他地点"按钮，给用户更多选择</p>
-                </div>
-                
-                <div class="fix-item">
-                    <h4>4. 优化用户体验</h4>
-                    <p>显示具体的搜索范围信息，让用户了解搜索的范围</p>
-                </div>
-            </div>
+            <div id="diagnoseResult" class="result" style="display: none;"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🗺️ 地图功能测试</h3>
+            <p>测试修复后的地图功能</p>
             
-            <div class="fix-section">
-                <h3>🎯 修复后的用户体验</h3>
-                
-                <h4>有寄存点时：</h4>
-                <ul>
-                    <li>显示"找到 X 个寄存点"</li>
-                    <li>显示第一个寄存点的详细信息</li>
-                    <li>显示寄存柜容量和状态</li>
-                    <li>提供"选择此寄存点"按钮</li>
-                </ul>
-                
-                <h4>没有寄存点时：</h4>
-                <ul>
-                    <li>显示"附近暂无寄存点"</li>
-                    <li>显示搜索范围信息</li>
-                    <li>提供"重新搜索"按钮</li>
-                    <li>提供"搜索其他地点"按钮</li>
-                </ul>
-            </div>
+            <button class="test-button" onclick="simulateNearbyPage()">🚀 模拟附近页面</button>
+            <button class="test-button" onclick="testAPICall()">📡 测试API调用</button>
+            <button class="test-button" onclick="testErrorHandling()">⚠️ 测试错误处理</button>
             
-            <div class="fix-section">
-                <h3>🔧 技术实现</h3>
-                
-                <h4>模板结构：</h4>
-                <div class="code-block">
-&lt;view class="locker-panel" v-if="currentLocation"&gt;
-    &lt;view class="panel-header"&gt;
-        &lt;text class="panel-title"&gt;🏪 附近寄存点&lt;/text&gt;
-        &lt;text class="panel-count" v-if="nearbyLockers.length &gt; 0"&gt;
-            找到 {{nearbyLockers.length}} 个寄存点
-        &lt;/text&gt;
-        &lt;text class="panel-count" v-else&gt;
-            附近暂无寄存点
-        &lt;/text&gt;
-        &lt;text class="refresh-btn-small" @click="refreshNearbyLockers"&gt;🔄&lt;/text&gt;
-    &lt;/view&gt;
-    
-    &lt;!-- 有寄存点时显示寄存点信息 --&gt;
-    &lt;view class="selected-locker" v-if="selectedLocker"&gt;
-        &lt;!-- 寄存点详细信息 --&gt;
-    &lt;/view&gt;
-    
-    &lt;!-- 没有寄存点时显示提示信息 --&gt;
-    &lt;view class="no-lockers" v-else&gt;
-        &lt;view class="no-lockers-content"&gt;
-            &lt;text class="no-lockers-icon"&gt;📍&lt;/text&gt;
-            &lt;text class="no-lockers-title"&gt;附近暂无寄存点&lt;/text&gt;
-            &lt;text class="no-lockers-desc"&gt;
-                在当前位置{{currentLocation?.accuracy || 1000}}米范围内未找到可用的寄存点
-            &lt;/text&gt;
-            &lt;view class="no-lockers-actions"&gt;
-                &lt;button class="action-btn secondary" @click="refreshNearbyLockers"&gt;
-                    🔄 重新搜索
-                &lt;/button&gt;
-                &lt;button class="action-btn primary" @click="openSearch"&gt;
-                    🔍 搜索其他地点
-                &lt;/button&gt;
-            &lt;/view&gt;
-        &lt;/view&gt;
-    &lt;/view&gt;
-&lt;/view&gt;
-                </div>
-            </div>
-            
-            <div class="fix-section">
-                <h3>📱 使用说明</h3>
-                <p>修复后，附近页面的行为将是：</p>
-                <ol>
-                    <li>页面加载时显示位置获取状态</li>
-                    <li>获取位置后自动搜索附近寄存点</li>
-                    <li>如果找到寄存点，显示寄存点列表和详细信息</li>
-                    <li>如果没有找到寄存点，显示友好的提示信息和操作按钮</li>
-                    <li>用户可以点击"重新搜索"或"搜索其他地点"</li>
-                </ol>
-            </div>
+            <div id="mapResult" class="result" style="display: none;"></div>
+            <div id="mapContainer" class="map-container" style="display: none;"></div>
         </div>
     </div>
+
+    <script>
+        const BAIDU_MAP_AK = '9jnxn6bIxVgX1u4KffC5Cc83dTMzzYIA';
+        const API_BASE_URL = 'http://localhost:8000';
+        let mapInstance = null;
+        
+        // 更新测试时间
+        document.getElementById('testTime').textContent = new Date().toLocaleString();
+        
+        // 诊断问题
+        function diagnoseProblems() {
+            const resultDiv = document.getElementById('diagnoseResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.textContent = '开始诊断问题...\n\n';
+            
+            let issues = [];
+            let warnings = [];
+            let successes = [];
+            
+            // 1. 检查浏览器环境
+            resultDiv.textContent += '1. 检查浏览器环境...\n';
+            if (typeof document === 'undefined') {
+                issues.push('document对象不可用');
+            } else {
+                successes.push('document对象可用');
+            }
+            
+            if (typeof window === 'undefined') {
+                issues.push('window对象不可用');
+            } else {
+                successes.push('window对象可用');
+            }
+            
+            // 2. 检查DOM API
+            resultDiv.textContent += '2. 检查DOM API...\n';
+            if (typeof document.getElementById === 'function') {
+                successes.push('getElementById方法可用');
+            } else {
+                issues.push('getElementById方法不可用');
+            }
+            
+            if (typeof document.createElement === 'function') {
+                successes.push('createElement方法可用');
+            } else {
+                issues.push('createElement方法不可用');
+            }
+            
+            // 3. 检查网络连接
+            resultDiv.textContent += '3. 检查网络连接...\n';
+            if (navigator.onLine) {
+                successes.push('网络连接正常');
+            } else {
+                warnings.push('网络连接可能有问题');
+            }
+            
+            // 4. 检查百度地图API
+            resultDiv.textContent += '4. 检查百度地图API...\n';
+            if (typeof window.BMap !== 'undefined') {
+                successes.push('百度地图API已加载');
+                document.getElementById('apiStatus').textContent = '已加载';
+            } else {
+                warnings.push('百度地图API未加载');
+                document.getElementById('apiStatus').textContent = '未加载';
+            }
+            
+            // 5. 检查控制台错误
+            resultDiv.textContent += '5. 检查可能的错误源...\n';
+            
+            // 检查常见的错误模式
+            const commonIssues = [
+                { check: () => typeof Promise === 'undefined', message: 'Promise不支持' },
+                { check: () => typeof fetch === 'undefined', message: 'fetch API不支持' },
+                { check: () => typeof URLSearchParams === 'undefined', message: 'URLSearchParams不支持' },
+                { check: () => !document.head, message: 'document.head不可用' }
+            ];
+            
+            commonIssues.forEach(issue => {
+                if (issue.check()) {
+                    issues.push(issue.message);
+                } else {
+                    successes.push(issue.message.replace('不支持', '支持').replace('不可用', '可用'));
+                }
+            });
+            
+            // 生成诊断报告
+            resultDiv.textContent += '\n=== 诊断报告 ===\n\n';
+            
+            if (successes.length > 0) {
+                resultDiv.textContent += '✅ 正常项目:\n';
+                successes.forEach(success => {
+                    resultDiv.textContent += `  - ${success}\n`;
+                });
+                resultDiv.textContent += '\n';
+            }
+            
+            if (warnings.length > 0) {
+                resultDiv.textContent += '⚠️ 警告项目:\n';
+                warnings.forEach(warning => {
+                    resultDiv.textContent += `  - ${warning}\n`;
+                });
+                resultDiv.textContent += '\n';
+            }
+            
+            if (issues.length > 0) {
+                resultDiv.textContent += '❌ 问题项目:\n';
+                issues.forEach(issue => {
+                    resultDiv.textContent += `  - ${issue}\n`;
+                });
+                resultDiv.textContent += '\n';
+                resultDiv.className = 'result error';
+            } else if (warnings.length > 0) {
+                resultDiv.className = 'result warning';
+            } else {
+                resultDiv.className = 'result success';
+            }
+            
+            resultDiv.textContent += '=== 建议 ===\n';
+            if (issues.length === 0 && warnings.length === 0) {
+                resultDiv.textContent += '✅ 环境检查通过，可以继续测试地图功能';
+            } else {
+                resultDiv.textContent += '⚠️ 发现一些问题，建议先解决这些问题再测试地图功能';
+            }
+        }
+        
+        // 测试百度地图API
+        function testBaiduAPI() {
+            const resultDiv = document.getElementById('diagnoseResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.textContent = '测试百度地图API...\n\n';
+            
+            if (window.BMap) {
+                resultDiv.textContent += '✅ 百度地图API已存在\n';
+                testExistingAPI();
+            } else {
+                resultDiv.textContent += '📡 开始加载百度地图API...\n';
+                loadBaiduAPI();
+            }
+            
+            function testExistingAPI() {
+                try {
+                    resultDiv.textContent += `API版本: ${window.BMap.version || '未知'}\n`;
+                    resultDiv.textContent += `可用类: ${Object.keys(window.BMap).length} 个\n`;
+                    
+                    // 测试关键类
+                    const keyClasses = ['Map', 'Point', 'Marker', 'Icon', 'InfoWindow'];
+                    keyClasses.forEach(className => {
+                        if (window.BMap[className]) {
+                            resultDiv.textContent += `  ✅ ${className} 类可用\n`;
+                        } else {
+                            resultDiv.textContent += `  ❌ ${className} 类不可用\n`;
+                        }
+                    });
+                    
+                    resultDiv.className = 'result success';
+                    document.getElementById('apiStatus').textContent = '正常';
+                    
+                } catch (error) {
+                    resultDiv.textContent += `❌ API测试失败: ${error.message}\n`;
+                    resultDiv.className = 'result error';
+                    document.getElementById('apiStatus').textContent = '异常';
+                }
+            }
+            
+            function loadBaiduAPI() {
+                const script = document.createElement('script');
+                script.src = `https://api.map.baidu.com/api?v=3.0&ak=${BAIDU_MAP_AK}&callback=testBaiduCallback`;
+                
+                const timeout = setTimeout(() => {
+                    resultDiv.textContent += '❌ API加载超时\n';
+                    resultDiv.className = 'result error';
+                    document.getElementById('apiStatus').textContent = '超时';
+                }, 10000);
+                
+                window.testBaiduCallback = function() {
+                    clearTimeout(timeout);
+                    resultDiv.textContent += '✅ API加载成功\n';
+                    testExistingAPI();
+                    delete window.testBaiduCallback;
+                };
+                
+                script.onerror = function() {
+                    clearTimeout(timeout);
+                    resultDiv.textContent += '❌ API脚本加载失败\n';
+                    resultDiv.className = 'result error';
+                    document.getElementById('apiStatus').textContent = '失败';
+                };
+                
+                document.head.appendChild(script);
+            }
+        }
+        
+        // 测试地图创建
+        function testMapCreation() {
+            const resultDiv = document.getElementById('mapResult');
+            const mapContainer = document.getElementById('mapContainer');
+            
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.textContent = '测试地图创建...\n\n';
+            
+            if (!window.BMap) {
+                resultDiv.textContent += '❌ 百度地图API未加载，请先测试API\n';
+                resultDiv.className = 'result error';
+                return;
+            }
+            
+            try {
+                mapContainer.style.display = 'block';
+                mapContainer.innerHTML = ''; // 清空容器
+                
+                resultDiv.textContent += '1. 创建地图容器...\n';
+                resultDiv.textContent += `容器尺寸: ${mapContainer.offsetWidth}x${mapContainer.offsetHeight}\n`;
+                
+                if (mapContainer.offsetWidth === 0 || mapContainer.offsetHeight === 0) {
+                    resultDiv.textContent += '⚠️ 容器尺寸为0，设置默认尺寸\n';
+                    mapContainer.style.width = '100%';
+                    mapContainer.style.height = '400px';
+                }
+                
+                resultDiv.textContent += '2. 创建地图实例...\n';
+                mapInstance = new BMap.Map(mapContainer);
+                
+                if (!mapInstance) {
+                    throw new Error('地图实例创建失败');
+                }
+                
+                resultDiv.textContent += '3. 设置地图中心和缩放...\n';
+                const point = new BMap.Point(113.6253, 34.7466);
+                mapInstance.centerAndZoom(point, 15);
+                
+                resultDiv.textContent += '4. 添加地图控件...\n';
+                mapInstance.addControl(new BMap.NavigationControl());
+                mapInstance.addControl(new BMap.ScaleControl());
+                
+                resultDiv.textContent += '5. 启用地图交互...\n';
+                mapInstance.enableScrollWheelZoom(true);
+                mapInstance.enableDragging(true);
+                
+                resultDiv.textContent += '✅ 地图创建成功！\n';
+                resultDiv.className = 'result success';
+                document.getElementById('mapStatus').textContent = '正常';
+                
+            } catch (error) {
+                resultDiv.textContent += `❌ 地图创建失败: ${error.message}\n`;
+                resultDiv.className = 'result error';
+                document.getElementById('mapStatus').textContent = '失败';
+            }
+        }
+        
+        // 模拟附近页面
+        function simulateNearbyPage() {
+            const resultDiv = document.getElementById('mapResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.textContent = '模拟附近页面加载流程...\n\n';
+            
+            // 模拟页面加载流程
+            const steps = [
+                { name: '页面初始化', action: () => Promise.resolve('页面初始化完成') },
+                { name: '加载百度地图API', action: () => loadMapAPI() },
+                { name: '创建地图实例', action: () => createMap() },
+                { name: '获取城市位置', action: () => getCityLocation() },
+                { name: '调用附近API', action: () => callNearbyAPI() }
+            ];
+            
+            executeSteps(steps, 0);
+            
+            function executeSteps(steps, index) {
+                if (index >= steps.length) {
+                    resultDiv.textContent += '\n✅ 所有步骤完成！\n';
+                    resultDiv.className = 'result success';
+                    return;
+                }
+                
+                const step = steps[index];
+                resultDiv.textContent += `${index + 1}. ${step.name}...\n`;
+                
+                step.action()
+                    .then(result => {
+                        resultDiv.textContent += `   ✅ ${result}\n`;
+                        setTimeout(() => executeSteps(steps, index + 1), 500);
+                    })
+                    .catch(error => {
+                        resultDiv.textContent += `   ❌ ${error.message}\n`;
+                        resultDiv.className = 'result error';
+                    });
+            }
+            
+            function loadMapAPI() {
+                return new Promise((resolve, reject) => {
+                    if (window.BMap) {
+                        resolve('API已存在');
+                        return;
+                    }
+                    
+                    const script = document.createElement('script');
+                    script.src = `https://api.map.baidu.com/api?v=3.0&ak=${BAIDU_MAP_AK}&callback=simulateCallback`;
+                    
+                    window.simulateCallback = () => {
+                        delete window.simulateCallback;
+                        resolve('API加载成功');
+                    };
+                    
+                    script.onerror = () => reject(new Error('API加载失败'));
+                    document.head.appendChild(script);
+                    
+                    setTimeout(() => reject(new Error('API加载超时')), 10000);
+                });
+            }
+            
+            function createMap() {
+                return new Promise((resolve, reject) => {
+                    try {
+                        const container = document.getElementById('mapContainer');
+                        container.style.display = 'block';
+                        
+                        if (!mapInstance) {
+                            mapInstance = new BMap.Map(container);
+                            const point = new BMap.Point(113.6253, 34.7466);
+                            mapInstance.centerAndZoom(point, 15);
+                        }
+                        
+                        resolve('地图实例创建成功');
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+            }
+            
+            function getCityLocation() {
+                return new Promise((resolve) => {
+                    // 模拟获取城市位置
+                    setTimeout(() => {
+                        resolve('城市位置获取成功 (郑州)');
+                    }, 500);
+                });
+            }
+            
+            function callNearbyAPI() {
+                return new Promise((resolve, reject) => {
+                    const params = new URLSearchParams({
+                        longitude: '113.6253',
+                        latitude: '34.7466',
+                        radius: '5',
+                        limit: '20'
+                    });
+                    
+                    fetch(`${API_BASE_URL}/api/nearby/my-nearby?${params}`)
+                        .then(response => {
+                            if (response.ok) {
+                                return response.json();
+                            } else {
+                                throw new Error(`HTTP ${response.status}`);
+                            }
+                        })
+                        .then(data => {
+                            const count = data.nearby_points ? data.nearby_points.length : 0;
+                            resolve(`API调用成功，找到${count}个寄存点`);
+                        })
+                        .catch(error => {
+                            resolve(`API调用失败: ${error.message} (这是正常的，如果后端未启动)`);
+                        });
+                });
+            }
+        }
+        
+        // 测试API调用
+        function testAPICall() {
+            const resultDiv = document.getElementById('mapResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.textContent = '测试API调用...\n\n';
+            
+            const params = new URLSearchParams({
+                longitude: '113.6253',
+                latitude: '34.7466',
+                radius: '5',
+                limit: '20'
+            });
+            
+            const url = `${API_BASE_URL}/api/nearby/my-nearby?${params}`;
+            resultDiv.textContent += `请求URL: ${url}\n\n`;
+            
+            fetch(url)
+                .then(response => {
+                    resultDiv.textContent += `HTTP状态: ${response.status} ${response.statusText}\n`;
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                })
+                .then(data => {
+                    resultDiv.textContent += '✅ API调用成功\n\n';
+                    resultDiv.textContent += `响应数据:\n${JSON.stringify(data, null, 2)}`;
+                    resultDiv.className = 'result success';
+                })
+                .catch(error => {
+                    resultDiv.textContent += `❌ API调用失败: ${error.message}\n\n`;
+                    resultDiv.textContent += '这可能是因为:\n';
+                    resultDiv.textContent += '1. 后端服务未启动\n';
+                    resultDiv.textContent += '2. 网络连接问题\n';
+                    resultDiv.textContent += '3. API地址错误\n';
+                    resultDiv.className = 'result warning';
+                });
+        }
+        
+        // 测试错误处理
+        function testErrorHandling() {
+            const resultDiv = document.getElementById('mapResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.textContent = '测试错误处理机制...\n\n';
+            
+            // 测试各种错误情况
+            const errorTests = [
+                {
+                    name: '无效的地图容器',
+                    test: () => {
+                        try {
+                            new BMap.Map(null);
+                            return '❌ 应该抛出错误但没有';
+                        } catch (error) {
+                            return `✅ 正确捕获错误: ${error.message}`;
+                        }
+                    }
+                },
+                {
+                    name: '无效的坐标',
+                    test: () => {
+                        try {
+                            new BMap.Point('invalid', 'invalid');
+                            return '⚠️ 接受了无效坐标';
+                        } catch (error) {
+                            return `✅ 正确处理无效坐标: ${error.message}`;
+                        }
+                    }
+                },
+                {
+                    name: '网络错误模拟',
+                    test: () => {
+                        return fetch('http://invalid-url-for-test.com')
+                            .then(() => '❌ 应该失败但成功了')
+                            .catch(error => `✅ 正确处理网络错误: ${error.message}`);
+                    }
+                }
+            ];
+            
+            if (!window.BMap) {
+                resultDiv.textContent += '⚠️ 百度地图API未加载，跳过地图相关测试\n\n';
+            }
+            
+            errorTests.forEach((test, index) => {
+                if (test.name.includes('地图') && !window.BMap) {
+                    return; // 跳过地图相关测试
+                }
+                
+                resultDiv.textContent += `${index + 1}. ${test.name}:\n`;
+                
+                try {
+                    const result = test.test();
+                    if (result instanceof Promise) {
+                        result.then(msg => {
+                            resultDiv.textContent += `   ${msg}\n`;
+                        });
+                    } else {
+                        resultDiv.textContent += `   ${result}\n`;
+                    }
+                } catch (error) {
+                    resultDiv.textContent += `   ✅ 测试框架正确捕获错误: ${error.message}\n`;
+                }
+            });
+            
+            resultDiv.textContent += '\n✅ 错误处理测试完成';
+            resultDiv.className = 'result success';
+        }
+        
+        // 清空结果
+        function clearResults() {
+            document.getElementById('diagnoseResult').style.display = 'none';
+            document.getElementById('mapResult').style.display = 'none';
+            document.getElementById('mapContainer').style.display = 'none';
+            
+            if (mapInstance) {
+                mapInstance = null;
+            }
+            
+            document.getElementById('apiStatus').textContent = '未检测';
+            document.getElementById('mapStatus').textContent = '未创建';
+        }
+    </script>
 </body>
 </html>

@@ -560,15 +560,11 @@
 							name: item.name || `寄存点${index + 1}`,
 							address: item.address || item.location || '地址信息暂无',
 							distance: item.distance ? `${item.distance.toFixed(1)}km` : '',
-							large: Math.floor(Math.random() * 5) + 1,
-							medium: Math.floor(Math.random() * 8) + 2,
-							small: Math.floor(Math.random() * 10) + 3,
+							large: parseInt(item.large_count || item.large || 0),
+							medium: parseInt(item.medium_count || item.medium || 0),
+							small: parseInt(item.small_count || item.small || 0),
 							price: item.price || '2元/小时起',
-							status: 'available',
-							coordinates: {
-								longitude: item.longitude || 113.6253,
-								latitude: item.latitude || 34.7466
-							}
+							status: item.status || 'available'
 						}));
 						
 						this.searchStatus = `在${this.currentCity}找到 ${this.searchResults.length} 个"${keyword}"相关的寄存点`;
@@ -591,10 +587,15 @@
 			
 			// 处理搜索失败
 			handleSearchError(keyword, error) {
-				console.log('⚠️ 搜索失败，使用模拟数据:', error);
+				console.log('❌ 搜索失败:', error);
 				
-				// 使用模拟数据作为后备
-				this.generateMockSearchResults(keyword);
+				this.searchResults = [];
+				this.searchStatus = '搜索失败，请检查网络连接或稍后重试';
+				uni.showToast({
+					title: '搜索失败',
+					icon: 'error',
+					duration: 2000
+				});
 			},
 			
 			// 处理无结果情况
@@ -614,185 +615,13 @@
 				}, 2000);
 			},
 			
-			// 搜索寄存点
+			// 搜索寄存点（已合并到performSearch方法中）
 			searchLockers(keyword) {
-				console.log('🔍 开始搜索寄存点:', keyword);
-				
-				// 清空之前的结果
-				this.searchResults = [];
-				this.isSearching = true;
-				this.searchStatus = `正在搜索"${keyword}"...`;
-				
-				// 获取当前城市信息
-				const selectedCity = uni.getStorageSync('selectedCity');
-				const cityCoords = selectedCity?.coordinates || {
-					longitude: 113.6253,
-					latitude: 34.7466
-				};
-				
-				console.log('当前城市信息:', {
-					city: this.currentCity,
-					coordinates: cityCoords
-				});
-				
-				// 首先尝试调用后端搜索接口
-				this.trySearchAPI(keyword, cityCoords);
+				// 直接调用统一的搜索方法
+				this.searchKeyword = keyword;
+				this.performSearch();
 			},
-			
-			// 尝试调用后端API
-			trySearchAPI(keyword, cityCoords) {
-				console.log('🔍 开始搜索流程:', keyword);
-				
-				// 先尝试调用真实的后端接口
-				this.callRealBackendAPI(keyword, cityCoords);
-			},
-			
-			// 调用真实后端API
-			callRealBackendAPI(keyword, cityCoords) {
-				// 统一的API基础URL
-				const API_BASE_URL = 'http://localhost:8000';
-				// 使用搜索接口而不是地图接口
-				const apiUrl = `${API_BASE_URL}/api/nearby/city/search`;
-				
-				// 构建查询参数（GET请求）
-				const queryParams = new URLSearchParams({
-					city_name: this.currentCity,
-					keyword: keyword,
-					page: '1',
-					page_size: '20'
-				});
-				
-				const fullUrl = `${apiUrl}?${queryParams.toString()}`;
-				
-				console.log('📡 调用真实后端搜索接口:', {
-					url: fullUrl,
-					method: 'GET',
-					params: {
-						city_name: this.currentCity,
-						keyword: keyword,
-						page: 1,
-						page_size: 20
-					}
-				});
-				
-				// 调用真实后端搜索接口
-				uni.request({
-					url: fullUrl,
-					method: 'GET',
-					header: {
-						'Content-Type': 'application/json',
-						'Accept': 'application/json'
-					},
-					timeout: 5000,
-					success: (res) => {
-						console.log('=== 真实后端搜索接口响应 ===');
-						console.log('HTTP状态码:', res.statusCode);
-						console.log('响应数据:', res.data);
-						
-						this.isSearching = false;
-						
-						try {
-							if (res.statusCode === 200 && res.data) {
-								this.handleSearchSuccess(res.data, keyword);
-							} else if (res.statusCode === 401) {
-								console.log('⚠️ API需要认证，后端服务可能需要重启');
-								this.searchStatus = '正在连接服务器，请稍后重试...';
-								// 显示友好提示
-								uni.showToast({
-									title: '正在连接服务器...',
-									icon: 'loading',
-									duration: 2000
-								});
-								this.handleSearchWithMockData(keyword);
-							} else {
-								console.log('⚠️ API返回非200状态码，使用模拟数据');
-								this.handleSearchWithMockData(keyword);
-							}
-						} catch (error) {
-							console.error('处理API响应时出错:', error);
-							this.handleSearchWithMockData(keyword);
-						}
-					},
-					fail: (error) => {
-						console.log('⚠️ 搜索API调用失败，自动使用模拟数据:', error);
-						console.log('错误详情:', {
-							errMsg: error.errMsg || '网络请求失败',
-							statusCode: error.statusCode || 'unknown',
-							data: error.data || 'no data'
-						});
-						
-						this.isSearching = false;
-						this.searchStatus = '网络连接失败，显示模拟数据';
-						
-						// 显示网络错误提示
-						uni.showToast({
-							title: '网络连接失败',
-							icon: 'none',
-							duration: 2000
-						});
-						
-						this.handleSearchWithMockData(keyword);
-					}
-				});
-			},
-			
 
-			
-			// 使用模拟数据处理搜索
-			handleSearchWithMockData(keyword) {
-				console.log('🎭 使用模拟数据搜索:', keyword);
-				
-				// 确保停止加载状态
-				this.isSearching = false;
-				
-				try {
-					const mockResults = this.generateMockSearchResults(keyword);
-					
-					console.log('🎭 生成的模拟结果:', mockResults);
-					console.log('🎭 结果数量:', mockResults ? mockResults.length : 0);
-					
-					// 设置搜索结果
-					this.searchResults = mockResults || [];
-					
-					// 强制Vue更新视图
-					this.$forceUpdate();
-					
-					console.log('🎭 设置后的searchResults:', this.searchResults);
-					console.log('🎭 searchResults.length:', this.searchResults.length);
-					
-					if (mockResults && mockResults.length > 0) {
-						this.searchStatus = `在${this.currentCity}找到 ${mockResults.length} 个"${keyword}"相关的寄存点`;
-						
-						uni.showToast({
-							title: `找到${mockResults.length}个寄存点`,
-							icon: 'success',
-							duration: 1500
-						});
-						
-						console.log('✅ 模拟搜索完成:', mockResults.length, '个结果');
-					} else {
-						this.searchStatus = `在${this.currentCity}未找到"${keyword}"相关的寄存点，试试其他关键词吧`;
-						
-						uni.showToast({
-							title: '未找到相关寄存点',
-							icon: 'none',
-							duration: 1500
-						});
-						
-						console.log('⚠️ 模拟搜索无结果');
-					}
-				} catch (error) {
-					console.error('模拟数据生成失败:', error);
-					this.searchStatus = '搜索出现问题，请稍后重试';
-					this.searchResults = [];
-					
-					uni.showToast({
-						title: '搜索出现问题',
-						icon: 'none',
-						duration: 1500
-					});
-				}
-			},
 			
 			// 处理搜索成功
 			handleSearchSuccess(responseData, keyword) {
@@ -860,12 +689,24 @@
 						});
 						
 					} else {
-						console.log('⚠️ 后端返回空结果，使用模拟数据');
-						this.handleSearchWithMockData(keyword);
+						console.log('⚠️ 后端返回空结果');
+						this.searchResults = [];
+						this.searchStatus = `在${this.currentCity}未找到"${keyword}"相关的寄存点`;
+						uni.showToast({
+							title: '未找到相关寄存点',
+							icon: 'none',
+							duration: 2000
+						});
 					}
 				} catch (error) {
 					console.error('处理搜索结果时出错:', error);
-					this.handleSearchWithMockData(keyword);
+					this.searchResults = [];
+					this.searchStatus = '搜索结果处理失败';
+					uni.showToast({
+						title: '搜索结果处理失败',
+						icon: 'error',
+						duration: 2000
+					});
 				}
 			},
 			
@@ -899,10 +740,6 @@
 							// 距离字段
 							distance: this.formatDistance(item.distance || item.dist || 0),
 							
-							// 坐标字段
-							longitude: parseFloat(item.longitude || item.lng || item.lon || 113.6253),
-							latitude: parseFloat(item.latitude || item.lat || 34.7466),
-							
 							// 寄存柜容量字段
 							large: parseInt(item.available_large || item.large_count || item.large || item.large_capacity || item.big_count || 0),
 							medium: parseInt(item.available_medium || item.medium_count || item.medium || item.medium_capacity || item.mid_count || 0),
@@ -931,8 +768,6 @@
 							name: `寄存点${index + 1}`,
 							address: '地址信息获取失败',
 							distance: '0km',
-							longitude: 113.6253,
-							latitude: 34.7466,
 							large: 0,
 							medium: 0,
 							small: 0,
@@ -960,46 +795,7 @@
 				return 'available'; // 默认可用
 			},
 			
-			// 生成模拟搜索结果
-			generateMockSearchResults(keyword) {
-				console.log('🎭 生成模拟搜索结果作为后备:', keyword);
-				
-				const mockResults = [];
-				const cleanKeyword = keyword.trim();
-				
-				if (!cleanKeyword) {
-					return [];
-				}
-				
-				// 根据关键词生成2-4个模拟结果
-				const resultCount = Math.floor(Math.random() * 3) + 2;
-				
-				for (let i = 0; i < resultCount; i++) {
-					mockResults.push({
-						id: `mock_${Date.now()}_${i}`,
-						name: `${cleanKeyword}寄存点${i + 1}`,
-						address: `${this.currentCity}${cleanKeyword}附近${(i + 1) * 100}米`,
-						distance: `${(Math.random() * 2 + 0.3).toFixed(1)}km`,
-						large: Math.floor(Math.random() * 5) + 1,
-						medium: Math.floor(Math.random() * 8) + 2,
-						small: Math.floor(Math.random() * 10) + 3,
-						price: `${Math.floor(Math.random() * 3) + 2}元/小时起`,
-						status: 'available'
-					});
-				}
-				
-				// 直接设置搜索结果
-				this.searchResults = mockResults;
-				this.searchStatus = `模拟数据：在${this.currentCity}找到 ${mockResults.length} 个"${cleanKeyword}"相关的寄存点`;
-				
-				uni.showToast({
-					title: `找到${mockResults.length}个寄存点（模拟）`,
-					icon: 'success',
-					duration: 2000
-				});
-				
-				console.log('🎭 模拟数据设置完成:', this.searchResults);
-			},
+
 			
 			// 格式化距离显示
 			formatDistance(distance) {
@@ -1022,9 +818,8 @@
 				this.searchKeyword = location;
 				this.searchStatus = `正在搜索"${location}"相关的寄存点...`;
 				
-				// 直接调用模拟数据搜索，确保有结果显示
-				console.log('🎭 直接使用模拟数据进行搜索');
-				this.handleSearchWithMockData(location);
+				// 调用真实的搜索接口
+				this.performSearch();
 			},
 			
 			// 选择搜索结果
@@ -1040,70 +835,17 @@
 			// 测试搜索功能
 			testSearch() {
 				console.log('🧪 开始测试搜索功能');
-				console.log('🧪 当前searchResults:', this.searchResults);
-				console.log('🧪 当前searchResults.length:', this.searchResults.length);
 				
 				// 显示测试开始提示
 				uni.showToast({
-					title: '开始测试搜索',
+					title: '测试后端搜索接口',
 					icon: 'loading',
 					duration: 1000
 				});
 				
-				this.searchStatus = '正在测试搜索功能...';
-				
-				// 直接设置一些测试数据
-				const testResults = [
-					{
-						id: 'test_1',
-						name: '测试寄存点1',
-						address: '郑州市测试地址1',
-						distance: '0.5km',
-						longitude: 113.6253,
-						latitude: 34.7466,
-						large: 5,
-						medium: 10,
-						small: 15,
-						status: 'available'
-					},
-					{
-						id: 'test_2',
-						name: '测试寄存点2',
-						address: '郑州市测试地址2',
-						distance: '1.2km',
-						longitude: 113.6253,
-						latitude: 34.7466,
-						large: 3,
-						medium: 8,
-						small: 12,
-						status: 'available'
-					}
-				];
-				
-				console.log('🧪 准备设置的测试数据:', testResults);
-				
-				// 设置搜索结果
-				this.searchResults = testResults;
-				this.searchStatus = `测试：找到 ${testResults.length} 个寄存点`;
-				
-				// 强制更新视图
-				this.$forceUpdate();
-				
-				console.log('🧪 设置后的searchResults:', this.searchResults);
-				console.log('🧪 设置后的searchResults.length:', this.searchResults.length);
-				console.log('🧪 条件判断 searchResults.length > 0:', this.searchResults.length > 0);
-				
-				uni.showToast({
-					title: '测试数据已加载',
-					icon: 'success',
-					duration: 2000
-				});
-				
-				// 延迟检查数据是否正确设置
-				setTimeout(() => {
-					console.log('🧪 延迟检查 - searchResults:', this.searchResults);
-					console.log('🧪 延迟检查 - searchResults.length:', this.searchResults.length);
-				}, 1000);
+				// 使用测试关键词调用真实的搜索接口
+				this.searchKeyword = '火车站';
+				this.performSearch();
 			}
 		}
 	}

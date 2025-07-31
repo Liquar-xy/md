@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试附近寄存点API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-button {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #0056CC;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success {
+            border-left: 4px solid #28a745;
+        }
+        .error {
+            border-left: 4px solid #dc3545;
+        }
+        .input-group {
+            margin: 10px 0;
+        }
+        .input-group label {
+            display: inline-block;
+            width: 100px;
+            font-weight: bold;
+        }
+        .input-group input {
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            width: 150px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗺️ 测试附近寄存点API</h1>
+        
+        <div class="test-section">
+            <h3>📍 API接口测试</h3>
+            <p>测试后端"我的附近"接口：<code>GET /api/nearby/my-nearby</code></p>
+            
+            <div class="input-group">
+                <label>经度:</label>
+                <input type="number" id="longitude" value="113.6253" step="0.000001">
+            </div>
+            <div class="input-group">
+                <label>纬度:</label>
+                <input type="number" id="latitude" value="34.7466" step="0.000001">
+            </div>
+            <div class="input-group">
+                <label>半径(km):</label>
+                <input type="number" id="radius" value="5" min="1" max="50">
+            </div>
+            <div class="input-group">
+                <label>城市:</label>
+                <input type="text" id="cityName" value="郑州">
+            </div>
+            <div class="input-group">
+                <label>限制数量:</label>
+                <input type="number" id="limit" value="20" min="1" max="100">
+            </div>
+            
+            <button class="test-button" onclick="testNearbyAPI()">🔍 测试附近寄存点API</button>
+            <button class="test-button" onclick="testWithDifferentCity()">🏙️ 测试其他城市</button>
+            <button class="test-button" onclick="clearResults()">🗑️ 清空结果</button>
+            
+            <div id="apiResult" class="result" style="display: none;"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🗺️ 百度地图API测试</h3>
+            <p>测试百度地图JavaScript API加载</p>
+            
+            <button class="test-button" onclick="testBaiduMapAPI()">🗺️ 测试百度地图API</button>
+            <button class="test-button" onclick="loadBaiduMap()">📍 加载地图实例</button>
+            
+            <div id="mapResult" class="result" style="display: none;"></div>
+            <div id="mapContainer" style="width: 100%; height: 300px; border: 1px solid #ddd; margin-top: 10px; display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+        const BAIDU_MAP_AK = '9jnxn6bIxVgX1u4KffC5Cc83dTMzzYIA';
+        
+        // 测试附近寄存点API
+        async function testNearbyAPI() {
+            const longitude = document.getElementById('longitude').value;
+            const latitude = document.getElementById('latitude').value;
+            const radius = document.getElementById('radius').value;
+            const cityName = document.getElementById('cityName').value;
+            const limit = document.getElementById('limit').value;
+            
+            const resultDiv = document.getElementById('apiResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.textContent = '正在测试API...';
+            
+            try {
+                const params = new URLSearchParams({
+                    longitude: longitude,
+                    latitude: latitude,
+                    radius: radius,
+                    city_name: cityName,
+                    limit: limit
+                });
+                
+                const url = `${API_BASE_URL}/api/nearby/my-nearby?${params.toString()}`;
+                console.log('请求URL:', url);
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `✅ API调用成功！
+                
+状态码: ${response.status}
+请求URL: ${url}
+
+响应数据:
+${JSON.stringify(data, null, 2)}
+
+解析结果:
+- 找到寄存点: ${data.nearby_points ? data.nearby_points.length : 0} 个
+- 搜索半径: ${data.search_radius || 'N/A'} km
+- 总数量: ${data.total_count || 'N/A'}
+- 响应时间: ${new Date().toLocaleTimeString()}`;
+                
+            } catch (error) {
+                console.error('API调用失败:', error);
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ API调用失败！
+                
+错误信息: ${error.message}
+请求URL: ${API_BASE_URL}/api/nearby/my-nearby
+错误时间: ${new Date().toLocaleTimeString()}
+
+可能的原因:
+1. 后端服务未启动
+2. 网络连接问题
+3. API接口地址错误
+4. 跨域问题`;
+            }
+        }
+        
+        // 测试其他城市
+        async function testWithDifferentCity() {
+            // 北京坐标
+            document.getElementById('longitude').value = '116.4074';
+            document.getElementById('latitude').value = '39.9042';
+            document.getElementById('cityName').value = '北京';
+            
+            await testNearbyAPI();
+        }
+        
+        // 清空结果
+        function clearResults() {
+            document.getElementById('apiResult').style.display = 'none';
+            document.getElementById('mapResult').style.display = 'none';
+            document.getElementById('mapContainer').style.display = 'none';
+        }
+        
+        // 测试百度地图API
+        function testBaiduMapAPI() {
+            const resultDiv = document.getElementById('mapResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.textContent = '正在测试百度地图API...';
+            
+            // 检查是否已经加载
+            if (window.BMap) {
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `✅ 百度地图API已加载！
+                
+API版本: ${window.BMap.version || 'Unknown'}
+可用类: ${Object.keys(window.BMap).slice(0, 10).join(', ')}...
+测试时间: ${new Date().toLocaleTimeString()}`;
+                return;
+            }
+            
+            // 动态加载百度地图API
+            const script = document.createElement('script');
+            script.src = `https://api.map.baidu.com/api?v=3.0&ak=${BAIDU_MAP_AK}&callback=initBaiduMapCallback`;
+            
+            window.initBaiduMapCallback = function() {
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `✅ 百度地图API加载成功！
+                
+API密钥: ${BAIDU_MAP_AK}
+API版本: ${window.BMap.version || 'Unknown'}
+加载时间: ${new Date().toLocaleTimeString()}
+可用类: ${Object.keys(window.BMap).slice(0, 10).join(', ')}...`;
+                
+                delete window.initBaiduMapCallback;
+            };
+            
+            script.onerror = function() {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ 百度地图API加载失败！
+                
+API密钥: ${BAIDU_MAP_AK}
+错误时间: ${new Date().toLocaleTimeString()}
+
+可能的原因:
+1. API密钥无效或过期
+2. 网络连接问题
+3. 百度地图服务不可用`;
+            };
+            
+            document.head.appendChild(script);
+        }
+        
+        // 加载地图实例
+        function loadBaiduMap() {
+            if (!window.BMap) {
+                alert('请先测试百度地图API！');
+                return;
+            }
+            
+            const mapContainer = document.getElementById('mapContainer');
+            mapContainer.style.display = 'block';
+            
+            try {
+                const map = new BMap.Map(mapContainer);
+                const point = new BMap.Point(113.6253, 34.7466);
+                map.centerAndZoom(point, 15);
+                
+                // 添加控件
+                map.addControl(new BMap.NavigationControl());
+                map.addControl(new BMap.ScaleControl());
+                
+                // 启用交互
+                map.enableScrollWheelZoom(true);
+                
+                // 添加标记
+                const marker = new BMap.Marker(point);
+                map.addOverlay(marker);
+                
+                const resultDiv = document.getElementById('mapResult');
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `✅ 地图实例创建成功！
+                
+中心点: 郑州 (113.6253, 34.7466)
+缩放级别: 15
+创建时间: ${new Date().toLocaleTimeString()}`;
+                
+            } catch (error) {
+                const resultDiv = document.getElementById('mapResult');
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ 地图实例创建失败！
+                
+错误信息: ${error.message}
+错误时间: ${new Date().toLocaleTimeString()}`;
+            }
+        }
+    </script>
+</body>
+</html>

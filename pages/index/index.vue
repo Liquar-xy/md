@@ -633,18 +633,8 @@ export default {
 				this.useMockNearbyData(34.7466, 113.6253);
 			}, 500);
 			
-			// 同时尝试获取真实位置（可选）
-			uni.getLocation({
-				type: 'gcj02',
-				success: (res) => {
-					console.log('📍 获取位置成功:', res);
-					this.fetchNearbyLockers(res.latitude, res.longitude);
-				},
-				fail: (err) => {
-					console.log('❌ 获取位置失败，使用默认位置:', err);
-					// 已经有模拟数据了，不需要再次调用
-				}
-			});
+			// 位置获取功能已禁用，直接使用模拟数据
+			console.log('📍 使用模拟数据，跳过位置获取');
 		},
 		
 		// 获取附近寄存点数据（暂时禁用API）
@@ -797,16 +787,8 @@ export default {
 			this.isLoadingNearby = true;
 			this.noLockerMessage = '正在扩大范围搜索...';
 			
-			// 获取用户位置并使用更大的搜索半径
-			uni.getLocation({
-				type: 'gcj02',
-				success: (res) => {
-					this.fetchNearbyLockersWithRadius(res.latitude, res.longitude, 50);
-				},
-				fail: (err) => {
-					this.fetchNearbyLockersWithRadius(34.7466, 113.6253, 50);
-				}
-			});
+			// 位置获取功能已禁用，直接使用默认坐标
+			this.fetchNearbyLockersWithRadius(34.7466, 113.6253, 50);
 		},
 		
 		// 使用指定半径获取寄存点（暂时禁用API）

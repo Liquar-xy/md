@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>寄存点分布图调试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-button {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #0056CC;
+        }
+        .test-button.danger {
+            background: #dc3545;
+        }
+        .test-button.danger:hover {
+            background: #c82333;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            border-left: 4px solid #28a745;
+        }
+        .error {
+            border-left: 4px solid #dc3545;
+        }
+        .warning {
+            border-left: 4px solid #ffc107;
+        }
+        .input-group {
+            margin: 10px 0;
+        }
+        .input-group label {
+            display: inline-block;
+            width: 100px;
+            font-weight: bold;
+        }
+        .input-group input {
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            width: 150px;
+        }
+        .status-bar {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗺️ 寄存点分布图调试工具</h1>
+        
+        <div class="status-bar">
+            <div>调试时间: <span id="debugTime"></span></div>
+            <div>API状态: <span id="apiStatus">未测试</span></div>
+            <div>数据库状态: <span id="dbStatus">未知</span></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔍 问题诊断</h3>
+            <p>诊断寄存点分布图API的500错误</p>
+            
+            <div class="input-group">
+                <label>城市名称:</label>
+                <input type="text" id="cityName" value="郑州">
+            </div>
+            <div class="input-group">
+                <label>北纬度:</label>
+                <input type="number" id="northLat" value="34.8466" step="0.0001">
+            </div>
+            <div class="input-group">
+                <label>南纬度:</label>
+                <input type="number" id="southLat" value="34.6466" step="0.0001">
+            </div>
+            <div class="input-group">
+                <label>东经度:</label>
+                <input type="number" id="eastLng" value="113.7253" step="0.0001">
+            </div>
+            <div class="input-group">
+                <label>西经度:</label>
+                <input type="number" id="westLng" value="113.5253" step="0.0001">
+            </div>
+            
+            <button class="test-button" onclick="testMapAPI()">🗺️ 测试分布图API</button>
+            <button class="test-button" onclick="testCityAPI()">🏙️ 测试城市API</button>
+            <button class="test-button" onclick="testNearbyAPI()">📍 测试附近API</button>
+            <button class="test-button danger" onclick="clearResults()">🗑️ 清空结果</button>
+            
+            <div id="testResult" class="result" style="display: none;"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔧 数据库检查</h3>
+            <p>检查后端数据库中的数据</p>
+            
+            <button class="test-button" onclick="checkCityData()">🏙️ 检查城市数据</button>
+            <button class="test-button" onclick="checkLockerData()">🏪 检查寄存点数据</button>
+            <button class="test-button" onclick="suggestFix()">💡 修复建议</button>
+            
+            <div id="dbResult" class="result" style="display: none;"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🚀 快速修复</h3>
+            <p>尝试修复常见问题</p>
+            
+            <button class="test-button" onclick="initTestData()">📊 初始化测试数据</button>
+            <button class="test-button" onclick="testWithDifferentParams()">🔄 测试不同参数</button>
+            <button class="test-button" onclick="generateReport()">📋 生成报告</button>
+            
+            <div id="fixResult" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+        
+        // 更新调试时间
+        document.getElementById('debugTime').textContent = new Date().toLocaleString();
+        
+        // 测试分布图API
+        async function testMapAPI() {
+            const resultDiv = document.getElementById('testResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.textContent = '测试寄存点分布图API...\n\n';
+            
+            const cityName = document.getElementById('cityName').value;
+            const northLat = document.getElementById('northLat').value;
+            const southLat = document.getElementById('southLat').value;
+            const eastLng = document.getElementById('eastLng').value;
+            const westLng = document.getElementById('westLng').value;
+            
+            const params = new URLSearchParams({
+                city_name: cityName,
+                north_lat: northLat,
+                south_lat: southLat,
+                east_lng: eastLng,
+                west_lng: westLng,
+                zoom_level: '12',
+                enable_cluster: 'false'
+            });
+            
+            const url = `${API_BASE_URL}/api/nearby/city/map?${params}`;
+            resultDiv.textContent += `请求URL: ${url}\n\n`;
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                resultDiv.textContent += `HTTP状态码: ${response.status} ${response.statusText}\n`;
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.textContent += '✅ API调用成功\n\n';
+                    resultDiv.textContent += `响应数据:\n${JSON.stringify(data, null, 2)}`;
+                    resultDiv.className = 'result success';
+                    document.getElementById('apiStatus').textContent = '正常';
+                } else {
+                    const errorText = await response.text();
+                    resultDiv.textContent += `❌ API调用失败\n\n`;
+                    resultDiv.textContent += `错误响应:\n${errorText}`;
+                    resultDiv.className = 'result error';
+                    document.getElementById('apiStatus').textContent = '错误';
+                    
+                    // 分析错误原因
+                    analyzeError(response.status, errorText);
+                }
+                
+            } catch (error) {
+                resultDiv.textContent += `❌ 网络错误: ${error.message}\n`;
+                resultDiv.className = 'result error';
+                document.getElementById('apiStatus').textContent = '网络错误';
+            }
+        }
+        
+        // 分析错误原因
+        function analyzeError(status, errorText) {
+            const resultDiv = document.getElementById('testResult');
+            resultDiv.textContent += '\n=== 错误分析 ===\n';
+            
+            if (status === 500) {
+                resultDiv.textContent += '🔍 HTTP 500错误通常表示:\n';
+                resultDiv.textContent += '1. 数据库连接问题\n';
+                resultDiv.textContent += '2. 城市数据不存在\n';
+                resultDiv.textContent += '3. 寄存点数据不存在\n';
+                resultDiv.textContent += '4. 后端代码逻辑错误\n';
+                resultDiv.textContent += '5. 参数验证失败\n\n';
+                
+                if (errorText.includes('城市')) {
+                    resultDiv.textContent += '💡 建议: 检查城市数据是否存在\n';
+                } else if (errorText.includes('寄存点')) {
+                    resultDiv.textContent += '💡 建议: 检查寄存点数据是否存在\n';
+                } else if (errorText.includes('数据库')) {
+                    resultDiv.textContent += '💡 建议: 检查数据库连接\n';
+                } else {
+                    resultDiv.textContent += '💡 建议: 检查后端日志获取详细错误信息\n';
+                }
+            } else if (status === 404) {
+                resultDiv.textContent += '🔍 HTTP 404错误表示API端点不存在\n';
+                resultDiv.textContent += '💡 建议: 检查API路径是否正确\n';
+            } else if (status === 400) {
+                resultDiv.textContent += '🔍 HTTP 400错误表示请求参数有问题\n';
+                resultDiv.textContent += '💡 建议: 检查请求参数格式\n';
+            }
+        }
+        
+        // 测试城市API
+        async function testCityAPI() {
+            const resultDiv = document.getElementById('testResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.textContent = '测试城市API...\n\n';
+            
+            const cityName = document.getElementById('cityName').value;
+            
+            try {
+                // 测试城市列表API
+                const listUrl = `${API_BASE_URL}/api/cities/list?page=1&page_size=10`;
+                resultDiv.textContent += `1. 测试城市列表API: ${listUrl}\n`;
+                
+                const listResponse = await fetch(listUrl);
+                resultDiv.textContent += `   状态码: ${listResponse.status}\n`;
+                
+                if (listResponse.ok) {
+                    const listData = await listResponse.json();
+                    resultDiv.textContent += `   ✅ 城市列表获取成功，共${listData.cities ? listData.cities.length : 0}个城市\n`;
+                    
+                    // 检查目标城市是否存在
+                    if (listData.cities) {
+                        const targetCity = listData.cities.find(city => city.name === cityName);
+                        if (targetCity) {
+                            resultDiv.textContent += `   ✅ 找到目标城市: ${cityName}\n`;
+                            resultDiv.textContent += `      城市ID: ${targetCity.id}\n`;
+                            resultDiv.textContent += `      坐标: (${targetCity.longitude}, ${targetCity.latitude})\n`;
+                        } else {
+                            resultDiv.textContent += `   ❌ 未找到目标城市: ${cityName}\n`;
+                            resultDiv.textContent += `   可用城市: ${listData.cities.map(c => c.name).join(', ')}\n`;
+                        }
+                    }
+                } else {
+                    resultDiv.textContent += `   ❌ 城市列表获取失败\n`;
+                }
+                
+                resultDiv.textContent += '\n';
+                
+                // 测试城市热点API
+                const hotspotUrl = `${API_BASE_URL}/api/cities/hotspots?city_name=${encodeURIComponent(cityName)}`;
+                resultDiv.textContent += `2. 测试城市热点API: ${hotspotUrl}\n`;
+                
+                const hotspotResponse = await fetch(hotspotUrl);
+                resultDiv.textContent += `   状态码: ${hotspotResponse.status}\n`;
+                
+                if (hotspotResponse.ok) {
+                    const hotspotData = await hotspotResponse.json();
+                    resultDiv.textContent += `   ✅ 城市热点获取成功\n`;
+                } else {
+                    resultDiv.textContent += `   ❌ 城市热点获取失败\n`;
+                }
+                
+                resultDiv.className = 'result success';
+                
+            } catch (error) {
+                resultDiv.textContent += `❌ 测试失败: ${error.message}\n`;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        // 测试附近API
+        async function testNearbyAPI() {
+            const resultDiv = document.getElementById('testResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.textContent = '测试附近API...\n\n';
+            
+            try {
+                // 测试我的附近API
+                const nearbyUrl = `${API_BASE_URL}/api/nearby/my-nearby?longitude=113.6253&latitude=34.7466&radius=5&limit=10`;
+                resultDiv.textContent += `测试我的附近API: ${nearbyUrl}\n`;
+                
+                const nearbyResponse = await fetch(nearbyUrl);
+                resultDiv.textContent += `状态码: ${nearbyResponse.status}\n`;
+                
+                if (nearbyResponse.ok) {
+                    const nearbyData = await nearbyResponse.json();
+                    resultDiv.textContent += `✅ 附近API调用成功\n`;
+                    resultDiv.textContent += `找到寄存点: ${nearbyData.nearby_points ? nearbyData.nearby_points.length : 0}个\n`;
+                    
+                    if (nearbyData.nearby_points && nearbyData.nearby_points.length > 0) {
+                        resultDiv.textContent += '\n寄存点示例:\n';
+                        const sample = nearbyData.nearby_points[0];
+                        resultDiv.textContent += `- 名称: ${sample.name}\n`;
+                        resultDiv.textContent += `- 地址: ${sample.address}\n`;
+                        resultDiv.textContent += `- 坐标: (${sample.longitude}, ${sample.latitude})\n`;
+                        document.getElementById('dbStatus').textContent = '有数据';
+                    } else {
+                        resultDiv.textContent += '⚠️ 没有找到寄存点数据\n';
+                        document.getElementById('dbStatus').textContent = '无数据';
+                    }
+                } else {
+                    resultDiv.textContent += `❌ 附近API调用失败\n`;
+                    document.getElementById('dbStatus').textContent = '错误';
+                }
+                
+                resultDiv.className = 'result success';
+                
+            } catch (error) {
+                resultDiv.textContent += `❌ 测试失败: ${error.message}\n`;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        // 检查城市数据
+        async function checkCityData() {
+            const resultDiv = document.getElementById('dbResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.textContent = '检查城市数据...\n\n';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/cities/list?page=1&page_size=50`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.textContent += `✅ 城市数据检查完成\n`;
+                    resultDiv.textContent += `总城市数: ${data.total || 0}\n`;
+                    resultDiv.textContent += `当前页城市数: ${data.cities ? data.cities.length : 0}\n\n`;
+                    
+                    if (data.cities && data.cities.length > 0) {
+                        resultDiv.textContent += '城市列表:\n';
+                        data.cities.forEach((city, index) => {
+                            resultDiv.textContent += `${index + 1}. ${city.name} (${city.longitude}, ${city.latitude})\n`;
+                        });
+                        
+                        // 检查目标城市
+                        const targetCity = document.getElementById('cityName').value;
+                        const found = data.cities.find(city => city.name === targetCity);
+                        if (found) {
+                            resultDiv.textContent += `\n✅ 目标城市 "${targetCity}" 存在于数据库中\n`;
+                        } else {
+                            resultDiv.textContent += `\n❌ 目标城市 "${targetCity}" 不存在于数据库中\n`;
+                            resultDiv.textContent += `建议使用以下城市之一: ${data.cities.slice(0, 5).map(c => c.name).join(', ')}\n`;
+                        }
+                    } else {
+                        resultDiv.textContent += '❌ 数据库中没有城市数据\n';
+                    }
+                    
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.textContent += `❌ 无法获取城市数据，状态码: ${response.status}\n`;
+                    resultDiv.className = 'result error';
+                }
+                
+            } catch (error) {
+                resultDiv.textContent += `❌ 检查失败: ${error.message}\n`;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        // 检查寄存点数据
+        async function checkLockerData() {
+            const resultDiv = document.getElementById('dbResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.textContent = '检查寄存点数据...\n\n';
+            
+            try {
+                // 使用附近API检查寄存点数据
+                const response = await fetch(`${API_BASE_URL}/api/nearby/my-nearby?longitude=113.6253&latitude=34.7466&radius=50&limit=100`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.textContent += `✅ 寄存点数据检查完成\n`;
+                    resultDiv.textContent += `找到寄存点: ${data.nearby_points ? data.nearby_points.length : 0}个\n`;
+                    resultDiv.textContent += `搜索半径: ${data.search_radius || 'N/A'}km\n\n`;
+                    
+                    if (data.nearby_points && data.nearby_points.length > 0) {
+                        resultDiv.textContent += '寄存点示例:\n';
+                        data.nearby_points.slice(0, 5).forEach((point, index) => {
+                            resultDiv.textContent += `${index + 1}. ${point.name}\n`;
+                            resultDiv.textContent += `   地址: ${point.address}\n`;
+                            resultDiv.textContent += `   坐标: (${point.longitude}, ${point.latitude})\n`;
+                            resultDiv.textContent += `   可用: 大${point.large_count || 0} 中${point.medium_count || 0} 小${point.small_count || 0}\n\n`;
+                        });
+                        
+                        if (data.nearby_points.length > 5) {
+                            resultDiv.textContent += `... 还有 ${data.nearby_points.length - 5} 个寄存点\n`;
+                        }
+                    } else {
+                        resultDiv.textContent += '❌ 数据库中没有寄存点数据\n';
+                        resultDiv.textContent += '这可能是分布图API失败的主要原因\n';
+                    }
+                    
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.textContent += `❌ 无法获取寄存点数据，状态码: ${response.status}\n`;
+                    resultDiv.className = 'result error';
+                }
+                
+            } catch (error) {
+                resultDiv.textContent += `❌ 检查失败: ${error.message}\n`;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        // 修复建议
+        function suggestFix() {
+            const resultDiv = document.getElementById('dbResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result warning';
+            resultDiv.textContent = '修复建议:\n\n';
+            
+            resultDiv.textContent += '基于常见的500错误，建议按以下顺序检查:\n\n';
+            
+            resultDiv.textContent += '1. 检查数据库连接\n';
+            resultDiv.textContent += '   - 确保数据库服务正在运行\n';
+            resultDiv.textContent += '   - 检查数据库连接配置\n\n';
+            
+            resultDiv.textContent += '2. 检查城市数据\n';
+            resultDiv.textContent += '   - 确保cities表中有数据\n';
+            resultDiv.textContent += '   - 确保目标城市存在\n\n';
+            
+            resultDiv.textContent += '3. 检查寄存点数据\n';
+            resultDiv.textContent += '   - 确保locker_points表中有数据\n';
+            resultDiv.textContent += '   - 确保寄存点有正确的坐标\n\n';
+            
+            resultDiv.textContent += '4. 检查参数验证\n';
+            resultDiv.textContent += '   - 确保边界坐标正确\n';
+            resultDiv.textContent += '   - 确保北纬度 > 南纬度\n';
+            resultDiv.textContent += '   - 确保东经度 > 西经度\n\n';
+            
+            resultDiv.textContent += '5. 检查后端日志\n';
+            resultDiv.textContent += '   - 查看详细的错误堆栈\n';
+            resultDiv.textContent += '   - 检查SQL查询是否正确\n\n';
+            
+            resultDiv.textContent += '6. 初始化测试数据\n';
+            resultDiv.textContent += '   - 点击"初始化测试数据"按钮\n';
+            resultDiv.textContent += '   - 或手动添加测试数据到数据库\n';
+        }
+        
+        // 初始化测试数据
+        async function initTestData() {
+            const resultDiv = document.getElementById('fixResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.textContent = '初始化测试数据...\n\n';
+            
+            try {
+                // 尝试调用初始化接口
+                const response = await fetch(`${API_BASE_URL}/api/admin/nearby/init`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.textContent += '✅ 测试数据初始化成功\n';
+                    resultDiv.textContent += `响应: ${JSON.stringify(data, null, 2)}\n`;
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.textContent += `❌ 初始化失败，状态码: ${response.status}\n`;
+                    const errorText = await response.text();
+                    resultDiv.textContent += `错误信息: ${errorText}\n`;
+                    resultDiv.className = 'result error';
+                }
+                
+            } catch (error) {
+                resultDiv.textContent += `❌ 初始化失败: ${error.message}\n`;
+                resultDiv.textContent += '\n如果初始化接口不可用，请手动执行以下SQL:\n\n';
+                resultDiv.textContent += generateTestDataSQL();
+                resultDiv.className = 'result warning';
+            }
+        }
+        
+        // 生成测试数据SQL
+        function generateTestDataSQL() {
+            return `-- 插入测试城市数据
+INSERT INTO cities (name, longitude, latitude, status) VALUES 
+('郑州', 113.6253, 34.7466, 1),
+('北京', 116.4074, 39.9042, 1),
+('上海', 121.4737, 31.2304, 1);
+
+-- 插入测试寄存点数据
+INSERT INTO locker_points (name, address, longitude, latitude, location_id, available_large, available_medium, available_small, open_time, mobile) VALUES 
+('郑州火车站寄存点', '郑州市二七区火车站广场', 113.6253, 34.7466, 1, 5, 10, 15, '24小时', '13800000001'),
+('郑州东站寄存点', '郑州市金水区郑州东站', 113.7253, 34.7566, 1, 3, 8, 12, '06:00-23:00', '13800000002'),
+('二七广场寄存点', '郑州市二七区二七广场', 113.6353, 34.7366, 1, 4, 6, 10, '24小时', '13800000003');`;
+        }
+        
+        // 测试不同参数
+        async function testWithDifferentParams() {
+            const resultDiv = document.getElementById('fixResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.textContent = '测试不同参数组合...\n\n';
+            
+            const testCases = [
+                { name: '郑州', north: 34.8466, south: 34.6466, east: 113.7253, west: 113.5253 },
+                { name: '北京', north: 40.0042, south: 39.8042, east: 116.5074, west: 116.3074 },
+                { name: '上海', north: 31.3304, south: 31.1304, east: 121.5737, west: 121.3737 }
+            ];
+            
+            for (const testCase of testCases) {
+                resultDiv.textContent += `测试城市: ${testCase.name}\n`;
+                
+                const params = new URLSearchParams({
+                    city_name: testCase.name,
+                    north_lat: testCase.north.toString(),
+                    south_lat: testCase.south.toString(),
+                    east_lng: testCase.east.toString(),
+                    west_lng: testCase.west.toString(),
+                    zoom_level: '12',
+                    enable_cluster: 'false'
+                });
+                
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/nearby/city/map?${params}`);
+                    resultDiv.textContent += `  状态码: ${response.status}\n`;
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        resultDiv.textContent += `  ✅ 成功，找到${data.total_count || 0}个寄存点\n`;
+                    } else {
+                        resultDiv.textContent += `  ❌ 失败\n`;
+                    }
+                } catch (error) {
+                    resultDiv.textContent += `  ❌ 网络错误: ${error.message}\n`;
+                }
+                
+                resultDiv.textContent += '\n';
+                
+                // 添加延迟避免请求过快
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            resultDiv.textContent += '测试完成！\n';
+            resultDiv.className = 'result success';
+        }
+        
+        // 生成报告
+        function generateReport() {
+            const resultDiv = document.getElementById('fixResult');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            
+            const apiStatus = document.getElementById('apiStatus').textContent;
+            const dbStatus = document.getElementById('dbStatus').textContent;
+            
+            resultDiv.textContent = `寄存点分布图问题诊断报告\n`;
+            resultDiv.textContent += `生成时间: ${new Date().toLocaleString()}\n\n`;
+            
+            resultDiv.textContent += `=== 状态摘要 ===\n`;
+            resultDiv.textContent += `API状态: ${apiStatus}\n`;
+            resultDiv.textContent += `数据库状态: ${dbStatus}\n\n`;
+            
+            resultDiv.textContent += `=== 问题分析 ===\n`;
+            if (apiStatus === '错误') {
+                resultDiv.textContent += `❌ 分布图API返回500错误\n`;
+                resultDiv.textContent += `   这通常表示后端处理过程中出现异常\n\n`;
+            }
+            
+            if (dbStatus === '无数据') {
+                resultDiv.textContent += `❌ 数据库中缺少寄存点数据\n`;
+                resultDiv.textContent += `   这是导致API失败的可能原因\n\n`;
+            }
+            
+            resultDiv.textContent += `=== 修复步骤 ===\n`;
+            resultDiv.textContent += `1. 检查后端服务日志，查看详细错误信息\n`;
+            resultDiv.textContent += `2. 确认数据库连接正常\n`;
+            resultDiv.textContent += `3. 检查cities表和locker_points表是否有数据\n`;
+            resultDiv.textContent += `4. 如果没有数据，运行初始化脚本\n`;
+            resultDiv.textContent += `5. 重新测试API接口\n\n`;
+            
+            resultDiv.textContent += `=== 联系信息 ===\n`;
+            resultDiv.textContent += `如果问题仍然存在，请提供以下信息:\n`;
+            resultDiv.textContent += `- 后端服务日志\n`;
+            resultDiv.textContent += `- 数据库表结构和数据\n`;
+            resultDiv.textContent += `- API请求和响应详情\n`;
+        }
+        
+        // 清空结果
+        function clearResults() {
+            document.getElementById('testResult').style.display = 'none';
+            document.getElementById('dbResult').style.display = 'none';
+            document.getElementById('fixResult').style.display = 'none';
+            
+            document.getElementById('apiStatus').textContent = '未测试';
+            document.getElementById('dbStatus').textContent = '未知';
+        }
+    </script>
+</body>
+</html>

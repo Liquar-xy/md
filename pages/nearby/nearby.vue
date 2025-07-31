@@ -701,42 +701,68 @@
 			// 加载百度地图API
 			loadBaiduMapAPI() {
 				return new Promise((resolve, reject) => {
-					if (window.BMap) {
+					// 检查是否已经加载
+					if (typeof window.BMap !== 'undefined') {
+						console.log('✅ 百度地图API已存在');
 						resolve();
 						return;
 					}
 					
-					console.log('📡 加载百度地图JavaScript API');
+					console.log('📡 开始加载百度地图JavaScript API');
+					console.log('API密钥:', BAIDU_MAP_AK);
+					
+					// 清理可能存在的旧回调
+					if (window.initBaiduMapCallback) {
+						delete window.initBaiduMapCallback;
+					}
 					
 					const script = document.createElement('script');
 					script.type = 'text/javascript';
 					script.src = `https://api.map.baidu.com/api?v=3.0&ak=${BAIDU_MAP_AK}&callback=initBaiduMapCallback`;
-					script.onerror = () => {
-					console.error('❌ 百度地图API加载失败');
-					this.mapError = true;
-					this.mapErrorMessage = '百度地图API加载失败，请检查网络连接';
-					this.mapStatus = 'API加载失败';
-					reject(new Error('百度地图API加载失败'));
-				};
 					
 					// 设置超时
 					const timeout = setTimeout(() => {
 						console.error('❌ 百度地图API加载超时');
-						this.mapError = true;
-						this.mapErrorMessage = '百度地图API加载超时，请重试';
-						this.mapStatus = 'API加载超时';
+						this.handleMapError('百度地图API加载超时，请检查网络连接');
 						reject(new Error('百度地图API加载超时'));
-					}, 10000);
+					}, 15000); // 增加超时时间到15秒
 					
+					// 成功回调
 					window.initBaiduMapCallback = () => {
 						console.log('✅ 百度地图API加载完成');
 						clearTimeout(timeout);
-						delete window.initBaiduMapCallback;
-						this.mapStatus = 'API加载完成';
-						resolve();
+						
+						// 验证API是否真正可用
+						if (typeof window.BMap !== 'undefined' && window.BMap.Map) {
+							console.log('✅ 百度地图API验证成功');
+							this.mapStatus = 'API加载完成';
+							delete window.initBaiduMapCallback;
+							resolve();
+						} else {
+							console.error('❌ 百度地图API加载不完整');
+							this.handleMapError('百度地图API加载不完整');
+							reject(new Error('百度地图API加载不完整'));
+						}
 					};
 					
-					document.head.appendChild(script);
+					// 错误处理
+					script.onerror = (error) => {
+						console.error('❌ 百度地图API脚本加载失败:', error);
+						clearTimeout(timeout);
+						this.handleMapError('百度地图API脚本加载失败，请检查网络连接');
+						reject(new Error('百度地图API脚本加载失败'));
+					};
+					
+					// 添加脚本到页面
+					try {
+						document.head.appendChild(script);
+						console.log('📡 百度地图API脚本已添加到页面');
+					} catch (error) {
+						console.error('❌ 添加百度地图API脚本失败:', error);
+						clearTimeout(timeout);
+						this.handleMapError('添加百度地图API脚本失败');
+						reject(error);
+					}
 				});
 			},
 			
@@ -746,78 +772,111 @@
 				this.mapStatus = '创建地图';
 				
 				try {
-					const mapContainer = document.getElementById('baiduMapContainer');
-					if (!mapContainer) {
-						throw new Error('地图容器未找到');
+					// 验证百度地图API是否可用
+					if (typeof window.BMap === 'undefined') {
+						throw new Error('百度地图API未加载');
 					}
 					
-					// 调试信息：检查容器尺寸
-					const rect = mapContainer.getBoundingClientRect();
-					console.log('地图容器尺寸:', {
-						width: rect.width,
-						height: rect.height,
-						visible: rect.width > 0 && rect.height > 0
+					// 等待DOM渲染完成
+					this.$nextTick(() => {
+						try {
+							const mapContainer = document.getElementById('baiduMapContainer');
+							if (!mapContainer) {
+								console.error('❌ 地图容器未找到，尝试延迟创建');
+								// 延迟重试
+								setTimeout(() => {
+									this.createMapInstance();
+								}, 1000);
+								return;
+							}
+							
+							// 调试信息：检查容器尺寸
+							const rect = mapContainer.getBoundingClientRect();
+							console.log('地图容器信息:', {
+								id: mapContainer.id,
+								width: rect.width,
+								height: rect.height,
+								visible: rect.width > 0 && rect.height > 0,
+								display: getComputedStyle(mapContainer).display,
+								visibility: getComputedStyle(mapContainer).visibility
+							});
+							
+							// 确保容器有尺寸
+							if (rect.width === 0 || rect.height === 0) {
+								console.warn('⚠️ 地图容器尺寸为0，设置默认尺寸');
+								mapContainer.style.width = '100%';
+								mapContainer.style.height = '400px';
+								mapContainer.style.minHeight = '400px';
+							}
+							
+							// 创建地图实例
+							console.log('🗺️ 开始创建BMap实例');
+							this.mapInstance = new BMap.Map(mapContainer);
+							
+							if (!this.mapInstance) {
+								throw new Error('地图实例创建失败');
+							}
+							
+							console.log('✅ 地图实例创建成功');
+							
+							// 设置初始位置
+							const initialPoint = new BMap.Point(113.6253, 34.7466);
+							this.mapInstance.centerAndZoom(initialPoint, 15);
+							
+							// 启用地图交互功能
+							this.mapInstance.enableScrollWheelZoom(true);     // 启用滚轮缩放
+							this.mapInstance.enableDragging(true);            // 启用拖拽
+							this.mapInstance.enableDoubleClickZoom(true);     // 启用双击缩放
+							this.mapInstance.enableKeyboard(true);           // 启用键盘操作
+							this.mapInstance.enableInertialDragging(true);   // 启用惯性拖拽
+							this.mapInstance.enableContinuousZoom(true);     // 启用连续缩放
+							
+							// 添加地图控件
+							this.mapInstance.addControl(new BMap.NavigationControl());
+							this.mapInstance.addControl(new BMap.ScaleControl());
+							
+							// 地图事件监听
+							this.mapInstance.addEventListener('tilesloaded', () => {
+								console.log('✅ 地图瓦片加载完成');
+								this.mapStatus = '地图就绪';
+								this.mapReady = true;
+								this.loadingText = '';
+							});
+							
+							// 地图拖拽事件
+							this.mapInstance.addEventListener('dragstart', () => {
+								console.log('🖱️ 开始拖拽地图');
+							});
+							
+							this.mapInstance.addEventListener('dragend', () => {
+								console.log('🖱️ 拖拽地图结束');
+								// 可以在这里添加拖拽结束后的逻辑，比如重新搜索附近寄存点
+							});
+							
+							// 地图缩放事件
+							this.mapInstance.addEventListener('zoomstart', () => {
+								console.log('🔍 开始缩放地图');
+							});
+							
+							this.mapInstance.addEventListener('zoomend', () => {
+								console.log('🔍 缩放地图结束');
+								const zoom = this.mapInstance.getZoom();
+								console.log('当前缩放级别:', zoom);
+							});
+							
+							// 地图点击事件
+							this.mapInstance.addEventListener('click', (e) => {
+								console.log('🖱️ 点击地图:', e.point);
+								// 可以在这里添加点击地图的逻辑
+							});
+							
+							console.log('✅ 百度地图实例创建完成');
+							
+						} catch (innerError) {
+							console.error('❌ 地图实例创建失败:', innerError);
+							this.handleError('地图实例创建失败: ' + innerError.message);
+						}
 					});
-					
-					if (rect.width === 0 || rect.height === 0) {
-						console.warn('⚠️ 地图容器尺寸为0，可能影响地图显示');
-					}
-					
-					this.mapInstance = new BMap.Map(mapContainer);
-					
-					const initialPoint = new BMap.Point(113.6253, 34.7466);
-					this.mapInstance.centerAndZoom(initialPoint, 15);
-					
-					// 启用地图交互功能
-					this.mapInstance.enableScrollWheelZoom(true);     // 启用滚轮缩放
-					this.mapInstance.enableDragging(true);            // 启用拖拽
-					this.mapInstance.enableDoubleClickZoom(true);     // 启用双击缩放
-					this.mapInstance.enableKeyboard(true);           // 启用键盘操作
-					this.mapInstance.enableInertialDragging(true);   // 启用惯性拖拽
-					this.mapInstance.enableContinuousZoom(true);     // 启用连续缩放
-					
-					// 添加地图控件
-					this.mapInstance.addControl(new BMap.NavigationControl());
-					this.mapInstance.addControl(new BMap.ScaleControl());
-					
-					// 地图事件监听
-					this.mapInstance.addEventListener('tilesloaded', () => {
-						console.log('✅ 地图瓦片加载完成');
-						this.mapStatus = '地图就绪';
-						this.mapReady = true;
-						this.loadingText = '';
-					});
-					
-					// 地图拖拽事件
-					this.mapInstance.addEventListener('dragstart', () => {
-						console.log('🖱️ 开始拖拽地图');
-					});
-					
-					this.mapInstance.addEventListener('dragend', () => {
-						console.log('🖱️ 拖拽地图结束');
-						// 可以在这里添加拖拽结束后的逻辑，比如重新搜索附近寄存点
-					});
-					
-					// 地图缩放事件
-					this.mapInstance.addEventListener('zoomstart', () => {
-						console.log('🔍 开始缩放地图');
-					});
-					
-					this.mapInstance.addEventListener('zoomend', () => {
-						console.log('🔍 缩放地图结束');
-						const zoom = this.mapInstance.getZoom();
-						console.log('当前缩放级别:', zoom);
-					});
-					
-					// 地图点击事件
-					this.mapInstance.addEventListener('click', (e) => {
-						console.log('🖱️ 点击地图:', e.point);
-						// 可以在这里添加点击地图的逻辑
-					});
-					
-					// 位置标记和寄存点搜索会在定位成功后自动执行
-					
-					console.log('✅ 百度地图实例创建完成');
 					
 				} catch (error) {
 					console.error('❌ 创建地图实例失败:', error);
@@ -1111,11 +1170,13 @@
 			// 处理附近寄存点接口成功响应
 			handleNearbyLockersSuccess(responseData) {
 				console.log('✅ 附近寄存点接口调用成功');
+				console.log('原始响应数据:', responseData);
 				
 				// 提取寄存点数据
 				const nearbyPoints = responseData.nearby_points || [];
 				const totalCount = responseData.total_count || 0;
 				const searchRadius = responseData.search_radius || 5;
+				const userLocation = responseData.user_location || null;
 				
 				console.log('📍 附近寄存点数据:', {
 					count: nearbyPoints.length,
@@ -1204,22 +1265,26 @@
 			
 			// 处理寄存点数据
 			processNearbyLockersData(nearbyPoints) {
-				console.log('🔄 处理寄存点数据');
+				console.log('🔄 处理寄存点数据，数量:', nearbyPoints.length);
 				
 				return nearbyPoints.map((point, index) => {
 					console.log(`处理寄存点 ${index + 1}:`, point);
 					
 					return {
-						id: point.id || `point_${index + 1}`,
-						name: point.name || `寄存点${index + 1}`,
-						large: point.large_count || point.large || 0,
-						medium: point.medium_count || point.medium || 0,
-						small: point.small_count || point.small || 0,
-						address: point.address || '地址信息待完善',
+						id: point.id || point.point_id || `point_${index + 1}`,
+						name: point.name || point.point_name || `寄存点${index + 1}`,
+						large: parseInt(point.large_count || point.large || 0),
+						medium: parseInt(point.medium_count || point.medium || 0),
+						small: parseInt(point.small_count || point.small || 0),
+						address: point.address || point.location || '地址信息待完善',
 						distance: this.formatDistance(point.distance),
 						status: point.status || 'available',
-						longitude: parseFloat(point.longitude),
-						latitude: parseFloat(point.latitude),
+						longitude: parseFloat(point.longitude || 0),
+						latitude: parseFloat(point.latitude || 0),
+						// 额外信息
+						phone: point.phone || point.mobile || '',
+						openTime: point.open_time || point.business_hours || '24小时',
+						rating: parseFloat(point.rating || point.score || 0),
 						// 保留原始数据
 						rawData: point
 					};
@@ -1512,6 +1577,22 @@
 				this.mapErrorMessage = message;
 				this.mapStatus = '加载失败';
 				this.loadingText = '';
+			},
+			
+			// 地图错误处理
+			handleMapError(message) {
+				console.error('❌ 地图错误:', message);
+				this.mapError = true;
+				this.mapErrorMessage = message;
+				this.mapStatus = 'API加载失败';
+				this.loadingText = '';
+				
+				// 显示用户友好的错误提示
+				uni.showToast({
+					title: '地图加载失败',
+					icon: 'none',
+					duration: 3000
+				});
 			},
 			
 			// 重试加载地图
