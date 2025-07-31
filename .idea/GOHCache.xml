@@ -364,7 +364,7 @@
         <entry key="file://$PROJECT_DIR$/../ito-deposit/internal/data/cabinet_cell.go">
           <value>
             <ScannedPath>
-              <option name="lastModified" value="1753882541730" />
+              <option name="lastModified" value="1753882623927" />
               <option name="schema">
                 <list>
                   <option value="CabinetCell" />
@@ -376,7 +376,7 @@
         <entry key="file://$PROJECT_DIR$/../ito-deposit/internal/data/cabinet_group.go">
           <value>
             <ScannedPath>
-              <option name="lastModified" value="1753882541757" />
+              <option name="lastModified" value="1753882623935" />
               <option name="schema">
                 <list>
                   <option value="CabinetGroup" />

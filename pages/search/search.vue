@@ -485,9 +485,133 @@
 				
 				console.log('🔍 执行搜索:', keyword);
 				
-				// 为了确保搜索结果能显示，直接使用模拟数据
-				console.log('🎭 使用模拟数据确保搜索结果显示');
-				this.handleSearchWithMockData(keyword);
+				// 清空之前的结果
+				this.searchResults = [];
+				this.isSearching = true;
+				this.searchStatus = `正在搜索"${keyword}"...`;
+				
+				// 调用后端搜索接口
+				this.callSearchAPI(keyword);
+			},
+			
+			// 调用后端搜索API
+			callSearchAPI(keyword) {
+				console.log('📡 调用后端搜索接口:', keyword);
+				
+				const API_BASE_URL = 'http://localhost:8000';
+				const apiUrl = `${API_BASE_URL}/api/cities/search`;
+				
+				// 构建查询参数
+				const queryParams = new URLSearchParams({
+					city_name: this.currentCity,
+					keyword: keyword,
+					page: '1',
+					page_size: '20'
+				});
+				
+				const fullUrl = `${apiUrl}?${queryParams.toString()}`;
+				
+				console.log('🔍 搜索请求URL:', fullUrl);
+				
+				uni.request({
+					url: fullUrl,
+					method: 'GET',
+					header: {
+						'Content-Type': 'application/json',
+						'Accept': 'application/json'
+					},
+					timeout: 10000,
+					success: (response) => {
+						console.log('✅ 搜索接口响应:', response);
+						this.handleSearchSuccess(response.data, keyword);
+					},
+					fail: (error) => {
+						console.log('❌ 搜索接口失败:', error);
+						this.handleSearchError(keyword, error);
+					},
+					complete: () => {
+						this.isSearching = false;
+					}
+				});
+			},
+			
+			// 处理搜索成功
+			handleSearchSuccess(data, keyword) {
+				console.log('🔄 处理搜索成功响应:', data);
+				
+				try {
+					let results = [];
+					
+					// 处理不同的响应格式
+					if (data && data.items && Array.isArray(data.items)) {
+						results = data.items;
+					} else if (data && Array.isArray(data)) {
+						results = data;
+					} else if (data && data.data && Array.isArray(data.data)) {
+						results = data.data;
+					}
+					
+					console.log('📊 解析到的结果数量:', results.length);
+					
+					if (results.length > 0) {
+						// 转换数据格式
+						this.searchResults = results.map((item, index) => ({
+							id: item.id || index + 1,
+							name: item.name || `寄存点${index + 1}`,
+							address: item.address || item.location || '地址信息暂无',
+							distance: item.distance ? `${item.distance.toFixed(1)}km` : '',
+							large: Math.floor(Math.random() * 5) + 1,
+							medium: Math.floor(Math.random() * 8) + 2,
+							small: Math.floor(Math.random() * 10) + 3,
+							price: item.price || '2元/小时起',
+							status: 'available',
+							coordinates: {
+								longitude: item.longitude || 113.6253,
+								latitude: item.latitude || 34.7466
+							}
+						}));
+						
+						this.searchStatus = `在${this.currentCity}找到 ${this.searchResults.length} 个"${keyword}"相关的寄存点`;
+						
+						uni.showToast({
+							title: `找到${this.searchResults.length}个寄存点`,
+							icon: 'success',
+							duration: 2000
+						});
+						
+						console.log('✅ 搜索结果处理完成:', this.searchResults);
+					} else {
+						this.handleNoResults(keyword);
+					}
+				} catch (error) {
+					console.error('❌ 处理搜索结果时出错:', error);
+					this.handleSearchError(keyword, error);
+				}
+			},
+			
+			// 处理搜索失败
+			handleSearchError(keyword, error) {
+				console.log('⚠️ 搜索失败，使用模拟数据:', error);
+				
+				// 使用模拟数据作为后备
+				this.generateMockSearchResults(keyword);
+			},
+			
+			// 处理无结果情况
+			handleNoResults(keyword) {
+				this.searchResults = [];
+				this.searchStatus = `在${this.currentCity}没有找到"${keyword}"相关的寄存点`;
+				
+				uni.showToast({
+					title: '未找到相关寄存点',
+					icon: 'none',
+					duration: 2000
+				});
+				
+				// 显示建议
+				setTimeout(() => {
+					this.searchStatus = '试试搜索其他关键词，如"火车站"、"地铁站"、"商场"等';
+				}, 2000);
 			},
 			
 			// 搜索寄存点
@@ -838,87 +962,43 @@
 			
 			// 生成模拟搜索结果
 			generateMockSearchResults(keyword) {
-				console.log('🎭 生成模拟搜索结果:', keyword);
+				console.log('🎭 生成模拟搜索结果作为后备:', keyword);
 				
-				try {
-					// 根据关键词生成更智能的结果
-					const mockResults = [];
-					
-					// 确保关键词有效
-					if (!keyword || keyword.trim().length === 0) {
-						console.log('关键词为空，返回空结果');
-						return [];
-					}
-					
-					const cleanKeyword = keyword.trim();
-					
-					// 预定义的寄存点名称模板
-					const nameTemplates = [
-						`${cleanKeyword}寄存点`,
-						`${cleanKeyword}附近寄存柜`,
-						`${cleanKeyword}智能寄存`,
-						`${cleanKeyword}便民寄存`,
-						`${cleanKeyword}快递寄存点`
-					];
-					
-					// 预定义的地址模板
-					const addressTemplates = [
-						`${this.currentCity}${cleanKeyword}1号出口`,
-						`${this.currentCity}${cleanKeyword}广场东侧`,
-						`${this.currentCity}${cleanKeyword}地铁站B口`,
-						`${this.currentCity}${cleanKeyword}商业街`,
-						`${this.currentCity}${cleanKeyword}停车场旁`
-					];
-					
-					// 根据关键词类型决定结果数量
-					let resultCount = 2; // 默认2个结果
-					
-					// 检查是否为预定义的分类
-					const attractions = this.attractions || [];
-					const stations = this.stations || [];
-					const subwayStations = this.subwayStations || [];
-					const businessAreas = this.businessAreas || [];
-					
-					if (attractions.includes(cleanKeyword)) {
-						resultCount = 3; // 景点类型返回3个
-					} else if (stations.includes(cleanKeyword)) {
-						resultCount = 4; // 车站类型返回4个
-					} else if (subwayStations.includes(cleanKeyword)) {
-						resultCount = 3; // 地铁站返回3个
-					} else if (businessAreas.includes(cleanKeyword)) {
-						resultCount = 5; // 商业区返回5个
-					} else if (cleanKeyword.length < 2) {
-						resultCount = 0; // 关键词太短，不返回结果
-					} else {
-						// 其他情况返回2-3个结果
-						resultCount = Math.floor(Math.random() * 2) + 2;
-					}
-					
-					// 生成指定数量的模拟结果
-					for (let i = 0; i < resultCount; i++) {
-						const distance = (Math.random() * 2 + 0.1).toFixed(1); // 0.1-2.1km
-						
-						mockResults.push({
-							id: `mock_search_${Date.now()}_${i + 1}`,
-							name: nameTemplates[i % nameTemplates.length],
-							address: addressTemplates[i % addressTemplates.length],
-							distance: distance + 'km',
-							longitude: 113.6253 + (Math.random() - 0.5) * 0.02,
-							latitude: 34.7466 + (Math.random() - 0.5) * 0.02,
-							large: Math.floor(Math.random() * 8) + 2,
-							medium: Math.floor(Math.random() * 12) + 5,
-							small: Math.floor(Math.random() * 15) + 8,
-							status: Math.random() > 0.1 ? 'available' : 'unavailable' // 90%可用
-						});
-					}
-					
-					console.log(`✅ 生成了 ${mockResults.length} 个模拟搜索结果`);
-					return mockResults;
-					
-				} catch (error) {
-					console.error('生成模拟数据时出错:', error);
+				const mockResults = [];
+				const cleanKeyword = keyword.trim();
+				
+				if (!cleanKeyword) {
 					return [];
 				}
+				
+				// 根据关键词生成2-4个模拟结果
+				const resultCount = Math.floor(Math.random() * 3) + 2;
+				
+				for (let i = 0; i < resultCount; i++) {
+					mockResults.push({
+						id: `mock_${Date.now()}_${i}`,
+						name: `${cleanKeyword}寄存点${i + 1}`,
+						address: `${this.currentCity}${cleanKeyword}附近${(i + 1) * 100}米`,
+						distance: `${(Math.random() * 2 + 0.3).toFixed(1)}km`,
+						large: Math.floor(Math.random() * 5) + 1,
+						medium: Math.floor(Math.random() * 8) + 2,
+						small: Math.floor(Math.random() * 10) + 3,
+						price: `${Math.floor(Math.random() * 3) + 2}元/小时起`,
+						status: 'available'
+					});
+				}
+				
+				// 直接设置搜索结果
+				this.searchResults = mockResults;
+				this.searchStatus = `模拟数据：在${this.currentCity}找到 ${mockResults.length} 个"${cleanKeyword}"相关的寄存点`;
+				
+				uni.showToast({
+					title: `找到${mockResults.length}个寄存点（模拟）`,
+					icon: 'success',
+					duration: 2000
+				});
+				
+				console.log('🎭 模拟数据设置完成:', this.searchResults);
 			},
 			
 			// 格式化距离显示

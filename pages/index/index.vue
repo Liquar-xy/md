@@ -9,6 +9,14 @@
 			</view>
 		</view>
 
+		<!-- 顶部操作栏 -->
+		<view class="top-bar">
+			<view class="logout-btn" @click="showLogoutConfirm">
+				<text class="logout-icon">🚪</text>
+				<text class="logout-text">退出</text>
+			</view>
+		</view>
+
 		<!-- 城市选择和我的附近 -->
 		<view class="location-section">
 			<view class="city-selector" @click="selectCity">
@@ -64,13 +72,7 @@
 			</view>
 		</view>
 		
-		<!-- 管理员入口 -->
-		<view class="admin-entrance">
-			<view class="admin-btn" @click="goToAdminLogin">
-				<view class="feature-icon admin-icon">👨‍💼</view>
-				<text class="feature-text admin-text">管理员登录</text>
-			</view>
-		</view>
+
 
 		<!-- 交易保障 -->
 		<view class="guarantee-section">
@@ -565,11 +567,44 @@ export default {
 			});
 		},
 		
-		// 跳转到管理员登录
-		goToAdminLogin() {
-			uni.navigateTo({
-				url: '/pages/admin/login'
+
+		
+		// 显示退出登录确认
+		showLogoutConfirm() {
+			uni.showModal({
+				title: '退出登录',
+				content: '确定要退出当前账号吗？',
+				confirmText: '退出',
+				cancelText: '取消',
+				success: (res) => {
+					if (res.confirm) {
+						this.logout();
+					}
+				}
 			});
+		},
+		
+		// 退出登录
+		logout() {
+			// 清除本地存储的用户信息
+			uni.removeStorageSync('userToken');
+			uni.removeStorageSync('userId');
+			uni.removeStorageSync('userInfo');
+			uni.removeStorageSync('selectedCity');
+			
+			// 显示退出成功提示
+			uni.showToast({
+				title: '已退出登录',
+				icon: 'success',
+				duration: 1500
+			});
+			
+			// 延迟跳转到登录页面
+			setTimeout(() => {
+				uni.reLaunch({
+					url: '/pages/login/login'
+				});
+			}, 1500);
 		},
 		
 		// 查看全部附近寄存点
@@ -1283,49 +1318,5 @@ export default {
 	color: #ffffff;
 }
 
-/* 管理员入口 */
-.admin-entrance {
-	display: flex;
-	justify-content: center;
-	padding: 30rpx;
-	background: linear-gradient(135deg, 
-		rgba(255, 255, 255, 0.95) 0%, 
-		rgba(255, 255, 255, 0.85) 100%);
-	backdrop-filter: blur(20rpx);
-	margin-top: 20rpx;
-}
 
-.admin-btn {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	padding: 30rpx 50rpx;
-	border-radius: 25rpx;
-	background: linear-gradient(135deg, #e74c3c, #c0392b);
-	box-shadow: 0 8rpx 25rpx rgba(231, 76, 60, 0.4);
-	transition: all 0.3s ease;
-	min-width: 200rpx;
-}
-
-.admin-btn:active {
-	transform: translateY(2rpx);
-	box-shadow: 0 6rpx 20rpx rgba(231, 76, 60, 0.3);
-}
-
-.admin-icon {
-	font-size: 52rpx;
-	margin-bottom: 15rpx;
-	padding: 25rpx;
-	border-radius: 50%;
-	background: rgba(255, 255, 255, 0.2);
-	color: #ffffff;
-	border: 2rpx solid rgba(255, 255, 255, 0.3);
-}
-
-.admin-text {
-	font-size: 28rpx;
-	color: #ffffff;
-	font-weight: bold;
-	text-shadow: 0 1rpx 2rpx rgba(0, 0, 0, 0.2);
-}
 </style>
