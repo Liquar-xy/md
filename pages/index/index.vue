@@ -11,6 +11,10 @@
 
 		<!-- 顶部操作栏 -->
 		<view class="top-bar">
+			<view class="back-to-login-btn" @click="backToLogin">
+				<text class="back-icon">🔙</text>
+				<text class="back-text">登录页</text>
+			</view>
 			<view class="logout-btn" @click="showLogoutConfirm">
 				<text class="logout-icon">🚪</text>
 				<text class="logout-text">退出</text>
@@ -147,6 +151,8 @@
 </template>
 
 <script>
+import NavigationUtils from '@/utils/navigation.js';
+
 export default {
 	data() {
 		return {
@@ -571,17 +577,12 @@ export default {
 		
 		// 显示退出登录确认
 		showLogoutConfirm() {
-			uni.showModal({
-				title: '退出登录',
-				content: '确定要退出当前账号吗？',
-				confirmText: '退出',
-				cancelText: '取消',
-				success: (res) => {
-					if (res.confirm) {
-						this.logout();
-					}
-				}
-			});
+			NavigationUtils.showLogoutConfirm();
+		},
+		
+		// 回到登录页面（不退出登录）
+		backToLogin() {
+			NavigationUtils.showBackToLoginConfirm();
 		},
 		
 		// 退出登录
@@ -591,6 +592,8 @@ export default {
 			uni.removeStorageSync('userId');
 			uni.removeStorageSync('userInfo');
 			uni.removeStorageSync('selectedCity');
+			uni.removeStorageSync('token');
+			uni.removeStorageSync('userData');
 			
 			// 显示退出成功提示
 			uni.showToast({
@@ -889,6 +892,38 @@ export default {
 		rgba(240, 147, 251, 0.1) 100%);
 	backdrop-filter: blur(100rpx);
 	z-index: -1;
+}
+
+/* 顶部操作栏 */
+.top-bar {
+	position: absolute;
+	top: 60rpx;
+	right: 30rpx;
+	z-index: 10;
+	display: flex;
+	gap: 20rpx;
+}
+
+.back-to-login-btn, .logout-btn {
+	display: flex;
+	align-items: center;
+	padding: 15rpx 20rpx;
+	background: rgba(255, 255, 255, 0.9);
+	border-radius: 25rpx;
+	box-shadow: 0 4rpx 15rpx rgba(0, 0, 0, 0.1);
+	backdrop-filter: blur(10rpx);
+}
+
+.back-icon, .logout-icon {
+	font-size: 24rpx;
+	margin-right: 8rpx;
+	color: #007aff;
+}
+
+.back-text, .logout-text {
+	font-size: 24rpx;
+	color: #007aff;
+	font-weight: 500;
 }
 
 /* 顶部图片区域 */

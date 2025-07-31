@@ -44,6 +44,10 @@
 					<text class="service-text">用户协议</text>
 					<text class="arrow">></text>
 				</view>
+				<view class="service-item" @click="handleBackToLogin">
+					<text class="service-text">回到登录页</text>
+					<text class="arrow">></text>
+				</view>
 				<view class="service-item" @click="handleLogout">
 					<text class="service-text">退出登录</text>
 					<text class="arrow">></text>
@@ -70,6 +74,8 @@
 </template>
 
 <script>
+import NavigationUtils from '@/utils/navigation.js';
+
 export default {
 	data() {
 		return {
@@ -217,50 +223,19 @@ export default {
 			});
 		},
 		
+		// 回到登录页面（不退出登录）
+		handleBackToLogin() {
+			NavigationUtils.showBackToLoginConfirm();
+		},
+		
 		// 退出登录
 		handleLogout() {
-			uni.showModal({
-				title: '退出登录',
-				content: '确定要退出登录吗？',
-				success: (res) => {
-					if (res.confirm) {
-						// 清除所有登录相关的本地存储
-						try {
-							uni.removeStorageSync('token');
-							uni.removeStorageSync('userData');
-							uni.removeStorageSync('loginTime');
-							uni.removeStorageSync('selectedCity');
-
-							console.log('登录数据已清除');
-
-							// 重置页面数据
-							this.isLoggedIn = false;
-							this.username = '';
-							this.phoneNumber = '';
-							this.avatarUrl = '';
-
-							uni.showToast({
-								title: '已退出登录',
-								icon: 'success',
-								duration: 1500
-							});
-
-							// 延迟跳转到登录页
-							setTimeout(() => {
-								uni.reLaunch({
-									url: '/pages/login/login'
-								});
-							}, 1500);
-
-						} catch (e) {
-							console.error('清除登录数据失败:', e);
-							uni.showToast({
-								title: '退出失败，请重试',
-								icon: 'none'
-							});
-						}
-					}
-				}
+			NavigationUtils.showLogoutConfirm(() => {
+				// 重置页面数据
+				this.isLoggedIn = false;
+				this.username = '';
+				this.phoneNumber = '';
+				this.avatarUrl = '';
 			});
 		},
 

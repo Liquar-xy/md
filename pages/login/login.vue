@@ -99,7 +99,13 @@ export default {
 			countdown: 0 // 验证码倒计时
 		}
 	},
-	onLoad() {
+	onLoad(options) {
+		// 检查是否强制显示登录页面
+		if (options && options.force === 'true') {
+			console.log('强制显示登录页面，跳过自动登录检查');
+			return;
+		}
+		
 		// 检查是否已经登录
 		this.checkLoginStatus();
 	},
