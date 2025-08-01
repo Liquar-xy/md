@@ -182,6 +182,34 @@
           "navigationBarTitleText": "收费规则",
           "navigationStyle": "custom"
         }
+      },
+      {
+        "path": "pages/cabinet-group/cabinet-group",
+        "style": {
+          "navigationBarTitleText": "柜组管理",
+          "navigationStyle": "custom"
+        }
+      },
+      {
+        "path": "pages/cabinet-cell/cabinet-cell",
+        "style": {
+          "navigationBarTitleText": "柜格管理",
+          "navigationStyle": "custom"
+        }
+      },
+      {
+        "path": "pages/group-orders/group-orders",
+        "style": {
+          "navigationBarTitleText": "柜组订单",
+          "navigationStyle": "custom"
+        }
+      },
+      {
+        "path": "pages/location-select/location-select",
+        "style": {
+          "navigationBarTitleText": "选择寄存点",
+          "navigationStyle": "custom"
+        }
       }
     ],
   "globalStyle": {
