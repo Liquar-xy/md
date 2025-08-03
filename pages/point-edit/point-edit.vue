@@ -161,7 +161,7 @@ export default {
       console.log('正在获取网点信息，ID:', this.pointId);
       
       uni.request({
-        url: 'http://localhost:8000/admin/getPointInfo',
+        url: 'http://localhost:8000/point_info',
         method: 'POST',
         data: {
           Id: this.pointId
