@@ -43,11 +43,28 @@
             /* ios打包配置 */
             "ios" : {},
             /* SDK配置 */
-            "sdkConfigs" : {}
+            "sdkConfigs" : {
+                "maps" : {
+                    "type" : "baidu",
+                    "key" : "9jnxn6bIxVgX1u4KffC5Cc83dTMzzYIA"
+                }
+            }
         }
     },
     /* 快应用特有相关 */
     "quickapp" : {},
+    /* H5特有相关 */
+    "h5" : {
+        "devServer" : {
+            "https" : false
+        },
+        "sdkConfigs" : {
+            "maps" : {
+                "type" : "baidu",
+                "key" : "9jnxn6bIxVgX1u4KffC5Cc83dTMzzYIA"
+            }
+        }
+    },
     /* 小程序特有相关 */
     "mp-weixin" : {
         "appid" : "",

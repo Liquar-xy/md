@@ -32,7 +32,7 @@
         <text class="arrow">></text>
       </view>
       
-      <view class="info-item">
+      <view class="info-item clickable" @click="openBaiduMap">
         <text class="info-label">网点地址</text>
         <view class="address-container">
           <text class="location-icon">📍</text>
@@ -225,6 +225,34 @@ export default {
       console.log('点击编辑网点，ID:', this.pointId, '名称:', this.pointName);
       uni.navigateTo({
         url: `/pages/point-edit/point-edit?id=${this.pointId}&name=${encodeURIComponent(this.pointName)}`
+    // 打开百度地图
+    openBaiduMap() {
+      if (!this.pointDetail.address) {
+        uni.showToast({
+          title: '网点地址为空',
+          icon: 'none'
+        });
+        return;
+      }
+      
+      console.log('打开地图页面，地址:', this.pointDetail.address);
+      
+      // 跳转到地图页面
+      const name = encodeURIComponent(this.pointDetail.name || '网点位置');
+      const address = encodeURIComponent(this.pointDetail.address);
+      
+      uni.navigateTo({
+        url: `/pages/map-view/map-view?name=${name}&address=${address}`,
+        success: () => {
+          console.log('跳转到地图页面成功');
+        },
+        fail: (err) => {
+          console.error('跳转到地图页面失败:', err);
+          uni.showToast({
+            title: '跳转失败',
+            icon: 'none'
+          });
+        }
       });
     },
     

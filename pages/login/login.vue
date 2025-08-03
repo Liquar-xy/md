@@ -99,7 +99,30 @@ export default {
 			countdown: 0 // 验证码倒计时
 		}
 	},
+	onLoad(options) {
+		// 检查是否强制显示登录页面
+		if (options && options.force === 'true') {
+			console.log('强制显示登录页面，跳过自动登录检查');
+			return;
+		}
+		
+		// 检查是否已经登录
+		this.checkLoginStatus();
+	},
 	methods: {
+		// 检查登录状态
+		checkLoginStatus() {
+			const token = uni.getStorageSync('token');
+			const userData = uni.getStorageSync('userData');
+
+			if (token && userData) {
+				console.log('用户已登录，跳转到首页');
+				uni.switchTab({
+					url: '/pages/index/index'
+				});
+			}
+		},
+
 		// 选择登录类型
 		selectLoginType(type) {
 			this.loginType = type;
@@ -151,7 +174,10 @@ export default {
 			} else {
 				smsData.source = 'login';
 			}
-			
+
+			// 统一的API基础URL
+			const API_BASE_URL = 'http://localhost:8000';
+
 			// 调用后端发送短信接口
 			uni.request({
 				url: 'http://localhost:8000/sendSms',
@@ -259,7 +285,7 @@ export default {
 					username: 'user'
 				};
 			}
-			
+
 			console.log('=== 管理员登录请求详情 ===');
 			console.log('登录类型:', this.loginType);
 			console.log('登录接口:', loginUrl);
@@ -289,15 +315,15 @@ export default {
 					console.log('响应消息:', res.data.msg);
 					console.log('管理员ID:', res.data.id);
 					console.log('Token:', res.data.token);
-					
+
 					if (res.data && (res.data.code === 200 || res.data.code === "200")) {
 						// 登录成功
 						console.log('后端返回的完整数据:', res.data);
 						console.log('后端返回的id字段:', res.data.id);
 						console.log('当前账号:', this.account);
-						
+
 						let loginData;
-						
+
 						if (this.loginType === 'admin') {
 							// 管理员登录数据 - 管理员接口返回的是数据统计，不是登录信息
 							loginData = {
@@ -332,7 +358,7 @@ export default {
 								isLoggedIn: true
 							};
 						}
-						
+
 						// 保存登录信息到本地存储
 						try {
 							if (this.loginType === 'admin') {
@@ -378,7 +404,7 @@ export default {
 						} else {
 							// 用户登录跳转到我的页面
 							console.log('跳转到我的页面');
-							uni.reLaunch({
+							uni.switchTab({
 								url: '/pages/my/my',
 								success: () => {
 									console.log('我的页面跳转成功');
@@ -563,6 +589,18 @@ export default {
 
 .login-btn:active {
 	background-color: #0056cc;
+}
+
+.quick-login {
+	text-align: center;
+	margin-top: 30rpx;
+	padding: 20rpx;
+}
+
+.quick-login-text {
+	font-size: 28rpx;
+	color: #007aff;
+	text-decoration: underline;
 }
 
 .footer-section {

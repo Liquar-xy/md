@@ -133,9 +133,28 @@ export default {
 
 <style scoped>
 .order-detail-container {
+	background-image: url('/static/12.png');
+	background-size: cover;
+	background-position: center;
+	background-repeat: no-repeat;
+	background-attachment: fixed;
 	min-height: 100vh;
-	background-color: #f5f5f5;
 	padding-bottom: 40rpx;
+	position: relative;
+}
+
+.order-detail-container::before {
+	content: '';
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: linear-gradient(180deg, 
+		rgba(248, 250, 255, 0.85) 0%, 
+		rgba(245, 245, 245, 0.9) 100%);
+	z-index: -1;
+	backdrop-filter: blur(2rpx);
 }
 
 /* 状态区域 */

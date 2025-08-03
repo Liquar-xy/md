@@ -44,6 +44,10 @@
 					<text class="service-text">用户协议</text>
 					<text class="arrow">></text>
 				</view>
+				<view class="service-item" @click="handleBackToLogin">
+					<text class="service-text">回到登录页</text>
+					<text class="arrow">></text>
+				</view>
 				<view class="service-item" @click="handleLogout">
 					<text class="service-text">退出登录</text>
 					<text class="arrow">></text>
@@ -70,6 +74,8 @@
 </template>
 
 <script>
+import NavigationUtils from '@/utils/navigation.js';
+
 export default {
 	data() {
 		return {
@@ -88,39 +94,50 @@ export default {
 		}
 	},
 	onLoad() {
-		// 页面加载时从本地存储获取用户数据
-		this.loadUserData();
+		// 检查登录状态
+		this.checkLoginStatus();
 	},
 	
 	onShow() {
-		// 页面显示时重新加载用户数据，确保数据是最新的
-		this.loadUserData();
+		// 页面显示时重新检查登录状态
+		this.checkLoginStatus();
 	},
 	methods: {
+		// 检查登录状态
+		checkLoginStatus() {
+			const token = uni.getStorageSync('token');
+			const userData = uni.getStorageSync('userData');
+
+			if (!token || !userData) {
+				console.log('用户未登录，跳转到登录页');
+				this.isLoggedIn = false;
+				uni.reLaunch({
+					url: '/pages/login/login'
+				});
+				return;
+			}
+
+			// 加载用户数据
+			this.loadUserData(userData);
+		},
+
 		// 加载用户数据
-		loadUserData() {
+		loadUserData(userData) {
 			try {
-				const userData = uni.getStorageSync('userData');
 				if (userData) {
-					const data = JSON.parse(userData);
-					this.username = data.username || '智慧存0987';
-					this.phoneNumber = data.phoneNumber || '18512345678';
-					this.avatarUrl = data.avatarUrl || '';
+					this.username = userData.username || userData.nickname || '智慧存用户';
+					this.phoneNumber = userData.phone || '';
+					this.avatarUrl = userData.avatar || '';
 					this.isLoggedIn = true;
-				} else {
-					// 如果没有本地数据，使用默认值
-					this.username = '智慧存0987';
-					this.phoneNumber = '18512345678';
-					this.avatarUrl = '';
-					this.isLoggedIn = true;
+
+					console.log('用户数据加载成功:', {
+						username: this.username,
+						phone: this.phoneNumber
+					});
 				}
 			} catch (e) {
-				console.log('加载用户数据失败:', e);
-				// 出错时使用默认值
-				this.username = '智慧存0987';
-				this.phoneNumber = '18512345678';
-				this.avatarUrl = '';
-				this.isLoggedIn = true;
+				console.error('加载用户数据失败:', e);
+				this.handleLogout();
 			}
 		},
 		
@@ -206,45 +223,22 @@ export default {
 			});
 		},
 		
-		// 退出登录
-		handleLogout() {
-			uni.showModal({
-				title: '提示',
-				content: '确定要退出登录吗？',
-				success: (res) => {
-					if (res.confirm) {
-						// 清除本地存储的用户数据
-						try {
-							uni.removeStorageSync('userData');
-							console.log('用户数据已清除');
-						} catch (e) {
-							console.log('清除用户数据失败:', e);
-						}
-						
-						this.isLoggedIn = false;
-						this.username = '';
-						this.phoneNumber = '';
-						this.avatarUrl = '';
-						
-						uni.showToast({
-							title: '已退出登录',
-							icon: 'success',
-							success: () => {
-								// 延迟跳转到登录界面
-								setTimeout(() => {
-									uni.reLaunch({
-										url: '/pages/login/login'
-									});
-								}, 1500);
-							}
-						});
-					}
-				}
-			});
+		// 回到登录页面（不退出登录）
+		handleBackToLogin() {
+			NavigationUtils.showBackToLoginConfirm();
 		},
 		
+		// 退出登录
+		handleLogout() {
+			NavigationUtils.showLogoutConfirm(() => {
+				// 重置页面数据
+				this.isLoggedIn = false;
+				this.username = '';
+				this.phoneNumber = '';
+				this.avatarUrl = '';
+			});
+		},
 
-		
 		// 底部导航事件
 		handleHomeClick() {
 			uni.switchTab({
@@ -254,15 +248,13 @@ export default {
 		
 		handleOrdersClick() {
 			uni.navigateTo({
-				url: '/pages/orders/orders'
+				url: '/pages/order-detail/order-detail'
 			});
 		},
 		
 		handleMyClick() {
-			uni.showToast({
-				title: '我的页面',
-				icon: 'none'
-			});
+			// 当前就在我的页面，不需要跳转
+			console.log('当前在我的页面');
 		}
 	}
 }
@@ -270,9 +262,28 @@ export default {
 
 <style scoped>
 .my-container {
+	background-image: url('/static/12.png');
+	background-size: cover;
+	background-position: center;
+	background-repeat: no-repeat;
+	background-attachment: fixed;
 	min-height: 100vh;
-	background-color: #f5f5f5;
 	padding-bottom: 120rpx;
+	position: relative;
+}
+
+.my-container::before {
+	content: '';
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: linear-gradient(180deg,
+		rgba(248, 250, 255, 0.85) 0%,
+		rgba(245, 245, 245, 0.9) 100%);
+	z-index: -1;
+	backdrop-filter: blur(2rpx);
 }
 
 /* 用户信息区域 */

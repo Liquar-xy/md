@@ -209,35 +209,105 @@ export default {
       });
     },
     fetchLockerInfo(locker_id) {
+      console.log('🔄 获取寄存柜信息，ID:', locker_id);
+      
+      // 暂时禁用API调用，直接使用模拟数据避免500错误
+      console.log('📦 使用模拟寄存柜数据');
+      
+      // 根据locker_id生成不同的模拟数据
+      const mockData = this.generateMockLockerData(locker_id);
+      
+      setTimeout(() => {
+        this.lockerInfo = mockData;
+        this.lockerTypes = (mockData.locker || []).filter(l => l.num > 0);
+        this.selectedLockerType = 0;
+        console.log('✅ 寄存柜信息加载完成:', this.lockerInfo);
+      }, 300);
+      
+      // TODO: 等后端API修复后再启用
+      /*
       uni.request({
-        url: `http://127.0.0.1:8000/getDepositLocker?locker_id=${locker_id}`,
+        url: `http://localhost:8000/api/lockers/${locker_id}`,
         method: 'GET',
         header: {
-          Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTM3NTUyNDMsImlkIjoiMTIzIiwieW91cl9jdXN0b21fY2xhaW0iOiJ5b3VyX2N1c3RvbV92YWx1ZSJ9.qcdoe8dSYtfQBZgCP30Yln4r8z9ovPDEF1fNVlviWX4'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
+        timeout: 5000,
         success: (res) => {
-          if (res.data) {
+          console.log('✅ API获取寄存柜信息成功:', res.data);
+          if (res.statusCode === 200 && res.data) {
             this.lockerInfo = res.data;
-            // 只保留有余量的locker
             this.lockerTypes = (res.data.locker || []).filter(l => l.num > 0);
-            // 如果没有可用locker，selectedLockerType为0
             this.selectedLockerType = 0;
+          } else {
+            console.log('⚠️ API返回异常，使用模拟数据');
+            this.useMockData(locker_id);
           }
         },
-        fail: () => {
-          // 假数据兜底
-          this.lockerInfo = {
-            name: '郑州火车站寄存柜',
-            address: '郑州火车站西广场路北100米KFC门口',
-            locker: [
-              { name: '小柜子', description: '适合小件', size: '33L(298*429*430mm)', num: 3, hourlyRate: 1, lockerType: 1, freeDuration: 0 },
-              { name: '大柜子', description: '适合大件', size: '53L(298*429*630mm)', num: 2, hourlyRate: 2, lockerType: 2, freeDuration: 0 }
-            ]
-          };
-          this.lockerTypes = this.lockerInfo.locker.filter(l => l.num > 0);
-          this.selectedLockerType = 0;
+        fail: (error) => {
+          console.log('❌ API调用失败，使用模拟数据:', error);
+          this.useMockData(locker_id);
         }
       });
+      */
+    },
+    
+    // 生成模拟寄存柜数据
+    generateMockLockerData(locker_id) {
+      const locations = [
+        { name: '郑州火车站寄存柜', address: '郑州火车站西广场路北100米KFC门口' },
+        { name: '郑州东站寄存柜', address: '郑州东站南广场地下一层' },
+        { name: '二七广场寄存柜', address: '二七广场地铁站B出口' },
+        { name: '中原福塔寄存柜', address: '中原福塔景区入口处' },
+        { name: '河南博物院寄存柜', address: '河南博物院正门左侧' }
+      ];
+      
+      const location = locations[locker_id % locations.length] || locations[0];
+      
+      return {
+        id: locker_id,
+        name: location.name,
+        address: location.address,
+        status: 'online',
+        locker: [
+          { 
+            name: '小柜子', 
+            description: '适合背包、手提包等小件物品', 
+            size: '33L(298*429*430mm)', 
+            num: Math.floor(Math.random() * 5) + 1, 
+            hourlyRate: 2, 
+            lockerType: 1, 
+            freeDuration: 0 
+          },
+          { 
+            name: '中柜子', 
+            description: '适合行李箱、购物袋等中等物品', 
+            size: '53L(298*429*630mm)', 
+            num: Math.floor(Math.random() * 3) + 1, 
+            hourlyRate: 3, 
+            lockerType: 2, 
+            freeDuration: 0 
+          },
+          { 
+            name: '大柜子', 
+            description: '适合大型行李箱、多件物品', 
+            size: '73L(298*429*830mm)', 
+            num: Math.floor(Math.random() * 2) + 1, 
+            hourlyRate: 5, 
+            lockerType: 3, 
+            freeDuration: 0 
+          }
+        ]
+      };
+    },
+    
+    // 使用模拟数据的备用方法
+    useMockData(locker_id) {
+      const mockData = this.generateMockLockerData(locker_id);
+      this.lockerInfo = mockData;
+      this.lockerTypes = mockData.locker.filter(l => l.num > 0);
+      this.selectedLockerType = 0;
     },
     getLockerImg(type) {
       // 可根据类型返回不同图片

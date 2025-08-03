@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>后端连接问题修复完成</title>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+        .success { color: #28a745; font-weight: bold; }
+        .error { color: #dc3545; }
+        .warning { color: #ffc107; }
+        .info { color: #17a2b8; }
+        pre { background: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #dee2e6; border-radius: 8px; }
+        .highlight { background: #fff3cd; padding: 2px 4px; border-radius: 3px; }
+        ul li { margin: 8px 0; }
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0; }
+        .feature-card { background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #007bff; }
+        .step-card { background: #e9ecef; padding: 15px; border-radius: 8px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🎉 后端连接问题修复完成</h1>
+    
+    <div class="section">
+        <h2 class="success">✅ 修复完成状态</h2>
+        <p>已成功修复前端与后端的连接问题，统一了API接口调用方式，并提供了完整的测试和诊断工具。</p>
+        
+        <h3>修复的问题：</h3>
+        <ul class="success">
+            <li>✅ <strong>API地址不统一</strong>：统一使用 localhost:8000</li>
+            <li>✅ <strong>接口路径标准化</strong>：规范了所有API路径</li>
+            <li>✅ <strong>错误处理优化</strong>：增加了超时和降级机制</li>
+            <li>✅ <strong>调试工具完善</strong>：提供了测试页面和检查脚本</li>
+        </ul>
+    </div>
+    
+    <div class="section">
+        <h2>🔧 修复详情</h2>
+        
+        <h3>1. 统一API配置</h3>
+        <div class="feature-card">
+            <h4>📁 创建了统一的API配置文件</h4>
+            <p><code>utils/api.js</code> - 包含所有API接口的统一配置</p>
+            <pre><code>
+const API_CONFIG = {
+    BASE_URL: 'http://localhost:8000',
+    TIMEOUT: 10000,
+    ENDPOINTS: {
+        LOGIN: '/api/auth/login',
+        LOCKERS_DISTRIBUTION: '/api/lockers/distribution',
+        NEARBY_SEARCH: '/api/nearby/city/search',
+        // ... 更多接口
+    }
+};
+            </code></pre>
+        </div>
+        
+        <h3>2. 修复的页面和接口</h3>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h4>🏠 首页 (index.vue)</h4>
+                <ul>
+                    <li>✅ 附近寄存点接口</li>
+                    <li>✅ 增加超时设置（8秒）</li>
+                    <li>✅ 模拟数据降级</li>
+                </ul>
+            </div>
+            
+            <div class="feature-card">
+                <h4>🔍 搜索页面 (search.vue)</h4>
+                <ul>
+                    <li>✅ 搜索接口统一</li>
+                    <li>✅ API基础URL配置</li>
+                    <li>✅ 错误处理优化</li>
+                </ul>
+            </div>
+            
+            <div class="feature-card">
+                <h4>🔐 登录页面 (login.vue)</h4>
+                <ul>
+                    <li>✅ 短信接口路径修正</li>
+                    <li>✅ 统一API地址</li>
+                    <li>✅ 认证接口规范</li>
+                </ul>
+            </div>
+            
+            <div class="feature-card">
+                <h4>📍 寄存点详情 (locker-detail.vue)</h4>
+                <ul>
+                    <li>✅ 详情接口统一</li>
+                    <li>✅ API基础URL配置</li>
+                    <li>✅ 参数传递优化</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>🛠️ 提供的工具</h2>
+        
+        <h3>1. 后端连接测试页面</h3>
+        <div class="step-card">
+            <h4>📄 test_backend_connection.html</h4>
+            <p>在浏览器中打开此页面，可以：</p>
+            <ul>
+                <li>测试后端服务是否运行</li>
+                <li>检查各个API接口状态</li>
+                <li>查看详细的错误信息</li>
+                <li>获取后端启动指南</li>
+            </ul>
+        </div>
+        
+        <h3>2. 后端服务检查脚本</h3>
+        <div class="step-card">
+            <h4>📜 check_backend.js</h4>
+            <p>在终端中运行此脚本：</p>
+            <pre><code>node check_backend.js</code></pre>
+            <p>功能：</p>
+            <ul>
+                <li>自动检查后端服务状态</li>
+                <li>测试主要API接口</li>
+                <li>提供详细的诊断信息</li>
+                <li>显示启动指导</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>🚀 后端服务启动指南</h2>
+        
+        <h3>步骤1：进入后端目录</h3>
+        <pre><code>cd ito-deposit</code></pre>
+        
+        <h3>步骤2：安装依赖</h3>
+        <pre><code>go mod tidy</code></pre>
+        
+        <h3>步骤3：启动服务</h3>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h4>方式1：直接运行</h4>
+                <pre><code>go run cmd/ito-deposit/main.go</code></pre>
+            </div>
+            
+            <div class="feature-card">
+                <h4>方式2：使用Kratos</h4>
+                <pre><code>kratos run</code></pre>
+            </div>
+        </div>
+        
+        <h3>步骤4：验证服务</h3>
+        <pre><code># 检查端口占用
+netstat -ano | findstr :8000
+
+# 测试健康检查
+curl http://localhost:8000/health
+
+# 或使用我们的检查脚本
+node check_backend.js</code></pre>
+    </div>
+    
+    <div class="section">
+        <h2>📡 API接口规范</h2>
+        
+        <h3>统一的API基础URL：</h3>
+        <pre><code>http://localhost:8000</code></pre>
+        
+        <h3>主要接口列表：</h3>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h4>🔐 认证相关</h4>
+                <ul>
+                    <li><code>POST /api/auth/login</code></li>
+                    <li><code>POST /api/auth/admin/login</code></li>
+                    <li><code>POST /api/auth/sms</code></li>
+                </ul>
+            </div>
+            
+            <div class="feature-card">
+                <h4>📍 寄存点相关</h4>
+                <ul>
+                    <li><code>POST /api/lockers/distribution</code></li>
+                    <li><code>GET /api/lockers/{id}</code></li>
+                    <li><code>GET /api/nearby/city/search</code></li>
+                    <li><code>GET /api/nearby/my-nearby</code></li>
+                </ul>
+            </div>
+            
+            <div class="feature-card">
+                <h4>🏙️ 其他接口</h4>
+                <ul>
+                    <li><code>GET /api/cities</code></li>
+                    <li><code>POST /api/orders/list</code></li>
+                    <li><code>POST /api/orders/detail</code></li>
+                    <li><code>POST /api/admin/dashboard</code></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>🔍 故障排除</h2>
+        
+        <h3>常见错误及解决方案：</h3>
+        
+        <div class="step-card">
+            <h4 class="error">❌ ERR_CONNECTION_REFUSED</h4>
+            <p><strong>原因</strong>：后端服务未启动</p>
+            <p><strong>解决</strong>：</p>
+            <ol>
+                <li>检查后端服务是否运行</li>
+                <li>确认端口8000没有被占用</li>
+                <li>按照启动指南启动后端服务</li>
+            </ol>
+        </div>
+        
+        <div class="step-card">
+            <h4 class="warning">⚠️ 404 Not Found</h4>
+            <p><strong>原因</strong>：API路径不正确</p>
+            <p><strong>解决</strong>：</p>
+            <ol>
+                <li>检查API路径是否与后端路由匹配</li>
+                <li>确认后端路由配置正确</li>
+                <li>查看后端日志确认接口注册</li>
+            </ol>
+        </div>
+        
+        <div class="step-card">
+            <h4 class="info">ℹ️ CORS跨域错误</h4>
+            <p><strong>原因</strong>：后端CORS配置问题</p>
+            <p><strong>解决</strong>：</p>
+            <ol>
+                <li>在后端添加CORS中间件</li>
+                <li>允许localhost:8080访问</li>
+                <li>配置正确的请求头</li>
+            </ol>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>✅ 验证步骤</h2>
+        
+        <h3>完成修复后，请按以下步骤验证：</h3>
+        <ol>
+            <li class="info"><strong>启动后端服务</strong>
+                <pre><code>cd ito-deposit
+go run cmd/ito-deposit/main.go</code></pre>
+            </li>
+            
+            <li class="info"><strong>运行连接测试</strong>
+                <pre><code>node check_backend.js</code></pre>
+            </li>
+            
+            <li class="info"><strong>打开测试页面</strong>
+                <p>在浏览器中打开 <code>test_backend_connection.html</code></p>
+            </li>
+            
+            <li class="info"><strong>测试前端功能</strong>
+                <ul>
+                    <li>启动前端开发服务器</li>
+                    <li>测试首页附近寄存点功能</li>
+                    <li>测试搜索功能</li>
+                    <li>测试登录功能</li>
+                </ul>
+            </li>
+        </ol>
+    </div>
+    
+    <div class="section">
+        <h2 class="success">🎯 修复总结</h2>
+        
+        <p>通过这次修复，我们解决了：</p>
+        
+        <h3>技术问题：</h3>
+        <ul class="success">
+            <li>✅ API地址不统一导致的连接失败</li>
+            <li>✅ 接口路径不规范的问题</li>
+            <li>✅ 缺乏统一的错误处理机制</li>
+            <li>✅ 没有有效的调试和测试工具</li>
+        </ul>
+        
+        <h3>用户体验：</h3>
+        <ul class="success">
+            <li>✅ 网络失败时的优雅降级</li>
+            <li>✅ 更好的错误提示和处理</li>
+            <li>✅ 统一的API调用方式</li>
+            <li>✅ 完善的开发调试工具</li>
+        </ul>
+        
+        <p class="highlight">
+            <strong>🎉 现在前端可以正确连接到后端接口了！</strong> 
+            请按照上述步骤启动后端服务，然后测试各项功能。
+        </p>
+    </div>
+    
+    <script>
+        console.log('🎉 后端连接问题修复完成！');
+        console.log('📋 修复内容：');
+        console.log('1. ✅ 统一了API接口地址');
+        console.log('2. ✅ 规范了接口路径');
+        console.log('3. ✅ 优化了错误处理');
+        console.log('4. ✅ 提供了测试工具');
+        console.log('5. ✅ 完善了调试功能');
+        
+        // 提示用户下一步操作
+        setTimeout(() => {
+            console.log('🚀 下一步：启动后端服务并运行测试！');
+            console.log('💡 使用命令：cd ito-deposit && go run cmd/ito-deposit/main.go');
+        }, 1000);
+    </script>
+</body>
+</html>

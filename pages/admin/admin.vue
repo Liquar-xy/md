@@ -406,9 +406,9 @@ export default {
 		
 		// 柜组管理
 		handleCabinetManagement() {
-			uni.showToast({
-				title: '柜组管理',
-				icon: 'none'
+			// 先跳转到寄存点选择页面，选择寄存点后再进入柜组管理
+			uni.navigateTo({
+				url: '/pages/location-select/location-select?from=admin&target=cabinet-group'
 			});
 		},
 		
