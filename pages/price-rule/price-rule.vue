@@ -15,6 +15,12 @@
     <!-- 网点信息 -->
     <view class="network-info">
       <text class="network-title">网点: {{ networkName }}</text>
+      <view class="data-status" v-if="hasData">
+        <text class="status-text">✅ 已加载保存的配置</text>
+      </view>
+      <view class="data-status" v-else>
+        <text class="status-text">📝 使用默认配置</text>
+      </view>
     </view>
 
     <!-- 收费模式 -->
@@ -161,6 +167,7 @@
     <!-- 底部按钮 -->
     <view class="bottom-buttons">
       <button class="cancel-btn" @click="goBack">取消</button>
+      <button class="refresh-btn" @click="refreshData">刷新</button>
       <button class="save-btn" @click="savePriceRule">保存</button>
     </view>
   </view>
@@ -173,6 +180,7 @@ export default {
       networkId: null,
       networkName: '',
       chargingMode: 'timed', // 'timed' 或 'daily'
+      hasData: false, // 是否有已保存的数据
       
       // 计时收费设置
       timedSettings: {
@@ -203,18 +211,42 @@ export default {
     this.networkId = options.id || 1;
     this.networkName = decodeURIComponent(options.name || '未命名网点');
     console.log('收费规则页面加载 - 网点ID:', this.networkId, '名称:', this.networkName);
-    this.getPriceRule();
+    
+    // 延迟加载，确保页面完全渲染
+    setTimeout(() => {
+      this.loadPriceData();
+    }, 100);
   },
   
   onShow() {
-    // 每次显示页面时重新获取数据
-    if (this.networkId) {
-      console.log('页面显示，重新获取价格规则 - 网点ID:', this.networkId);
-      this.getPriceRule();
-    }
+    console.log('页面显示 - 网点ID:', this.networkId);
+    // 页面显示时重新加载数据
+    this.loadPriceData();
   },
   
   methods: {
+    // 加载价格数据（优先从本地存储加载）
+    loadPriceData() {
+      console.log('开始加载价格数据，网点ID:', this.networkId);
+      
+      // 先尝试从本地存储加载
+      const savedData = uni.getStorageSync(`price_rule_${this.networkId}`);
+      console.log('本地存储数据:', savedData);
+      
+      if (savedData) {
+        console.log('找到本地保存的数据:', savedData);
+        this.loadPriceRules(savedData);
+        uni.showToast({
+          title: '加载本地保存的配置',
+          icon: 'success',
+          duration: 1000
+        });
+      } else {
+        console.log('没有本地数据，从服务器获取');
+        this.getPriceRule();
+      }
+    },
+    
     // 设置收费模式
     setChargingMode(mode) {
       this.chargingMode = mode;
@@ -241,18 +273,25 @@ export default {
     getPriceRule() {
       console.log('正在获取价格规则，网点ID:', this.networkId);
       
+      // 显示加载提示
+      uni.showLoading({
+        title: '加载中...'
+      });
+      
       uni.request({
         url: `http://localhost:8000/admin/getPriceRule?networkId=${this.networkId}`,
         method: 'GET',
         header: {
-          'Authorization': 'Bearer ' + uni.getStorageSync('adminToken')
+          'Content-Type': 'application/json'
         },
         success: (res) => {
+          uni.hideLoading();
           console.log('获取价格规则返回:', res);
           
           if (res.data && res.data.code === 200 && res.data.rules && res.data.rules.length > 0) {
             console.log('找到价格规则数据，开始加载');
             this.loadPriceRules(res.data.rules);
+            this.hasData = true; // 设置数据状态
             uni.showToast({
               title: '数据加载成功',
               icon: 'success',
@@ -260,21 +299,52 @@ export default {
             });
           } else {
             console.log('没有找到价格规则数据或数据为空');
-            // 清空所有数据
-            this.resetFormData();
-            uni.showToast({
-              title: '暂无价格规则数据',
-              icon: 'none',
-              duration: 1500
-            });
+            console.log('响应数据详情:', res.data);
+            
+            // 如果获取不到数据，尝试从本地存储恢复
+            const savedData = uni.getStorageSync(`price_rule_${this.networkId}`);
+            if (savedData) {
+              console.log('从本地存储恢复数据:', savedData);
+              this.loadPriceRules(savedData);
+              this.hasData = true;
+              uni.showToast({
+                title: '使用本地保存的配置',
+                icon: 'success',
+                duration: 1000
+              });
+            } else {
+              this.resetFormData();
+              this.hasData = false;
+              uni.showToast({
+                title: '暂无价格规则数据',
+                icon: 'none',
+                duration: 1500
+              });
+            }
           }
         },
         fail: (err) => {
+          uni.hideLoading();
           console.error('获取价格规则失败:', err);
-          uni.showToast({
-            title: '获取数据失败',
-            icon: 'none'
-          });
+          
+          // 网络失败时也尝试从本地存储恢复
+          const savedData = uni.getStorageSync(`price_rule_${this.networkId}`);
+          if (savedData) {
+            console.log('网络失败，从本地存储恢复数据:', savedData);
+            this.loadPriceRules(savedData);
+            this.hasData = true;
+            uni.showToast({
+              title: '使用本地保存的配置',
+              icon: 'success',
+              duration: 1000
+            });
+          } else {
+            uni.showToast({
+              title: '获取数据失败',
+              icon: 'none',
+              duration: 3000
+            });
+          }
         }
       });
     },
@@ -282,6 +352,46 @@ export default {
     // 加载价格规则到表单
     loadPriceRules(rules) {
       console.log('开始加载价格规则:', rules);
+      
+      // 设置数据状态
+      this.hasData = true;
+      
+      // 检查是否是本地存储的数据格式
+      if (rules.chargingMode) {
+        // 这是本地存储的数据格式
+        console.log('加载本地存储的数据');
+        this.chargingMode = rules.chargingMode;
+        this.freeDuration = rules.freeDuration || '';
+        this.timedSettings = rules.timedSettings || {
+          smallHourlyRate: '',
+          smallDailyCap: '',
+          largeHourlyRate: '',
+          largeDailyCap: ''
+        };
+        this.dailySettings = rules.dailySettings || {
+          smallDailyRate: '',
+          largeDailyRate: ''
+        };
+        this.depositSettings = rules.depositSettings || {
+          smallDeposit: '',
+          largeDeposit: ''
+        };
+        
+        console.log('=== 本地数据加载结果 ===');
+        console.log('计时设置:', this.timedSettings);
+        console.log('按日设置:', this.dailySettings);
+        console.log('押金设置:', this.depositSettings);
+        console.log('免费时长:', this.freeDuration);
+        console.log('收费模式:', this.chargingMode);
+        console.log('数据状态:', this.hasData);
+        
+        // 更新数据状态显示
+        this.hasData = true;
+        return;
+      }
+      
+      // 这是后端API的数据格式
+      console.log('加载后端API的数据');
       
       // 重置所有数据
       this.timedSettings = {
@@ -303,6 +413,15 @@ export default {
       
       this.freeDuration = '';
       
+      // 先处理免费时长和收费模式（取第一个规则）
+      if (rules.length > 0) {
+        const firstRule = rules[0];
+        this.freeDuration = (firstRule.freeDuration || 0).toString();
+        this.chargingMode = firstRule.feeType === 1 ? 'timed' : 'daily';
+        console.log('设置免费时长:', this.freeDuration);
+        console.log('设置收费模式:', this.chargingMode);
+      }
+      
       rules.forEach(rule => {
         console.log('处理规则:', rule);
         
@@ -310,39 +429,39 @@ export default {
           if (rule.feeType === 1) { // 计时收费
             this.timedSettings.smallHourlyRate = (rule.hourlyRate || 0).toString();
             this.timedSettings.smallDailyCap = (rule.dailyCap || 0).toString();
+            console.log('小柜子计时收费设置:', this.timedSettings.smallHourlyRate, this.timedSettings.smallDailyCap);
           } else { // 按日收费
             this.dailySettings.smallDailyRate = (rule.dailyRate || 0).toString();
+            console.log('小柜子按日收费设置:', this.dailySettings.smallDailyRate);
           }
           this.depositSettings.smallDeposit = (rule.depositAmount || 0).toString();
+          console.log('小柜子押金设置:', this.depositSettings.smallDeposit);
         } else if (rule.lockerType === 2) { // 大柜子
           if (rule.feeType === 1) { // 计时收费
             this.timedSettings.largeHourlyRate = (rule.hourlyRate || 0).toString();
             this.timedSettings.largeDailyCap = (rule.dailyCap || 0).toString();
+            console.log('大柜子计时收费设置:', this.timedSettings.largeHourlyRate, this.timedSettings.largeDailyCap);
           } else { // 按日收费
             this.dailySettings.largeDailyRate = (rule.dailyRate || 0).toString();
+            console.log('大柜子按日收费设置:', this.dailySettings.largeDailyRate);
           }
           this.depositSettings.largeDeposit = (rule.depositAmount || 0).toString();
+          console.log('大柜子押金设置:', this.depositSettings.largeDeposit);
         }
-        
-        // 设置免费时长（取第一个规则的免费时长）
-        if (rule.freeDuration !== undefined && rule.freeDuration !== null) {
-          this.freeDuration = (rule.freeDuration || 0).toString();
-        }
-        
-        // 设置收费模式
-        this.chargingMode = rule.feeType === 1 ? 'timed' : 'daily';
       });
       
-      console.log('加载完成 - 计时设置:', this.timedSettings);
-      console.log('加载完成 - 按日设置:', this.dailySettings);
-      console.log('加载完成 - 押金设置:', this.depositSettings);
-      console.log('加载完成 - 免费时长:', this.freeDuration);
-      console.log('加载完成 - 收费模式:', this.chargingMode);
+      console.log('=== 最终加载结果 ===');
+      console.log('计时设置:', this.timedSettings);
+      console.log('按日设置:', this.dailySettings);
+      console.log('押金设置:', this.depositSettings);
+      console.log('免费时长:', this.freeDuration);
+      console.log('收费模式:', this.chargingMode);
+      console.log('数据状态:', this.hasData);
     },
     
     // 保存价格规则
     savePriceRule() {
-      // 验证免费时长
+      // 验证数据
       const freeDurationNum = parseFloat(this.freeDuration) || 0;
       if (freeDurationNum < 0) {
         uni.showToast({
@@ -351,6 +470,31 @@ export default {
         });
         return;
       }
+      
+      // 验证价格数据
+      let hasValidPrice = false;
+      if (this.chargingMode === 'timed') {
+        const smallPrice = parseFloat(this.timedSettings.smallHourlyRate) || 0;
+        const largePrice = parseFloat(this.timedSettings.largeHourlyRate) || 0;
+        hasValidPrice = smallPrice > 0 || largePrice > 0;
+      } else {
+        const smallPrice = parseFloat(this.dailySettings.smallDailyRate) || 0;
+        const largePrice = parseFloat(this.dailySettings.largeDailyRate) || 0;
+        hasValidPrice = smallPrice > 0 || largePrice > 0;
+      }
+      
+      if (!hasValidPrice) {
+        uni.showToast({
+          title: '请至少设置一个柜子的价格',
+          icon: 'none'
+        });
+        return;
+      }
+      
+      // 显示保存中提示
+      uni.showLoading({
+        title: '正在保存...'
+      });
       
       const rules = [];
       
@@ -364,7 +508,7 @@ export default {
           hourlyRate: parseFloat(this.timedSettings.smallHourlyRate) || 0,
           dailyCap: parseFloat(this.timedSettings.smallDailyCap) || 0,
           depositAmount: parseFloat(this.depositSettings.smallDeposit) || 0,
-          isDepositEnabled: this.depositSettings.smallDeposit > 0,
+          isDepositEnabled: parseFloat(this.depositSettings.smallDeposit) > 0,
           isAdvancePay: false
         });
         
@@ -376,7 +520,7 @@ export default {
           hourlyRate: parseFloat(this.timedSettings.largeHourlyRate) || 0,
           dailyCap: parseFloat(this.timedSettings.largeDailyCap) || 0,
           depositAmount: parseFloat(this.depositSettings.largeDeposit) || 0,
-          isDepositEnabled: this.depositSettings.largeDeposit > 0,
+          isDepositEnabled: parseFloat(this.depositSettings.largeDeposit) > 0,
           isAdvancePay: false
         });
       } else {
@@ -387,7 +531,7 @@ export default {
           freeDuration: parseFloat(this.freeDuration) || 0,
           dailyRate: parseFloat(this.dailySettings.smallDailyRate) || 0,
           depositAmount: parseFloat(this.depositSettings.smallDeposit) || 0,
-          isDepositEnabled: this.depositSettings.smallDeposit > 0,
+          isDepositEnabled: parseFloat(this.depositSettings.smallDeposit) > 0,
           isAdvancePay: false
         });
         
@@ -398,7 +542,7 @@ export default {
           freeDuration: parseFloat(this.freeDuration) || 0,
           dailyRate: parseFloat(this.dailySettings.largeDailyRate) || 0,
           depositAmount: parseFloat(this.depositSettings.largeDeposit) || 0,
-          isDepositEnabled: this.depositSettings.largeDeposit > 0,
+          isDepositEnabled: parseFloat(this.depositSettings.largeDeposit) > 0,
           isAdvancePay: false
         });
       }
@@ -408,8 +552,14 @@ export default {
         rules: rules
       };
       
-      console.log('保存价格规则:', requestData);
-      console.log('免费时长值:', this.freeDuration);
+      console.log('=== 保存价格规则 ===');
+      console.log('网点ID:', this.networkId);
+      console.log('收费模式:', this.chargingMode);
+      console.log('免费时长:', this.freeDuration);
+      console.log('计时设置:', this.timedSettings);
+      console.log('按日设置:', this.dailySettings);
+      console.log('押金设置:', this.depositSettings);
+      console.log('请求数据:', requestData);
       
       uni.request({
         url: 'http://localhost:8000/admin/setPriceRule',
@@ -420,32 +570,67 @@ export default {
           'Authorization': 'Bearer ' + uni.getStorageSync('adminToken')
         },
         success: (res) => {
+          uni.hideLoading();
           console.log('保存价格规则返回:', res);
           if (res.data && res.data.code === 200) {
-            // 保存成功后，重新获取最新数据
-            this.getPriceRule();
+            // 设置数据状态为已保存
+            this.hasData = true;
             
             uni.showToast({
               title: '保存成功',
-              icon: 'success'
+              icon: 'success',
+              duration: 2000
             });
             
-            // 延迟返回，让用户看到保存成功的数据
-            setTimeout(() => {
-              uni.navigateBack();
-            }, 2000);
+            // 保存成功后，同时保存到本地存储
+            console.log('=== 保存成功，保存到本地 ===');
+            console.log('计时设置:', this.timedSettings);
+            console.log('按日设置:', this.dailySettings);
+            console.log('押金设置:', this.depositSettings);
+            console.log('免费时长:', this.freeDuration);
+            console.log('收费模式:', this.chargingMode);
+            
+            // 构建要保存的数据
+            const saveData = {
+              networkId: this.networkId,
+              chargingMode: this.chargingMode,
+              freeDuration: this.freeDuration,
+              timedSettings: this.timedSettings,
+              dailySettings: this.dailySettings,
+              depositSettings: this.depositSettings
+            };
+            
+            // 保存到本地存储
+            uni.setStorageSync(`price_rule_${this.networkId}`, saveData);
+            console.log('数据已保存到本地存储:', saveData);
+            
+            // 验证保存是否成功
+            const savedData = uni.getStorageSync(`price_rule_${this.networkId}`);
+            console.log('验证保存结果:', savedData);
+            
+            // 设置数据状态
+            this.hasData = true;
+            
+            uni.showToast({
+              title: '保存成功，数据已存储',
+              icon: 'success',
+              duration: 2000
+            });
           } else {
             uni.showToast({
               title: res.data?.msg || '保存失败',
-              icon: 'none'
+              icon: 'none',
+              duration: 3000
             });
           }
         },
         fail: (err) => {
+          uni.hideLoading();
           console.error('保存价格规则失败:', err);
           uni.showToast({
             title: '网络错误',
-            icon: 'none'
+            icon: 'none',
+            duration: 3000
           });
         }
       });
@@ -453,6 +638,8 @@ export default {
     
     // 重置表单数据
     resetFormData() {
+      this.hasData = false;
+      
       this.timedSettings = {
         smallHourlyRate: '',
         smallDailyCap: '',
@@ -475,6 +662,15 @@ export default {
       
       console.log('表单数据已重置');
     },
+    
+    // 刷新数据
+    refreshData() {
+      console.log('手动刷新数据');
+      this.hasData = false; // 重置数据状态
+      this.getPriceRule();
+    },
+    
+
     
     // 返回上一页
     goBack() {
@@ -538,6 +734,16 @@ export default {
   font-size: 32rpx;
   color: #333333;
   font-weight: bold;
+  margin-bottom: 10rpx;
+}
+
+.data-status {
+  margin-top: 10rpx;
+}
+
+.status-text {
+  font-size: 24rpx;
+  color: #666666;
 }
 
 /* 收费模式 */
@@ -707,7 +913,7 @@ export default {
   border-top: 1rpx solid #f0f0f0;
 }
 
-.cancel-btn, .save-btn {
+.cancel-btn, .refresh-btn, .save-btn {
   flex: 1;
   padding: 20rpx;
   border-radius: 8rpx;
@@ -719,6 +925,12 @@ export default {
   background-color: #f5f5f5;
   color: #666666;
   border: 1rpx solid #e0e0e0;
+}
+
+.refresh-btn {
+  background-color: #28a745;
+  color: #ffffff;
+  border: 1rpx solid #28a745;
 }
 
 .save-btn {

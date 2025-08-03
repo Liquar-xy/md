@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>测试网点详情接口</title>
+    <title>网点详情接口测试</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -26,19 +26,22 @@
             margin-bottom: 5px;
             font-weight: bold;
         }
-        input, button {
+        input {
             width: 100%;
-            padding: 10px;
+            padding: 8px;
             border: 1px solid #ddd;
             border-radius: 4px;
-            font-size: 14px;
+            box-sizing: border-box;
         }
         button {
             background-color: #007aff;
             color: white;
+            padding: 10px 20px;
             border: none;
+            border-radius: 4px;
             cursor: pointer;
-            margin-top: 10px;
+            margin-right: 10px;
+            margin-bottom: 10px;
         }
         button:hover {
             background-color: #0056b3;
@@ -46,72 +49,217 @@
         .result {
             margin-top: 20px;
             padding: 15px;
-            background-color: #f8f9fa;
             border-radius: 4px;
             white-space: pre-wrap;
-            font-family: monospace;
-        }
-        .error {
-            background-color: #f8d7da;
-            color: #721c24;
+            font-size: 12px;
         }
         .success {
             background-color: #d4edda;
+            border: 1px solid #c3e6cb;
             color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>测试网点详情接口</h1>
+        <h1>网点详情接口测试</h1>
+        
+        <div class="form-group">
+            <label for="token">Token:</label>
+            <input type="text" id="token" placeholder="请输入token">
+        </div>
         
         <div class="form-group">
             <label for="pointId">网点ID:</label>
-            <input type="number" id="pointId" value="1" placeholder="请输入网点ID">
+            <input type="number" id="pointId" placeholder="请输入网点ID" value="1">
         </div>
         
-        <button onclick="testPointDetail()">测试网点详情</button>
+        <button onclick="testPointInfo()">测试 point_info 接口</button>
+        <button onclick="testPointDetail()">测试 point_detail 接口</button>
+        <button onclick="testGetPoint()">测试 getPoint 接口</button>
+        <button onclick="testWithoutToken()">测试无Token</button>
+        <button onclick="clearResult()">清除结果</button>
         
         <div id="result" class="result" style="display: none;"></div>
     </div>
 
     <script>
-        async function testPointDetail() {
-            const pointId = document.getElementById('pointId').value;
+        function showResult(data, isSuccess = true) {
             const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result ' + (isSuccess ? 'success' : 'error');
+            resultDiv.textContent = JSON.stringify(data, null, 2);
+        }
+        
+        function testPointInfo() {
+            const token = document.getElementById('token').value;
+            const pointId = document.getElementById('pointId').value;
             
-            if (!pointId) {
-                showResult('请输入网点ID', 'error');
+            if (!token) {
+                showResult({ error: '请输入token' }, false);
                 return;
             }
             
-            try {
-                const response = await fetch('http://localhost:8000/point_info', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: `Id=${pointId}`
-                });
-                
-                const data = await response.json();
-                
-                if (data.code === 200 || data.code === "200") {
-                    showResult(`✅ 请求成功!\n\n网点详情:\n- 名称: ${data.name}\n- 地址: ${data.address}\n- 类型: ${data.pointType || '未设置'}\n- 状态: ${data.staus === 1 ? '营业中' : '暂停营业'}\n- 营业时间: ${data.openTime || '未设置'}\n- 大型柜: ${data.availableLarge}组\n- 中型柜: ${data.availableMedium}组\n- 小型柜: ${data.availableSmall}个\n- 图片: ${data.pointImage || '无'}\n\n完整响应:\n${JSON.stringify(data, null, 2)}`, 'success');
-                } else {
-                    showResult(`❌ 请求失败: ${data.msg}\n\n完整响应:\n${JSON.stringify(data, null, 2)}`, 'error');
-                }
-            } catch (error) {
-                showResult(`❌ 网络错误: ${error.message}`, 'error');
+            if (!pointId) {
+                showResult({ error: '请输入网点ID' }, false);
+                return;
             }
+            
+            console.log('测试 point_info 接口，ID:', pointId, 'token:', token);
+            
+            fetch('http://localhost:8000/point_info', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({ id: parseInt(pointId) })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('point_info 接口返回:', data);
+                showResult({ 
+                    message: 'point_info 接口测试成功', 
+                    response: data
+                }, true);
+            })
+            .catch(error => {
+                console.error('point_info 接口测试失败:', error);
+                showResult({ 
+                    error: 'point_info 接口测试失败: ' + error.message
+                }, false);
+            });
         }
         
-        function showResult(message, type) {
-            const resultDiv = document.getElementById('result');
-            resultDiv.textContent = message;
-            resultDiv.className = `result ${type}`;
-            resultDiv.style.display = 'block';
+        function testPointDetail() {
+            const token = document.getElementById('token').value;
+            const pointId = document.getElementById('pointId').value;
+            
+            if (!token) {
+                showResult({ error: '请输入token' }, false);
+                return;
+            }
+            
+            if (!pointId) {
+                showResult({ error: '请输入网点ID' }, false);
+                return;
+            }
+            
+            console.log('测试 point_detail 接口，ID:', pointId, 'token:', token);
+            
+            fetch('http://localhost:8000/point_detail', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({ id: parseInt(pointId) })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('point_detail 接口返回:', data);
+                showResult({ 
+                    message: 'point_detail 接口测试成功', 
+                    response: data
+                }, true);
+            })
+            .catch(error => {
+                console.error('point_detail 接口测试失败:', error);
+                showResult({ 
+                    error: 'point_detail 接口测试失败: ' + error.message
+                }, false);
+            });
         }
+        
+        function testGetPoint() {
+            const token = document.getElementById('token').value;
+            const pointId = document.getElementById('pointId').value;
+            
+            if (!token) {
+                showResult({ error: '请输入token' }, false);
+                return;
+            }
+            
+            if (!pointId) {
+                showResult({ error: '请输入网点ID' }, false);
+                return;
+            }
+            
+            console.log('测试 getPoint 接口，ID:', pointId, 'token:', token);
+            
+            fetch('http://localhost:8000/getPoint', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({ id: parseInt(pointId) })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('getPoint 接口返回:', data);
+                showResult({ 
+                    message: 'getPoint 接口测试成功', 
+                    response: data
+                }, true);
+            })
+            .catch(error => {
+                console.error('getPoint 接口测试失败:', error);
+                showResult({ 
+                    error: 'getPoint 接口测试失败: ' + error.message
+                }, false);
+            });
+        }
+        
+        function testWithoutToken() {
+            const pointId = document.getElementById('pointId').value;
+            
+            if (!pointId) {
+                showResult({ error: '请输入网点ID' }, false);
+                return;
+            }
+            
+            console.log('测试无Token的网点详情接口，ID:', pointId);
+            
+            fetch('http://localhost:8000/point_info', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id: parseInt(pointId) })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('无Token网点详情接口返回:', data);
+                showResult({ 
+                    message: '无Token网点详情接口测试成功', 
+                    response: data
+                }, true);
+            })
+            .catch(error => {
+                console.error('无Token网点详情接口测试失败:', error);
+                showResult({ 
+                    error: '无Token网点详情接口测试失败: ' + error.message
+                }, false);
+            });
+        }
+        
+        function clearResult() {
+            document.getElementById('result').style.display = 'none';
+        }
+        
+        // 页面加载时尝试从localStorage获取token
+        window.onload = function() {
+            const token = localStorage.getItem('adminToken');
+            if (token) {
+                document.getElementById('token').value = token;
+            }
+        };
     </script>
 </body>
 </html> 

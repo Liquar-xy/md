@@ -19,14 +19,14 @@
 			<view class="overview-header">
 				<text class="overview-text">共 {{pointNum}} 个网点</text>
 				<text class="overview-status" v-if="pointNum > 0">✅ 正常</text>
-				<text class="overview-status error" v-else>⚠️ 无数据</text>
+				<text class="overview-status error" v-else>▲ 无数据</text>
 			</view>
 			<view class="revenue-note">
 				<text class="note-text">*每日9:00后结算昨日收益</text>
 				<text class="question-icon">?</text>
 			</view>
 			<view class="data-time" v-if="lastUpdateTime">
-				<text class="time-text">数据更新时间: {{lastUpdateTime}}</text>
+				<text class="time-text">数据库同步时间: {{lastUpdateTime}}</text>
 			</view>
 		</view>
 		
@@ -67,13 +67,12 @@
 		
 		<!-- 刷新区域 -->
 		<view class="refresh-section">
-			<view class="refresh-info">
-				<text class="last-update" v-if="lastUpdateTime">最后更新: {{lastUpdateTime}}</text>
+			<view class="refresh-controls">
+				<button class="refresh-btn" @click="forceRefreshData">
+					<text class="refresh-icon">🔄</text>
+					<text class="refresh-text">刷新数据</text>
+				</button>
 			</view>
-			<button class="refresh-btn" @click="fetchAdminData">
-				<text class="refresh-icon">🔄</text>
-				<text class="refresh-text">刷新数据</text>
-			</button>
 		</view>
 		
 		<!-- 管理工具 -->
@@ -134,10 +133,8 @@ export default {
 	
 	onShow() {
 		console.log('页面显示');
-		if (this.pointNum === 0) {
-			console.log('数据为空，重新获取');
-			this.loadAdminData();
-		}
+		// 每次显示页面时都刷新数据，但不显示loading
+		this.fetchAdminDataSilent();
 	},
 	methods: {
 		// 加载管理员数据
@@ -147,9 +144,13 @@ export default {
 			const adminId = uni.getStorageSync('adminId');
 			const adminMobile = uni.getStorageSync('adminMobile');
 			
-			// 设置管理员ID
+			// 设置管理员ID和网点ID（与API测试一致）
 			this.adminId = adminId || '1';
-			this.lockerPointId = '1';
+			this.lockerPointId = '2';  // 使用locker_point_id: 2，与您的API测试一致
+			
+			console.log('=== 初始化参数 ===');
+			console.log('管理员ID:', this.adminId);
+			console.log('网点ID:', this.lockerPointId);
 			
 			// 加载数据
 			this.fetchAdminData();
@@ -159,147 +160,111 @@ export default {
 		
 
 		
+		// 静默获取管理员数据（不显示loading）
+		fetchAdminDataSilent() {
+			console.log('=== 静默获取管理员数据 ===');
+			console.log('时间:', new Date().toLocaleString());
+			
+			this.fetchAdminDataInternal(false);
+		},
+		
 		// 获取管理员数据
 		fetchAdminData() {
 			console.log('=== 开始获取管理员数据 ===');
+			console.log('时间:', new Date().toLocaleString());
 			
-			// 清空数据
-			this.pointNum = 0;
-			this.lastOrderNum = 0;
-			this.yesterdayOrderNum = 0;
-			this.lastOrderPrice = 0;
-			this.mouthPrice = 0;
-			this.monthNum = 0;
+			uni.showLoading({ title: '正在获取数据...' });
 			
-			uni.showLoading({ title: '加载中...' });
+			this.fetchAdminDataInternal(true);
+		},
+		
+		// 内部获取数据方法
+		fetchAdminDataInternal(showLoading = true) {
 			
 			// 使用登录后的管理员ID
 			const requestData = {
 				admin_id: this.adminId,
-				locker_point_id: this.lockerPointId || "1"
+				locker_point_id: this.lockerPointId
 			};
 			
-			console.log('=== 使用登录后的参数 ===');
+			console.log('=== 请求参数 ===');
 			console.log('管理员ID:', this.adminId);
 			console.log('网点ID:', this.lockerPointId);
+			console.log('请求数据:', requestData);
 			
-			console.log('=== 请求详情 ===');
-			console.log('请求URL:', 'http://localhost:8000/admin');
-			console.log('请求方法:', 'POST');
-			console.log('请求参数:', requestData);
-			console.log('adminId类型:', typeof this.adminId);
-			console.log('lockerPointId类型:', typeof this.lockerPointId);
+			// 添加时间戳防止缓存
+			const timestamp = new Date().getTime();
+			const url = `http://localhost:8000/admin?t=${timestamp}`;
+			
+			// 将数据转换为URL编码格式
+			const formData = new URLSearchParams();
+			formData.append('admin_id', requestData.admin_id);
+			formData.append('locker_point_id', requestData.locker_point_id);
 			
 			uni.request({
-				url: 'http://localhost:8000/admin',
+				url: url,
 				method: 'POST',
-				data: requestData,
-				header: { 'Content-Type': 'application/x-www-form-urlencoded' },
-				timeout: 10000,
+				data: formData.toString(),
+				header: { 
+					'Content-Type': 'application/x-www-form-urlencoded'
+				},
+				timeout: 20000, // 增加超时时间到20秒
 				success: (res) => {
-					uni.hideLoading();
-					console.log('=== 接口响应详情 ===');
-					console.log('完整响应:', res);
-					console.log('响应数据:', res.data);
-					console.log('响应状态码:', res.statusCode);
-					console.log('响应数据类型:', typeof res.data);
-					console.log('响应数据是否为对象:', typeof res.data === 'object');
-					console.log('响应数据的所有字段:');
-					if (res.data && typeof res.data === 'object') {
-						Object.keys(res.data).forEach(key => {
-							console.log(`  ${key}:`, res.data[key], `(类型: ${typeof res.data[key]})`);
-						});
+					if (showLoading) {
+						uni.hideLoading();
 					}
 					
-					// 检查响应数据结构
-					if (res.data) {
-						console.log('响应数据字段:');
-						Object.keys(res.data).forEach(key => {
-							console.log(`${key}:`, res.data[key], `(类型: ${typeof res.data[key]})`);
-						});
-					}
+					console.log('=== API响应 ===');
+					console.log('状态码:', res.statusCode);
+					console.log('响应数据:', res.data);
 					
 					if (res.data && (res.data.code === 200 || res.data.code === "200")) {
-						console.log('=== 开始数据映射 ===');
+						console.log('=== 数据映射开始 ===');
 						
-						// 根据后端接口返回的真实数据进行映射
 						const data = res.data;
-						console.log('用于映射的数据对象:', data);
-						console.log('=== 完整响应数据结构 ===');
-						console.log('res.data:', res.data);
-						console.log('res.data的所有字段:', Object.keys(res.data));
-						console.log('res.data的每个字段值:');
-						Object.keys(res.data).forEach(key => {
-							console.log(`  ${key}:`, res.data[key], `(类型: ${typeof res.data[key]})`);
-						});
 						
-						// 映射数据字段（根据后端API返回的真实字段）
-						const originalPointNum = data.pointNum;
-						const originalLastOrderNum = data.lastOrderNum;
-						const originalYesterdayOrderNum = data.yesterdayOrderNum;
-						const originalLastOrderPrice = data.lastOrderPrice;
-						const originalMouthPrice = data.mouthPrice;
-						const originalMonthNum = data.monthNum;
+						// 调试：打印所有字段
+						console.log('=== 所有字段 ===');
+						console.log('pointNum:', data.pointNum, typeof data.pointNum);
+						console.log('lastOrderNum:', data.lastOrderNum, typeof data.lastOrderNum);
+						console.log('yesterdayOrderNum:', data.yesterdayOrderNum, typeof data.yesterdayOrderNum);
+						console.log('lastOrderPrice:', data.lastOrderPrice, typeof data.lastOrderPrice);
+						console.log('mouthPrice:', data.mouthPrice, typeof data.mouthPrice);
+						console.log('monthNum:', data.monthNum, typeof data.monthNum);
 						
-						console.log('=== 原始数据值 ===');
-						console.log('pointNum:', originalPointNum, `(类型: ${typeof originalPointNum})`);
-						console.log('lastOrderNum:', originalLastOrderNum, `(类型: ${typeof originalLastOrderNum})`);
-						console.log('yesterdayOrderNum:', originalYesterdayOrderNum, `(类型: ${typeof originalYesterdayOrderNum})`);
-						console.log('lastOrderPrice:', originalLastOrderPrice, `(类型: ${typeof originalLastOrderPrice})`);
-						console.log('mouthPrice:', originalMouthPrice, `(类型: ${typeof originalMouthPrice})`);
-						console.log('monthNum:', originalMonthNum, `(类型: ${typeof originalMonthNum})`);
-						
-						// 设置到前端变量 - 确保正确转换数据类型
-						this.pointNum = parseInt(originalPointNum) || 0;
-						this.lastOrderNum = parseInt(originalLastOrderNum) || 0;
-						this.yesterdayOrderNum = parseInt(originalYesterdayOrderNum) || 0;
-						this.lastOrderPrice = parseFloat(originalLastOrderPrice) || 0;
-						this.mouthPrice = parseFloat(originalMouthPrice) || 0;
-						this.monthNum = parseInt(originalMonthNum) || 0;
+						// 根据实际后端返回的字段名映射
+						this.pointNum = this.safeParseInt(data.pointNum);
+						this.lastOrderNum = this.safeParseInt(data.lastOrderNum);
+						this.yesterdayOrderNum = this.safeParseInt(data.yesterdayOrderNum);
+						this.lastOrderPrice = this.safeParseFloat(data.lastOrderPrice);
+						this.mouthPrice = this.safeParseFloat(data.mouthPrice);
+						this.monthNum = this.safeParseInt(data.monthNum);
 						
 						console.log('=== 数据映射结果 ===');
-						console.log('- 网点:', this.pointNum);
-						console.log('- 今日订单:', this.lastOrderNum);
-						console.log('- 昨日订单:', this.yesterdayOrderNum);
-						console.log('- 昨日收益:', this.lastOrderPrice);
-						console.log('- 本月收益:', this.mouthPrice);
-						console.log('- 本月订单:', this.monthNum);
+						console.log('网点数:', this.pointNum);
+						console.log('今日订单:', this.lastOrderNum);
+						console.log('昨日订单:', this.yesterdayOrderNum);
+						console.log('昨日收益:', this.lastOrderPrice);
+						console.log('本月收益:', this.mouthPrice);
+						console.log('本月订单:', this.monthNum);
 						
 						// 保存最后更新时间
 						this.lastUpdateTime = new Date().toLocaleString();
 						
-						uni.showToast({ title: '数据加载成功', icon: 'success' });
+						uni.showToast({ 
+							title: '数据已更新', 
+							icon: 'success',
+							duration: 2000
+						});
 					} else {
-						console.log('=== 接口返回错误详情 ===');
-						console.log('完整响应:', res);
-						console.log('响应数据:', res.data);
-						console.log('响应状态码:', res.statusCode);
-						console.log('code字段值:', res.data?.code);
-						console.log('code字段类型:', typeof res.data?.code);
-						console.log('code是否等于200:', res.data?.code === 200);
-						console.log('code是否等于"200":', res.data?.code === "200");
+						console.log('=== API返回错误 ===');
+						console.log('错误码:', res.data?.code);
+						console.log('错误信息:', res.data?.msg);
 						
-						// 检查是否是认证错误，如果是则提示重新登录
+						// 检查是否是认证错误
 						if (res.data?.code === 401 || res.data?.msg?.includes('未登录') || res.data?.msg?.includes('token')) {
-							console.log('检测到认证错误，提示重新登录');
-							uni.showModal({
-								title: '登录已过期',
-								content: '您的登录已过期，请重新登录',
-								showCancel: false,
-								success: () => {
-									// 清除登录信息
-									uni.removeStorageSync('adminToken');
-									uni.removeStorageSync('adminId');
-									uni.removeStorageSync('adminMobile');
-									
-									// 跳转到登录页面
-									uni.reLaunch({
-										url: '/pages/admin/login'
-									});
-								}
-							});
+							this.handleAuthError();
 						} else {
-							// 其他错误只显示提示，不退出登录
 							uni.showToast({ 
 								title: `获取数据失败: ${res.data?.msg || '未知错误'}`, 
 								icon: 'none',
@@ -309,25 +274,72 @@ export default {
 					}
 				},
 				fail: (err) => {
-					uni.hideLoading();
-					console.log('=== 请求失败详情 ===');
-					console.log('错误对象:', err);
-					console.log('错误信息:', err.errMsg);
-					console.log('错误类型:', typeof err);
-					
-					// 检查是否是跨域问题
-					if (err.errMsg && err.errMsg.includes('fail')) {
-						console.log('可能是跨域或网络问题');
+					if (showLoading) {
+						uni.hideLoading();
 					}
 					
-					// 不要因为API失败就退出登录，只显示错误信息
-					uni.showToast({ 
-						title: `网络请求失败: ${err.errMsg || '未知错误'}`, 
-						icon: 'none',
-						duration: 3000
+					console.log('=== 网络请求失败 ===');
+					console.log('错误信息:', err.errMsg);
+					console.log('错误详情:', err);
+					
+					if (showLoading) {
+						uni.showToast({ 
+							title: `网络请求失败: ${err.errMsg || '未知错误'}`, 
+							icon: 'none',
+							duration: 3000
+						});
+					}
+				}
+			});
+		},
+		
+		// 安全解析整数
+		safeParseInt(value) {
+			if (value === null || value === undefined || value === '') {
+				return 0;
+			}
+			const parsed = parseInt(value);
+			return isNaN(parsed) ? 0 : parsed;
+		},
+		
+		// 安全解析浮点数
+		safeParseFloat(value) {
+			if (value === null || value === undefined || value === '') {
+				return 0;
+			}
+			const parsed = parseFloat(value);
+			return isNaN(parsed) ? 0 : parsed;
+		},
+		
+		// 处理认证错误
+		handleAuthError() {
+			uni.showModal({
+				title: '登录已过期',
+				content: '您的登录已过期，请重新登录',
+				showCancel: false,
+				success: () => {
+					// 清除登录信息
+					uni.removeStorageSync('adminToken');
+					uni.removeStorageSync('adminId');
+					uni.removeStorageSync('adminMobile');
+					
+					// 跳转到登录页面
+					uni.reLaunch({
+						url: '/pages/admin/login'
 					});
 				}
 			});
+		},
+		
+
+		
+				// 强制刷新数据
+		forceRefreshData() {
+			console.log('=== 刷新数据 ===');
+			console.log('时间:', new Date().toLocaleString());
+
+			// 重新获取数据（带loading）
+			this.fetchAdminData();
 		},
 		
 
@@ -525,11 +537,23 @@ export default {
 .data-time {
 	margin-top: 10rpx;
 	text-align: center;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 10rpx;
 }
 
 .time-text {
 	font-size: 22rpx;
 	color: #999999;
+}
+
+.sync-status {
+	font-size: 20rpx;
+	color: #007aff;
+	background-color: #e3f2fd;
+	padding: 4rpx 12rpx;
+	border-radius: 20rpx;
 }
 
 /* 关键指标 */
@@ -672,15 +696,23 @@ export default {
 .refresh-info {
 	margin-bottom: 20rpx;
 	padding: 10rpx 0;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
 }
 
-.last-update {
+.last-update, .auto-refresh {
 	font-size: 24rpx;
 	color: #666666;
 }
 
-.refresh-btn {
-	width: 100%;
+.refresh-controls {
+	display: flex;
+	gap: 20rpx;
+}
+
+.refresh-btn, .auto-refresh-btn {
+	flex: 1;
 	height: 80rpx;
 	background-color: #f8f9fa;
 	color: #007aff;
@@ -694,15 +726,20 @@ export default {
 	gap: 10rpx;
 }
 
-.refresh-btn:active {
+.refresh-btn:active, .auto-refresh-btn:active {
 	background-color: #e3f2fd;
 }
 
-.refresh-icon {
+.auto-refresh-btn.active {
+	background-color: #007aff;
+	color: #ffffff;
+}
+
+.refresh-icon, .auto-refresh-icon {
 	font-size: 24rpx;
 }
 
-.refresh-text {
+.refresh-text, .auto-refresh-text {
 	font-size: 28rpx;
 }
 </style> 

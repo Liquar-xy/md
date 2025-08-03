@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>接口路径测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .endpoint {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .endpoint h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .endpoint p {
+            margin: 5px 0;
+            color: #666;
+        }
+        button {
+            background-color: #007aff;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-size: 12px;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>后端接口路径测试</h1>
+        
+                         <div class="endpoint">
+            <h3>1. 获取网点列表</h3>
+            <p><strong>路径:</strong> GET http://localhost:8000/point_list</p>
+             <p><strong>说明:</strong> 获取所有网点列表</p>
+             <button onclick="testGetPointList()">测试获取网点列表</button>
+             <div id="result1" class="result" style="display: none;"></div>
+         </div>
+         
+         <div class="endpoint">
+             <h3>2. 获取网点详情</h3>
+             <p><strong>路径:</strong> POST http://localhost:8000/admin/getPointInfo</p>
+             <p><strong>说明:</strong> 根据ID获取网点详细信息</p>
+             <button onclick="testGetPointInfo()">测试获取网点详情</button>
+             <div id="result2" class="result" style="display: none;"></div>
+         </div>
+         
+         <div class="endpoint">
+             <h3>3. 新增网点</h3>
+             <p><strong>路径:</strong> POST http://localhost:8000/admin/addPoint</p>
+             <p><strong>说明:</strong> 新增网点信息</p>
+             <button onclick="testAddPoint()">测试新增网点</button>
+             <div id="result3" class="result" style="display: none;"></div>
+         </div>
+         
+         <div class="endpoint">
+             <h3>4. 修改网点</h3>
+             <p><strong>路径:</strong> POST http://localhost:8000/admin/updatePoint</p>
+             <p><strong>说明:</strong> 修改网点信息</p>
+             <button onclick="testUpdatePoint()">测试修改网点</button>
+             <div id="result4" class="result" style="display: none;"></div>
+         </div>
+        
+        <div class="endpoint">
+            <h3>5. 其他可能的路径</h3>
+            <p><strong>小写路径:</strong></p>
+            <button onclick="testLowercasePaths()">测试小写路径</button>
+            <div id="result5" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        function showResult(elementId, data, isSuccess = true) {
+            const resultDiv = document.getElementById(elementId);
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result ' + (isSuccess ? 'success' : 'error');
+            resultDiv.textContent = JSON.stringify(data, null, 2);
+        }
+        
+                         function testGetPointList() {
+            fetch('http://localhost:8000/point_list', {
+                 method: 'GET',
+                 headers: {
+                     'Content-Type': 'application/json'
+                 }
+             })
+            .then(response => response.json())
+            .then(data => {
+                console.log('获取网点列表成功:', data);
+                showResult('result1', data, true);
+            })
+            .catch(error => {
+                console.error('获取网点列表失败:', error);
+                showResult('result1', { error: error.message }, false);
+            });
+        }
+        
+                 function testGetPointInfo() {
+             fetch('http://localhost:8000/admin/getPointInfo', {
+                 method: 'POST',
+                 headers: {
+                     'Content-Type': 'application/json'
+                 },
+                 body: JSON.stringify({ Id: 1 })
+             })
+            .then(response => response.json())
+            .then(data => {
+                console.log('获取网点详情成功:', data);
+                showResult('result2', data, true);
+            })
+            .catch(error => {
+                console.error('获取网点详情失败:', error);
+                showResult('result2', { error: error.message }, false);
+            });
+        }
+        
+        function testAddPoint() {
+            const testData = {
+                name: '测试网点',
+                address: '测试地址',
+                pointType: '测试类型',
+                availableLarge: 5,
+                availableMedium: 10,
+                availableSmall: 15,
+                openTime: '08:00-22:00',
+                status: 1,
+                manager: '测试管理员'
+            };
+            
+                         fetch('http://localhost:8000/admin/addPoint', {
+                 method: 'POST',
+                 headers: {
+                     'Content-Type': 'application/json'
+                 },
+                 body: JSON.stringify(testData)
+             })
+            .then(response => response.json())
+            .then(data => {
+                console.log('新增网点成功:', data);
+                showResult('result3', data, true);
+            })
+            .catch(error => {
+                console.error('新增网点失败:', error);
+                showResult('result3', { error: error.message }, false);
+            });
+        }
+        
+        function testUpdatePoint() {
+            const testData = {
+                id: 1,
+                name: '修改后的网点',
+                address: '修改后的地址',
+                pointType: '修改后的类型',
+                availableLarge: 8,
+                availableMedium: 12,
+                availableSmall: 16,
+                openTime: '09:00-21:00',
+                status: 1,
+                manager: '修改后的管理员'
+            };
+            
+                         fetch('http://localhost:8000/admin/updatePoint', {
+                 method: 'POST',
+                 headers: {
+                     'Content-Type': 'application/json'
+                 },
+                 body: JSON.stringify(testData)
+             })
+            .then(response => response.json())
+            .then(data => {
+                console.log('修改网点成功:', data);
+                showResult('result4', data, true);
+            })
+            .catch(error => {
+                console.error('修改网点失败:', error);
+                showResult('result4', { error: error.message }, false);
+            });
+        }
+        
+        function testLowercasePaths() {
+            const paths = [
+                'http://localhost:8000/point_list',
+                'http://localhost:8000/point_info',
+                'http://localhost:8000/add_point',
+                'http://localhost:8000/update_point'
+            ];
+            
+            const results = {};
+            
+            Promise.all(paths.map(path => 
+                fetch(path, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => ({ path, status: response.status, ok: response.ok }))
+                .catch(error => ({ path, error: error.message }))
+            )).then(results => {
+                const resultObj = {};
+                results.forEach(result => {
+                    resultObj[result.path] = result;
+                });
+                showResult('result5', resultObj, true);
+            });
+        }
+    </script>
+</body>
+</html> 

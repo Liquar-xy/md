@@ -7,8 +7,7 @@
       </view>
       <view class="title">我的网点</view>
       <view class="header-right">
-        <text class="menu-icon">⋯</text>
-        <text class="target-icon">◎</text>
+        <text class="edit-btn" @click="editPoint">编辑</text>
       </view>
     </view>
 
@@ -23,6 +22,8 @@
       </view>
     </view>
 
+
+    
     <!-- 网点信息 -->
     <view class="info-section" v-if="pointDetail">
       <view class="info-item">
@@ -57,8 +58,6 @@
         <text class="info-value">{{ pointDetail.openTime }}</text>
         <text class="arrow">></text>
       </view>
-      
-
       
       <view class="info-item">
         <text class="info-label">网点状态</text>
@@ -115,15 +114,20 @@ export default {
     this.pointId = options.id || 1;
     this.pointName = decodeURIComponent(options.name || '');
     console.log('网点详情页面加载 - ID:', this.pointId, '名称:', this.pointName);
+    console.log('完整options:', options);
+    
+    // 检查token
+    const token = uni.getStorageSync('adminToken');
+    console.log('当前token:', token);
+    
+    // 直接调用接口获取网点详情
     this.getPointDetail();
   },
   
   onShow() {
-    // 每次显示页面时重新获取数据
-    if (this.pointId) {
-      console.log('页面显示，重新获取网点详情 - ID:', this.pointId);
-      this.getPointDetail();
-    }
+    // 重置导航状态，确保可以正常点击
+    this.isNavigating = false;
+    console.log('页面显示，重置导航状态');
   },
   methods: {
     // 获取网点详情
@@ -146,15 +150,19 @@ export default {
         pointImage: ''
       };
       
-      // 构建 URL 编码的表单数据
-      const formData = `id=${this.pointId}`;
+      // 构建JSON数据
+      const requestData = {
+        id: this.pointId
+      };
+      
+      console.log('发送的请求数据:', requestData);
       
       uni.request({
         url: 'http://localhost:8000/point_info',
         method: 'POST',
-        data: formData,
+        data: requestData,
         header: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
           'Authorization': 'Bearer ' + uni.getStorageSync('adminToken')
         },
         success: (res) => {
@@ -165,21 +173,11 @@ export default {
             console.log('原始接口返回数据:', res.data);
             
             // 根据你的后端接口实际返回的数据结构进行映射
-            const data = res.data;
+            const data = res.data.data || res.data;
             console.log('后端返回的原始数据:', data);
             
-            // 根据你的后端代码，字段名应该是小写的
-            this.pointDetail = {
-              name: data.name || '未设置',
-              address: data.address || '未设置',
-              pointType: data.pointType || '未设置',
-              availableLarge: parseInt(data.availableLarge) || 0,
-              availableMedium: parseInt(data.availableMedium) || 0,
-              availableSmall: parseInt(data.availableSmall) || 0,
-              openTime: data.openTime || '未设置',
-              staus: parseInt(data.staus) || 1,
-              pointImage: data.pointImage || ''
-            };
+            // 直接使用后端返回的数据
+            this.pointDetail = data;
             
             console.log('处理后的网点详情:', this.pointDetail);
             
@@ -222,10 +220,19 @@ export default {
       return `${large}组${medium}主机${small}柜门`;
     },
     
+    // 编辑网点
+    editPoint() {
+      console.log('点击编辑网点，ID:', this.pointId, '名称:', this.pointName);
+      uni.navigateTo({
+        url: `/pages/point-edit/point-edit?id=${this.pointId}&name=${encodeURIComponent(this.pointName)}`
+      });
+    },
+    
     // 跳转到收费规则页面
     goToPriceRule() {
       // 防止重复点击
       if (this.isNavigating) {
+        console.log('正在跳转中，忽略重复点击');
         return;
       }
       
@@ -236,6 +243,10 @@ export default {
         url: `/pages/price-rule/price-rule?id=${this.pointId}&name=${encodeURIComponent(this.pointName)}`,
         success: () => {
           console.log('跳转成功');
+          // 跳转成功后重置状态
+          setTimeout(() => {
+            this.isNavigating = false;
+          }, 500);
         },
         fail: (err) => {
           console.error('跳转失败:', err);
@@ -292,9 +303,18 @@ export default {
   gap: 20rpx;
 }
 
-.menu-icon, .target-icon {
-  font-size: 32rpx;
-  color: #333333;
+.edit-btn {
+  font-size: 28rpx;
+  color: #007aff;
+  padding: 8rpx 16rpx;
+  border: 1rpx solid #007aff;
+  border-radius: 8rpx;
+  background: transparent;
+}
+
+.edit-btn:active {
+  background: #007aff;
+  color: #ffffff;
 }
 
 /* 照片区域 */
@@ -403,6 +423,20 @@ export default {
 }
 
 
+
+/* 调试信息 */
+.debug-info {
+  background: #f8f9fa;
+  padding: 20rpx 40rpx;
+  margin: 0 40rpx 20rpx 40rpx;
+  border-radius: 8rpx;
+  border: 1rpx solid #e9ecef;
+}
+
+.debug-text {
+  font-size: 24rpx;
+  color: #6c757d;
+}
 
 /* 加载和错误状态 */
 .loading, .error {
