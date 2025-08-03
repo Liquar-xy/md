@@ -142,7 +142,7 @@
 		<!-- 菜单弹窗 -->
 		<view class="menu-overlay" v-if="showMenuModal" @click="hideMenu">
 			<view class="menu-popup" @click.stop>
-				<view class="menu-item" @click="showAddGroupModal">
+				<view class="menu-item" @click="navigateToAddGroup">
 					<text class="menu-icon">➕</text>
 					<text class="menu-text">添加柜组</text>
 				</view>
@@ -157,74 +157,6 @@
 			</view>
 		</view>
 
-		<!-- 添加柜组弹框 - 系统原生风格 -->
-		<view class="alert-overlay" v-if="showAddModal" @click="hideAddModal">
-			<view class="alert-container" @click.stop>
-				<!-- 弹框标题 -->
-				<view class="alert-title">添加柜组</view>
-				
-				<!-- 弹框内容 -->
-				<view class="alert-content">
-					<text class="alert-message">请填写柜组信息</text>
-					
-					<!-- 表单输入 -->
-					<view class="alert-inputs">
-						<input 
-							class="alert-input" 
-							v-model="addForm.groupName" 
-							placeholder="柜组名称（如：A组、B组）"
-							maxlength="20"
-						/>
-						<input 
-							class="alert-input" 
-							v-model="addForm.groupCode" 
-							placeholder="柜组编码（如：GROUP001）"
-							maxlength="32"
-						/>
-						<picker 
-							:value="addForm.groupTypeIndex" 
-							:range="groupTypeOptions" 
-							range-key="label"
-							@change="onGroupTypeChange"
-						>
-							<view class="alert-picker">
-								<text class="picker-text">{{ groupTypeOptions[addForm.groupTypeIndex].label }}</text>
-								<text class="picker-arrow">▼</text>
-							</view>
-						</picker>
-						<view class="input-row">
-							<input 
-								class="alert-input half" 
-								v-model.number="addForm.totalCells" 
-								placeholder="总格口数"
-								type="number"
-								maxlength="3"
-							/>
-							<input 
-								class="alert-input half" 
-								v-model.number="addForm.startNo" 
-								placeholder="起始编号"
-								type="number"
-								maxlength="3"
-							/>
-						</view>
-						<input 
-							class="alert-input calculated" 
-							v-model.number="addForm.endNo" 
-							placeholder="结束编号（自动计算）"
-							type="number"
-							readonly
-						/>
-					</view>
-				</view>
-				
-				<!-- 弹框按钮 -->
-				<view class="alert-actions">
-					<button class="alert-btn cancel" @click="hideAddModal">取消</button>
-					<button class="alert-btn confirm" @click="confirmAddGroup" :disabled="!canSubmit">确定</button>
-				</view>
-			</view>
-		</view>
 	</view>
 </template>
 
@@ -251,47 +183,16 @@ export default {
 			connectionStatusText: '',
 			connectionStatusClass: '',
 			
-			// 添加柜组相关
-			showAddModal: false,
-			addForm: {
-				groupName: '',
-				groupCode: '',
-				groupTypeIndex: 0,
-				totalCells: '',
-				startNo: '',
-				endNo: ''
-			},
-			groupTypeOptions: [
-				{ label: '标准柜组', value: 'standard' },
-				{ label: '冷藏柜组', value: 'refrigerated' },
-				{ label: '超大柜组', value: 'oversize' }
-			],
+
 			
 			// API配置
 			apiBaseUrl: 'http://localhost:8000'
 		}
 	},
 	
-	computed: {
-		// 检查是否可以提交表单
-		canSubmit() {
-			return this.addForm.groupName.trim() && 
-				   this.addForm.groupCode.trim() && 
-				   this.addForm.totalCells > 0 && 
-				   this.addForm.startNo > 0 && 
-				   this.addForm.endNo > 0;
-		}
-	},
+
 	
-	watch: {
-		// 监听总格口数和起始编号的变化，自动计算结束编号
-		'addForm.totalCells'() {
-			this.calculateEndNo();
-		},
-		'addForm.startNo'() {
-			this.calculateEndNo();
-		}
-	},
+
 	
 	onLoad() {
 		console.log('=== 柜组管理页面加载 ===');
@@ -323,6 +224,14 @@ export default {
 			
 			// 重新加载柜组数据
 			this.refreshData();
+		} else {
+			// 检查是否需要刷新数据（从添加页面返回）
+			const shouldRefresh = uni.getStorageSync('shouldRefreshGroupList');
+			if (shouldRefresh) {
+				console.log('从添加页面返回，刷新柜组列表');
+				uni.removeStorageSync('shouldRefreshGroupList');
+				this.refreshData();
+			}
 		}
 	},
 	
@@ -730,177 +639,20 @@ export default {
 			});
 		},
 		
-		// 显示添加柜组弹框
+		// 添加柜组
 		addGroup() {
-			this.showAddGroupModal();
+			this.navigateToAddGroup();
 		},
 		
-		// 显示添加柜组弹框
-		showAddGroupModal() {
+		// 跳转到添加柜组页面
+		navigateToAddGroup() {
 			this.hideMenu();
-			this.resetAddForm();
-			this.showAddModal = true;
-		},
-		
-		// 隐藏添加柜组弹框
-		hideAddModal() {
-			this.showAddModal = false;
-			this.resetAddForm();
-		},
-		
-		// 重置添加表单
-		resetAddForm() {
-			this.addForm = {
-				groupName: '',
-				groupCode: '',
-				groupTypeIndex: 0,
-				totalCells: '',
-				startNo: '',
-				endNo: ''
-			};
-		},
-		
-		// 柜组类型选择变化
-		onGroupTypeChange(e) {
-			this.addForm.groupTypeIndex = e.detail.value;
-		},
-		
-		// 计算结束编号
-		calculateEndNo() {
-			if (this.addForm.totalCells > 0 && this.addForm.startNo > 0) {
-				this.addForm.endNo = parseInt(this.addForm.startNo) + parseInt(this.addForm.totalCells) - 1;
-			}
-		},
-		
-		// 确认添加柜组
-		async confirmAddGroup() {
-			if (!this.canSubmit) {
-				uni.showToast({
-					title: '请填写完整信息',
-					icon: 'none'
-				});
-				return;
-			}
-			
-			// 检查寄存点是否已选择
-			if (!this.currentLocationId) {
-				uni.showToast({
-					title: '请先选择寄存点',
-					icon: 'none'
-				});
-				return;
-			}
-			
-			try {
-				uni.showLoading({
-					title: '添加中...',
-					mask: true
-				});
-				
-				// 调用后端API添加柜组
-				const result = await this.createGroupAPI();
-				
-				uni.hideLoading();
-				
-				if (result.code === 200) {
-					uni.showToast({
-						title: '添加成功',
-						icon: 'success',
-						duration: 1500
-					});
-					
-					// 隐藏弹框
-					this.hideAddModal();
-					
-					// 刷新列表
-					setTimeout(() => {
-						this.refreshData();
-					}, 1500);
-				} else {
-					uni.showToast({
-						title: result.msg || '添加失败',
-						icon: 'none',
-						duration: 2000
-					});
-				}
-			} catch (error) {
-				uni.hideLoading();
-				console.error('添加柜组失败:', error);
-				uni.showToast({
-					title: error.message || '添加失败',
-					icon: 'none',
-					duration: 2000
-				});
-			}
-		},
-		
-		// 调用后端创建柜组API
-		createGroupAPI() {
-			return new Promise((resolve, reject) => {
-				console.log('=== 开始创建柜组 ===');
-				
-				// 获取token
-				const token = uni.getStorageSync('token') || uni.getStorageSync('adminToken') || '';
-				
-				// 构建请求数据
-				const requestData = {
-					location_point_id: this.currentLocationId,
-					group_name: this.addForm.groupName.trim(),
-					group_code: this.addForm.groupCode.trim(),
-					group_type: this.groupTypeOptions[this.addForm.groupTypeIndex].value,
-					total_cells: parseInt(this.addForm.totalCells),
-					start_no: parseInt(this.addForm.startNo),
-					end_no: parseInt(this.addForm.endNo),
-					install_time: new Date().toISOString()
-				};
-				
-				console.log('创建柜组请求数据:', requestData);
-				console.log('请求URL:', `${this.apiBaseUrl}/v1/group/create`);
-				
-				uni.request({
-					url: `${this.apiBaseUrl}/v1/group/create`,
-					method: 'POST',
-					header: {
-						'Content-Type': 'application/json',
-						'Authorization': token ? `Bearer ${token}` : ''
-					},
-					data: requestData,
-					timeout: 15000,
-					success: (res) => {
-						console.log('=== 创建柜组API响应 ===');
-						console.log('HTTP状态码:', res.statusCode);
-						console.log('响应数据:', res.data);
-						
-						if (res.statusCode === 200) {
-							if (res.data && typeof res.data === 'object') {
-								resolve(res.data);
-							} else {
-								reject(new Error('响应数据格式错误'));
-							}
-						} else {
-							reject(new Error(`HTTP ${res.statusCode}: ${res.data?.msg || '请求失败'}`));
-						}
-					},
-					fail: (err) => {
-						console.error('=== 创建柜组API请求失败 ===');
-						console.error('错误对象:', err);
-						
-						let errorMessage = '网络请求失败';
-						if (err.errMsg) {
-							if (err.errMsg.includes('timeout')) {
-								errorMessage = '请求超时，请检查网络连接';
-							} else if (err.errMsg.includes('fail')) {
-								errorMessage = '无法连接到服务器，请检查后端服务是否启动';
-							} else {
-								errorMessage = err.errMsg;
-							}
-						}
-						
-						reject(new Error(errorMessage));
-					}
-				});
+			uni.navigateTo({
+				url: '/pages/group-add/group-add?from=cabinet-group'
 			});
 		},
+		
+
 		
 		// 搜索柜组
 		searchGroup() {
@@ -1613,189 +1365,3 @@ export default {
 	}
 }
 
-/* 添加柜组弹框样式 - 系统原生风格 */
-.alert-overlay {
-	position: fixed;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	background-color: rgba(0, 0, 0, 0.4);
-	z-index: 2000;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	padding: 40rpx;
-	animation: fadeIn 0.2s ease-out;
-}
-
-@keyframes fadeIn {
-	from { opacity: 0; }
-	to { opacity: 1; }
-}
-
-.alert-container {
-	background-color: #ffffff;
-	border-radius: 20rpx;
-	width: 100%;
-	max-width: 540rpx;
-	box-shadow: 0 10rpx 40rpx rgba(0, 0, 0, 0.2);
-	animation: alertSlideIn 0.3s ease-out;
-	overflow: hidden;
-}
-
-@keyframes alertSlideIn {
-	from {
-		opacity: 0;
-		transform: scale(0.9) translateY(20rpx);
-	}
-	to {
-		opacity: 1;
-		transform: scale(1) translateY(0);
-	}
-}
-
-/* 弹框标题 */
-.alert-title {
-	text-align: center;
-	font-size: 34rpx;
-	font-weight: 600;
-	color: #333333;
-	padding: 40rpx 30rpx 20rpx;
-}
-
-/* 弹框内容 */
-.alert-content {
-	padding: 0 30rpx 30rpx;
-}
-
-.alert-message {
-	text-align: center;
-	font-size: 28rpx;
-	color: #666666;
-	margin-bottom: 30rpx;
-	display: block;
-}
-
-/* 输入框区域 */
-.alert-inputs {
-	display: flex;
-	flex-direction: column;
-	gap: 20rpx;
-}
-
-.alert-input {
-	width: 100%;
-	padding: 25rpx 20rpx;
-	border: 2rpx solid #e5e5e5;
-	border-radius: 12rpx;
-	font-size: 28rpx;
-	color: #333333;
-	background-color: #fafafa;
-	transition: all 0.2s ease;
-}
-
-.alert-input:focus {
-	border-color: #007aff;
-	background-color: #ffffff;
-	outline: none;
-}
-
-.alert-input.half {
-	flex: 1;
-}
-
-.alert-input.calculated {
-	background-color: #f0f8ff;
-	color: #007aff;
-	font-weight: 500;
-}
-
-.input-row {
-	display: flex;
-	gap: 15rpx;
-}
-
-/* 选择器样式 */
-.alert-picker {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	width: 100%;
-	padding: 25rpx 20rpx;
-	border: 2rpx solid #e5e5e5;
-	border-radius: 12rpx;
-	background-color: #fafafa;
-	transition: all 0.2s ease;
-}
-
-.alert-picker:active {
-	border-color: #007aff;
-	background-color: #ffffff;
-}
-
-.picker-text {
-	font-size: 28rpx;
-	color: #333333;
-}
-
-.picker-arrow {
-	font-size: 20rpx;
-	color: #999999;
-}
-
-/* 弹框按钮 */
-.alert-actions {
-	display: flex;
-	border-top: 1rpx solid #e5e5e5;
-}
-
-.alert-btn {
-	flex: 1;
-	padding: 30rpx 20rpx;
-	border: none;
-	background-color: transparent;
-	font-size: 32rpx;
-	font-weight: 500;
-	transition: background-color 0.2s ease;
-	position: relative;
-}
-
-.alert-btn:active {
-	background-color: rgba(0, 0, 0, 0.05);
-}
-
-.alert-btn.cancel {
-	color: #333333;
-	border-right: 1rpx solid #e5e5e5;
-}
-
-.alert-btn.confirm {
-	color: #007aff;
-	font-weight: 600;
-}
-
-.alert-btn.confirm:disabled {
-	color: #cccccc;
-}
-
-.alert-btn.confirm:disabled:active {
-	background-color: transparent;
-}
-
-/* 响应式适配 */
-@media screen and (max-width: 750rpx) {
-	.alert-container {
-		max-width: 90%;
-		margin: 0 20rpx;
-	}
-	
-	.input-row {
-		flex-direction: column;
-		gap: 20rpx;
-	}
-	
-	.alert-input.half {
-		width: 100%;
-	}
-}

@@ -499,7 +499,7 @@
 				console.log('📡 调用后端搜索接口:', keyword);
 				
 				const API_BASE_URL = 'http://localhost:8000';
-				const apiUrl = `${API_BASE_URL}/api/cities/search`;
+				const apiUrl = `${API_BASE_URL}/api/nearby/city/search`;
 				
 				// 构建查询参数
 				const queryParams = new URLSearchParams({

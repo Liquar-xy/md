@@ -210,6 +210,20 @@
           "navigationBarTitleText": "选择寄存点",
           "navigationStyle": "custom"
         }
+      },
+      {
+        "path": "pages/group-add/group-add",
+        "style": {
+          "navigationBarTitleText": "添加柜组",
+          "navigationStyle": "custom"
+        }
+      },
+      {
+        "path": "pages/map-view/map-view",
+        "style": {
+          "navigationBarTitleText": "网点位置",
+          "navigationStyle": "custom"
+        }
       }
     ],
   "globalStyle": {
