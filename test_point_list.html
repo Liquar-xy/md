@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网点列表接口测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007aff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-size: 12px;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>网点列表接口测试</h1>
+        
+        <div class="form-group">
+            <label for="token">Token:</label>
+            <input type="text" id="token" placeholder="请输入token">
+        </div>
+        
+        <button onclick="testPointList()">测试网点列表接口</button>
+        <button onclick="testWithoutToken()">测试无Token</button>
+        <button onclick="clearResult()">清除结果</button>
+        
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        function showResult(data, isSuccess = true) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result ' + (isSuccess ? 'success' : 'error');
+            resultDiv.textContent = JSON.stringify(data, null, 2);
+        }
+        
+        function testPointList() {
+            const token = document.getElementById('token').value;
+            
+            if (!token) {
+                showResult({ error: '请输入token' }, false);
+                return;
+            }
+            
+            console.log('测试网点列表接口，token:', token);
+            
+            fetch('http://localhost:8000/point_list', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('网点列表接口返回:', data);
+                showResult({ 
+                    message: '网点列表接口测试成功', 
+                    response: data,
+                    dataCount: data.list ? data.list.length : 0
+                }, true);
+            })
+            .catch(error => {
+                console.error('网点列表接口测试失败:', error);
+                showResult({ 
+                    error: '网点列表接口测试失败: ' + error.message
+                }, false);
+            });
+        }
+        
+        function testWithoutToken() {
+            console.log('测试无Token的网点列表接口');
+            
+            fetch('http://localhost:8000/point_list', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('无Token网点列表接口返回:', data);
+                showResult({ 
+                    message: '无Token网点列表接口测试成功', 
+                    response: data
+                }, true);
+            })
+            .catch(error => {
+                console.error('无Token网点列表接口测试失败:', error);
+                showResult({ 
+                    error: '无Token网点列表接口测试失败: ' + error.message
+                }, false);
+            });
+        }
+        
+        function clearResult() {
+            document.getElementById('result').style.display = 'none';
+        }
+        
+        // 页面加载时尝试从localStorage获取token
+        window.onload = function() {
+            const token = localStorage.getItem('adminToken');
+            if (token) {
+                document.getElementById('token').value = token;
+            }
+        };
+    </script>
+</body>
+</html> 

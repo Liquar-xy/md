@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007aff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-size: 12px;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .token-display {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>管理员登录测试</h1>
+        
+        <div class="form-group">
+            <label for="username">用户名:</label>
+            <input type="text" id="username" placeholder="请输入用户名">
+        </div>
+        
+        <div class="form-group">
+            <label for="password">密码:</label>
+            <input type="password" id="password" placeholder="请输入密码">
+        </div>
+        
+        <button onclick="login()">登录</button>
+        <button onclick="testWithToken()">使用当前Token测试</button>
+        <button onclick="clearToken()">清除Token</button>
+        
+        <div id="result" class="result" style="display: none;"></div>
+        
+        <div id="tokenSection" style="display: none;">
+            <h3>当前Token:</h3>
+            <div id="tokenDisplay" class="token-display"></div>
+        </div>
+    </div>
+
+    <script>
+        function showResult(data, isSuccess = true) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result ' + (isSuccess ? 'success' : 'error');
+            resultDiv.textContent = JSON.stringify(data, null, 2);
+        }
+        
+        function showToken(token) {
+            const tokenSection = document.getElementById('tokenSection');
+            const tokenDisplay = document.getElementById('tokenDisplay');
+            tokenSection.style.display = 'block';
+            tokenDisplay.textContent = token;
+        }
+        
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (!username || !password) {
+                showResult({ error: '请输入用户名和密码' }, false);
+                return;
+            }
+            
+            // 尝试不同的登录接口路径
+            const loginUrls = [
+                'http://localhost:8000/admin_login',
+                'http://localhost:8000/admin/login',
+                'http://localhost:8000/login',
+                'http://localhost:8000/admin/signin',
+                'http://localhost:8000/signin'
+            ];
+            
+            const loginData = {
+                username: username,
+                password: password
+            };
+            
+            // 尝试第一个登录接口
+            fetch(loginUrls[0], {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(loginData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('登录成功:', data);
+                
+                if (data.token || data.access_token || data.accessToken) {
+                    const token = data.token || data.access_token || data.accessToken;
+                    localStorage.setItem('adminToken', token);
+                    showToken(token);
+                    showResult({ message: '登录成功', token: token }, true);
+                } else {
+                    showResult({ error: '登录失败，未获取到token', data: data }, false);
+                }
+            })
+            .catch(error => {
+                console.error('登录失败:', error);
+                showResult({ error: '登录失败: ' + error.message }, false);
+            });
+        }
+        
+        function testWithToken() {
+            const token = localStorage.getItem('adminToken');
+            if (!token) {
+                showResult({ error: '没有找到token，请先登录' }, false);
+                return;
+            }
+            
+            showToken(token);
+            
+            // 测试新增网点接口
+            const testData = {
+                name: '测试网点',
+                address: '测试地址',
+                pointType: '测试类型',
+                availableLarge: 5,
+                availableMedium: 10,
+                availableSmall: 15,
+                openTime: '08:00-22:00',
+                status: 1,
+                manager: '测试管理员'
+            };
+            
+            fetch('http://localhost:8000/admin/addPoint', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify(testData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('测试成功:', data);
+                showResult({ message: '接口测试成功', data: data }, true);
+            })
+            .catch(error => {
+                console.error('测试失败:', error);
+                showResult({ error: '接口测试失败: ' + error.message }, false);
+            });
+        }
+        
+        function clearToken() {
+            localStorage.removeItem('adminToken');
+            document.getElementById('tokenSection').style.display = 'none';
+            showResult({ message: 'Token已清除' }, true);
+        }
+        
+        // 页面加载时检查是否有token
+        window.onload = function() {
+            const token = localStorage.getItem('adminToken');
+            if (token) {
+                showToken(token);
+            }
+        };
+    </script>
+</body>
+</html> 

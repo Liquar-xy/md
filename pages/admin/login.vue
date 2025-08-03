@@ -196,7 +196,7 @@ export default {
 			const loginData = `mobile=${this.loginForm.mobile}&password=${this.loginForm.password}&smsCode=${this.loginForm.smsCode}`;
 			
 			uni.request({
-				url: 'http://localhost:8000/admin/login',
+				url: 'http://localhost:8000/admin_login',
 				method: 'POST',
 				data: loginData,
 				header: { 
