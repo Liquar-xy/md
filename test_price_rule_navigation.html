@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试收费规则跳转</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background: #007aff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+        input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>测试收费规则跳转功能</h1>
+    
+    <div class="info">
+        <h3>测试说明：</h3>
+        <p>1. 在编辑页面点击"收费规则"应该跳转到收费规则页面</p>
+        <p>2. 跳转时会传递网点ID和名称参数</p>
+        <p>3. 收费规则页面应该能正确接收和显示这些参数</p>
+    </div>
+    
+    <div class="test-section">
+        <h3>1. 模拟编辑页面参数</h3>
+        <input type="text" id="pointId" placeholder="网点ID" value="1">
+        <input type="text" id="pointName" placeholder="网点名称" value="北京西站南广场寄存点">
+        <button onclick="testNavigation()">模拟跳转到收费规则页面</button>
+        <div id="navigationResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. 测试收费规则页面API</h3>
+        <input type="text" id="apiPointId" placeholder="网点ID" value="1">
+        <button onclick="testPriceRuleAPI()">测试收费规则API</button>
+        <div id="apiResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>3. 测试步骤</h3>
+        <ol>
+            <li>在应用中进入"我的网点"</li>
+            <li>点击任意网点进入详情</li>
+            <li>点击"编辑"按钮进入编辑页面</li>
+            <li>点击"收费规则"查看跳转效果</li>
+            <li>确认收费规则页面显示正确的网点信息</li>
+        </ol>
+    </div>
+
+    <script>
+        // 模拟跳转到收费规则页面
+        function testNavigation() {
+            const pointId = document.getElementById('pointId').value;
+            const pointName = document.getElementById('pointName').value;
+            
+            const url = `/pages/price-rule/price-rule?id=${pointId}&name=${encodeURIComponent(pointName)}`;
+            
+            document.getElementById('navigationResult').textContent = 
+                '模拟跳转URL:\n' + url + 
+                '\n\n参数解析:\n' +
+                '网点ID: ' + pointId + '\n' +
+                '网点名称: ' + pointName + '\n' +
+                '编码后的名称: ' + encodeURIComponent(pointName);
+        }
+        
+        // 测试收费规则API
+        async function testPriceRuleAPI() {
+            const pointId = document.getElementById('apiPointId').value;
+            
+            try {
+                const response = await fetch(`http://localhost:8000/admin/getPriceRule?networkId=${pointId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                document.getElementById('apiResult').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('apiResult').textContent = 'API请求失败: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html> 
