@@ -62,12 +62,6 @@
         <text class="arrow">></text>
       </view>
       
-      <view class="info-item" @click="editField('manager')">
-        <text class="info-label">网点管理员</text>
-        <text class="info-value">{{ pointInfo.manager || '未设置' }}</text>
-        <text class="arrow">></text>
-      </view>
-      
       <view class="info-item" @click="editField('status')">
         <text class="info-label">网点状态</text>
         <text class="info-value" :class="pointInfo.staus === 1 ? 'status-normal' : 'status-closed'">
@@ -123,7 +117,6 @@ export default {
         openTime: '',
         staus: 1,
         pointImage: '',
-        manager: '',
         photos: []
       },
       isSaving: false
@@ -147,7 +140,6 @@ export default {
         openTime: '',
         staus: 1,
         pointImage: '',
-        manager: '',
         photos: []
       };
     } else {
@@ -164,7 +156,7 @@ export default {
         url: 'http://localhost:8000/point_info',
         method: 'POST',
         data: {
-          Id: this.pointId
+          id: this.pointId
         },
         header: {
           'Content-Type': 'application/json',
@@ -185,7 +177,7 @@ export default {
               openTime: res.data.openTime || res.data.OpenTime || '',
               staus: parseInt(res.data.staus || res.data.Status) || 1,
               pointImage: res.data.pointImage || res.data.PointImage || '',
-              manager: res.data.manager || res.data.Manager || '',
+      
               photos: res.data.photos || res.data.Photos || []
             };
             
@@ -231,7 +223,6 @@ export default {
         'pointType': '网点类型',
         'cabinet': '管理柜组',
         'openTime': '营业时间',
-        'manager': '网点管理员',
         'status': '网点状态'
       };
       
@@ -262,9 +253,6 @@ export default {
         case 'openTime':
           currentValue = this.pointInfo.openTime || '';
           break;
-        case 'manager':
-          currentValue = this.pointInfo.manager || '';
-          break;
       }
       
       // 显示输入框
@@ -289,9 +277,6 @@ export default {
                   break;
                 case 'openTime':
                   this.pointInfo.openTime = newValue;
-                  break;
-                case 'manager':
-                  this.pointInfo.manager = newValue;
                   break;
               }
               uni.showToast({
@@ -380,9 +365,9 @@ export default {
     
     // 查看收费规则
     viewChargingRules() {
-      uni.showToast({
-        title: '查看收费规则',
-        icon: 'none'
+      // 跳转到收费规则页面，传递网点ID和名称
+      uni.navigateTo({
+        url: `/pages/price-rule/price-rule?id=${this.pointId}&name=${encodeURIComponent(this.pointInfo.name || this.pointName)}`
       });
     },
     
@@ -489,7 +474,6 @@ export default {
         availableSmall: this.pointInfo.availableSmall,
         openTime: this.pointInfo.openTime,
         status: this.pointInfo.staus,
-        manager: this.pointInfo.manager,
         pointImage: this.pointInfo.pointImage,
         photos: this.pointInfo.photos
       };

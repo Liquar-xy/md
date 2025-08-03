@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试编辑页面数据加载</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background: #007aff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+        input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>测试编辑页面数据加载</h1>
+    
+    <div class="test-section">
+        <h3>1. 测试管理员登录</h3>
+        <input type="text" id="username" placeholder="用户名" value="admin">
+        <input type="password" id="password" placeholder="密码" value="123456">
+        <button onclick="testLogin()">登录获取Token</button>
+        <div id="loginResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. 测试网点列表</h3>
+        <button onclick="testPointList()">获取网点列表</button>
+        <div id="listResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>3. 测试网点详情</h3>
+        <input type="text" id="pointId" placeholder="网点ID" value="1">
+        <button onclick="testPointInfo()">获取网点详情</button>
+        <div id="infoResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>4. 测试编辑页面数据</h3>
+        <input type="text" id="editPointId" placeholder="要编辑的网点ID" value="1">
+        <button onclick="testEditPageData()">模拟编辑页面数据加载</button>
+        <div id="editResult" class="result"></div>
+    </div>
+
+    <script>
+        let adminToken = '';
+        
+        // 测试登录
+        async function testLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('http://localhost:8000/admin_login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
+                    })
+                });
+                
+                const data = await response.json();
+                document.getElementById('loginResult').textContent = JSON.stringify(data, null, 2);
+                
+                if (data.code === 200 && data.token) {
+                    adminToken = data.token;
+                    console.log('登录成功，Token:', adminToken);
+                }
+            } catch (error) {
+                document.getElementById('loginResult').textContent = '请求失败: ' + error.message;
+            }
+        }
+        
+        // 测试网点列表
+        async function testPointList() {
+            try {
+                const response = await fetch('http://localhost:8000/point_list', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + adminToken
+                    }
+                });
+                
+                const data = await response.json();
+                document.getElementById('listResult').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('listResult').textContent = '请求失败: ' + error.message;
+            }
+        }
+        
+        // 测试网点详情
+        async function testPointInfo() {
+            const pointId = document.getElementById('pointId').value;
+            
+            try {
+                const response = await fetch('http://localhost:8000/point_info', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + adminToken
+                    },
+                    body: JSON.stringify({
+                        id: parseInt(pointId)
+                    })
+                });
+                
+                const data = await response.json();
+                document.getElementById('infoResult').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('infoResult').textContent = '请求失败: ' + error.message;
+            }
+        }
+        
+        // 测试编辑页面数据加载
+        async function testEditPageData() {
+            const pointId = document.getElementById('editPointId').value;
+            
+            try {
+                const response = await fetch('http://localhost:8000/point_info', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + adminToken
+                    },
+                    body: JSON.stringify({
+                        id: parseInt(pointId)
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // 模拟编辑页面的数据处理逻辑
+                let processedData = {};
+                if (data.code === 200) {
+                    const rawData = data.data || data;
+                    processedData = {
+                        name: rawData.name || rawData.Name || '',
+                        address: rawData.address || rawData.Address || '',
+                        pointType: rawData.pointType || rawData.PointType || '',
+                        availableLarge: parseInt(rawData.availableLarge || rawData.AvailableLarge) || 0,
+                        availableMedium: parseInt(rawData.availableMedium || rawData.AvailableMedium) || 0,
+                        availableSmall: parseInt(rawData.availableSmall || rawData.AvailableSmall) || 0,
+                        openTime: rawData.openTime || rawData.OpenTime || '',
+                        staus: parseInt(rawData.staus || rawData.Status) || 1,
+                        pointImage: rawData.pointImage || rawData.PointImage || '',
+                        manager: rawData.manager || rawData.Manager || '',
+                        photos: rawData.photos || rawData.Photos || []
+                    };
+                }
+                
+                document.getElementById('editResult').textContent = 
+                    '原始数据:\n' + JSON.stringify(data, null, 2) + 
+                    '\n\n处理后的编辑页面数据:\n' + JSON.stringify(processedData, null, 2);
+            } catch (error) {
+                document.getElementById('editResult').textContent = '请求失败: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html> 

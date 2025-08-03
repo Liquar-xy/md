@@ -150,19 +150,17 @@ export default {
         pointImage: ''
       };
       
-      // 构建JSON数据
-      const requestData = {
-        id: this.pointId
-      };
+      // 构建 URL 编码的表单数据
+      const formData = `id=${this.pointId}`;
       
-      console.log('发送的请求数据:', requestData);
+      console.log('发送的请求数据:', formData);
       
       uni.request({
         url: 'http://localhost:8000/point_info',
         method: 'POST',
-        data: requestData,
+        data: formData,
         header: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
           'Authorization': 'Bearer ' + uni.getStorageSync('adminToken')
         },
         success: (res) => {
@@ -221,12 +219,14 @@ export default {
     },
     
     // 编辑网点
-      editPoint() {
-        console.log('点击编辑网点，ID:', this.pointId, '名称:', this.pointName);
-        uni.navigateTo({
-          url: `/pages/point-edit/point-edit?id=${this.pointId}&name=${encodeURIComponent(this.pointName)}`
-        });
-      },
+
+    editPoint() {
+      console.log('点击编辑网点，ID:', this.pointId, '名称:', this.pointName);
+      uni.navigateTo({
+        url: `/pages/point-edit/point-edit?id=${this.pointId}&name=${encodeURIComponent(this.pointName)}`
+      });
+    },
+
     // 打开百度地图
     openBaiduMap() {
       if (!this.pointDetail.address) {

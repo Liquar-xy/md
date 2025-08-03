@@ -10,27 +10,6 @@
             </set>
           </value>
         </entry>
-        <entry key="Location">
-          <value>
-            <set>
-              <option value="file://$PROJECT_DIR$/../ito-deposit/internal/data/location.go" />
-            </set>
-          </value>
-        </entry>
-        <entry key="LockerOrders">
-          <value>
-            <set>
-              <option value="file://$PROJECT_DIR$/../ito-deposit/internal/data/locker_orders.go" />
-            </set>
-          </value>
-        </entry>
-        <entry key="LockerPoint">
-          <value>
-            <set>
-              <option value="file://$PROJECT_DIR$/../ito-deposit/internal/data/locker_point.go" />
-            </set>
-          </value>
-        </entry>
       </map>
     </option>
     <option name="scannedPathMapping">
@@ -38,46 +17,10 @@
         <entry key="file://$PROJECT_DIR$/../ito-deposit/internal/data/cabinet_cell.go">
           <value>
             <ScannedPath>
-              <option name="lastModified" value="1753971225897" />
+              <option name="lastModified" value="1754221954365" />
               <option name="schema">
                 <list>
                   <option value="CabinetCell" />
-                </list>
-              </option>
-            </ScannedPath>
-          </value>
-        </entry>
-        <entry key="file://$PROJECT_DIR$/../ito-deposit/internal/data/location.go">
-          <value>
-            <ScannedPath>
-              <option name="lastModified" value="1754040035907" />
-              <option name="schema">
-                <list>
-                  <option value="Location" />
-                </list>
-              </option>
-            </ScannedPath>
-          </value>
-        </entry>
-        <entry key="file://$PROJECT_DIR$/../ito-deposit/internal/data/locker_orders.go">
-          <value>
-            <ScannedPath>
-              <option name="lastModified" value="1753971227718" />
-              <option name="schema">
-                <list>
-                  <option value="LockerOrders" />
-                </list>
-              </option>
-            </ScannedPath>
-          </value>
-        </entry>
-        <entry key="file://$PROJECT_DIR$/../ito-deposit/internal/data/locker_point.go">
-          <value>
-            <ScannedPath>
-              <option name="lastModified" value="1754040035902" />
-              <option name="schema">
-                <list>
-                  <option value="LockerPoint" />
                 </list>
               </option>
             </ScannedPath>
@@ -88,11 +31,8 @@
     <option name="tableStructMapping">
       <map>
         <entry key="cabinet_cell" value="CabinetCell" />
-        <entry key="location" value="Location" />
-        <entry key="locker_orders" value="LockerOrders" />
-        <entry key="locker_point" value="LockerPoint" />
       </map>
     </option>
-    <option name="lastTimeChecked" value="1753971176399" />
+    <option name="lastTimeChecked" value="1754221854592" />
   </component>
 </project>
