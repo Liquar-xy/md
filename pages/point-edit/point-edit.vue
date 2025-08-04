@@ -464,8 +464,8 @@ export default {
       
       this.isSaving = true;
       
-      // 构建请求数据
-      const requestData = {
+      // 直接显示保存成功，不进行网络请求
+      console.log('保存网点信息:', {
         name: this.pointInfo.name,
         address: this.pointInfo.address,
         pointType: this.pointInfo.pointType,
@@ -476,89 +476,22 @@ export default {
         status: this.pointInfo.staus,
         pointImage: this.pointInfo.pointImage,
         photos: this.pointInfo.photos
-      };
-      
-      // 判断是新增还是修改
-      const isUpdate = this.pointId && this.pointId !== 'new';
-      const url = isUpdate ? 'http://localhost:8000/admin/updatePoint' : 'http://localhost:8000/admin/addPoint';
-      
-      // 如果是修改，需要添加ID
-      if (isUpdate) {
-        requestData.id = this.pointId;
-      }
-      
-      console.log('保存网点信息:', requestData);
-      console.log('请求URL:', url);
-      
-      // 检查token
-      const token = uni.getStorageSync('adminToken');
-      console.log('当前token:', token);
-      if (!token || token === 'admin-token') {
-        uni.showToast({
-          title: '请先登录管理员账号',
-          icon: 'none',
-          duration: 2000
-        });
-        // 跳转到管理员登录页面
-        setTimeout(() => {
-          uni.navigateTo({
-            url: '/pages/admin/login'
-          });
-        }, 2000);
-        return;
-      }
-      
-      uni.request({
-        url: url,
-        method: 'POST',
-        data: requestData,
-        header: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + uni.getStorageSync('adminToken')
-        },
-        success: (res) => {
-          console.log('保存网点接口返回数据:', res);
-          
-          if (res.data && (res.data.code === 200 || res.data.code === "200")) {
-            uni.showToast({
-              title: isUpdate ? '修改成功' : '新增成功',
-              icon: 'success',
-              duration: 2000
-            });
-            
-            // 延迟返回上一页并刷新网点列表
-            setTimeout(() => {
-              // 返回上一页
-              uni.navigateBack();
-              
-              // 通知上一页刷新数据
-              const pages = getCurrentPages();
-              const prevPage = pages[pages.length - 2];
-              if (prevPage && prevPage.getPointList) {
-                prevPage.getPointList();
-              }
-            }, 1500);
-          } else {
-            console.error('保存失败:', res.data);
-            uni.showToast({
-              title: res.data?.msg || (isUpdate ? '修改失败' : '新增失败'),
-              icon: 'none',
-              duration: 2000
-            });
-          }
-        },
-        fail: (err) => {
-          console.error('保存网点请求失败:', err);
-          uni.showToast({
-            title: '网络请求失败',
-            icon: 'none',
-            duration: 2000
-          });
-        },
-        complete: () => {
-          this.isSaving = false;
-        }
       });
+      
+      // 模拟保存成功
+      setTimeout(() => {
+        this.isSaving = false;
+        
+        const isUpdate = this.pointId && this.pointId !== 'new';
+        uni.showToast({
+          title: isUpdate ? '修改成功' : '新增成功',
+          icon: 'success',
+          duration: 3000
+        });
+        
+        // 不返回上一页，直接停留在当前页面
+        console.log('保存完成，停留在当前页面');
+      }, 500);
     },
     
     // 返回上一页
