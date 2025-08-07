@@ -89,10 +89,32 @@
           去评价
         </button>
         <button 
+          v-if="order.status !== 3"
           class="action-btn secondary"
           @click="handleCustomAction"
         >
           去支付
+        </button>
+        <button 
+          v-if="order.status === 2"
+          class="action-btn remind"
+          @click="goToRemindTask"
+        >
+          发送提醒
+        </button>
+        <button 
+          v-if="order.status === 1 || order.status === 2"
+          class="action-btn expire-remind"
+          @click="goToExpireRemind"
+        >
+          提醒到期
+        </button>
+        <button 
+          v-if="order.status === 1 || order.status === 2"
+          class="action-btn refund"
+          @click="goToRefund"
+        >
+          申请退款
         </button>
       </view>
     </view>
@@ -109,7 +131,8 @@ export default {
     return {
       orderId: null,
       order: null,
-      loading: true
+      loading: true,
+      statusCheckTimer: null // 状态检查定时器
     }
   },
   onLoad(options) {
@@ -132,6 +155,21 @@ export default {
         uni.navigateBack();
       }, 2000);
     }
+  },
+  
+  onShow() {
+    // 页面显示时开始状态同步
+    this.startStatusSync();
+  },
+  
+  onHide() {
+    // 页面隐藏时停止状态同步
+    this.stopStatusSync();
+  },
+  
+  onUnload() {
+    // 页面卸载时停止状态同步
+    this.stopStatusSync();
   },
   methods: {
     fetchOrderDetails() {
@@ -192,9 +230,16 @@ export default {
             amount_paid: orderData.amountPaid,
             storage_location_name: orderData.storageLocationName,
             cabinet_id: orderData.cabinetId,
-            status: orderData.status,
-            deposit_status: orderData.depositStatus
+            status: parseInt(orderData.status) || 0, // 确保状态是数字类型
+            deposit_status: parseInt(orderData.depositStatus) || 0 // 确保押金状态是数字类型
           };
+
+          // 调试信息：打印订单状态
+          console.log('订单状态调试信息:', {
+            原始状态: orderData.status,
+            转换后状态: this.order.status,
+            状态文本: this.getOrderStatusText(this.order.status)
+          });
 
           // 如果订单为空，显示错误提示
           if (!this.order) {
@@ -202,6 +247,9 @@ export default {
               title: '未找到订单详情',
               icon: 'none'
             });
+          } else {
+            // 订单数据加载完成后，启动状态同步
+            this.startStatusSync();
           }
         },
         fail: (err) => {
@@ -217,22 +265,33 @@ export default {
       });
     },
     getOrderStatusText(status) {
-      switch (status) {
+      // 确保状态是数字类型
+      const numStatus = parseInt(status);
+      console.log('状态映射调试:', { 输入状态: status, 转换后: numStatus });
+      
+      switch (numStatus) {
         case 1: return '待支付';
         case 2: return '寄存中';
         case 3: return '已完成';
         case 4: return '已取消';
         case 5: return '超时';
         case 6: return '异常';
-        default: return '未知状态';
+        default: 
+          console.warn('未知的订单状态:', status, '类型:', typeof status);
+          return `未知状态(${status})`;
       }
     },
     getDepositStatusText(status) {
-      switch (status) {
+      // 确保状态是数字类型
+      const numStatus = parseInt(status);
+      
+      switch (numStatus) {
         case 1: return '已支付';
         case 2: return '已退还';
         case 3: return '已扣除';
-        default: return '未知状态';
+        default: 
+          console.warn('未知的押金状态:', status, '类型:', typeof status);
+          return `未知状态(${status})`;
       }
     },
     goBack() {
@@ -300,6 +359,152 @@ export default {
         url: `/pages/alipay/alipay?id=${this.order.id}`,
         fail: (err) => {
           console.error('跳转支付页面失败:', err);
+          uni.showToast({
+            title: '页面跳转失败',
+            icon: 'none'
+          });
+        }
+      });
+    },
+    goToRemindTask() {
+      if (!this.order) {
+        uni.showToast({
+          title: '订单数据不完整',
+          icon: 'none'
+        });
+        return;
+      }
+
+      // 跳转到定时任务提醒页面，可以传递订单相关信息
+      uni.navigateTo({
+        url: `/pages/timetasksend/timetasksend?orderId=${this.order.id}&orderNumber=${this.order.order_number}`,
+        fail: (err) => {
+          console.error('跳转提醒任务页面失败:', err);
+          uni.showToast({
+            title: '页面跳转失败',
+            icon: 'none'
+          });
+        }
+      });
+    },
+    
+    // 开始状态同步
+    startStatusSync() {
+      // 如果已经有定时器，先清除
+      this.stopStatusSync();
+      
+      // 只对未完成的订单进行状态同步
+      if (this.order && this.order.status && this.order.status < 3) {
+        console.log('开始订单状态同步，当前状态:', this.order.status);
+        
+        // 每30秒检查一次状态
+        this.statusCheckTimer = setInterval(() => {
+          this.syncOrderStatus();
+        }, 30000);
+      }
+    },
+    
+    // 停止状态同步
+    stopStatusSync() {
+      if (this.statusCheckTimer) {
+        clearInterval(this.statusCheckTimer);
+        this.statusCheckTimer = null;
+        console.log('停止订单状态同步');
+      }
+    },
+    
+    // 同步订单状态
+    syncOrderStatus() {
+      if (!this.orderId) return;
+      
+      console.log('同步订单状态，订单ID:', this.orderId);
+      
+      uni.request({
+        url: 'http://127.0.0.1:8000/v1/orders/show',
+        method: 'POST',
+        header: {
+          'Content-Type': 'application/json'
+        },
+        data: JSON.stringify({
+          id: this.orderId
+        }),
+        success: (res) => {
+          if (res.statusCode === 200 && res.data && res.data.order && res.data.order.length > 0) {
+            const orderData = res.data.order[0];
+            const newStatus = parseInt(orderData.status) || 0;
+            const newDepositStatus = parseInt(orderData.depositStatus) || 0;
+            
+            // 检查状态是否发生变化
+            if (this.order.status !== newStatus || this.order.deposit_status !== newDepositStatus) {
+              console.log('订单状态发生变化:', {
+                旧状态: this.order.status,
+                新状态: newStatus,
+                旧押金状态: this.order.deposit_status,
+                新押金状态: newDepositStatus
+              });
+              
+              // 更新订单状态
+              this.order.status = newStatus;
+              this.order.deposit_status = newDepositStatus;
+              
+              // 如果订单已完成，停止状态同步
+              if (newStatus >= 3) {
+                this.stopStatusSync();
+              }
+              
+              // 显示状态变化提示
+              uni.showToast({
+                title: `订单状态已更新: ${this.getOrderStatusText(newStatus)}`,
+                icon: 'none',
+                duration: 2000
+              });
+            }
+          }
+        },
+        fail: (err) => {
+          console.error('同步订单状态失败:', err);
+        }
+      });
+    },
+    
+    // 跳转到提醒到期页面
+    goToExpireRemind() {
+      if (!this.order) {
+        uni.showToast({
+          title: '订单数据不完整',
+          icon: 'none'
+        });
+        return;
+      }
+
+      // 跳转到定时任务提醒页面，传递订单相关信息
+      uni.navigateTo({
+        url: `/pages/timetasksend/timetasksend?orderId=${this.order.id}&orderNumber=${this.order.order_number}&type=expire`,
+        fail: (err) => {
+          console.error('跳转提醒到期页面失败:', err);
+          uni.showToast({
+            title: '页面跳转失败',
+            icon: 'none'
+          });
+        }
+      });
+    },
+    
+    // 跳转到退款页面
+    goToRefund() {
+      if (!this.order) {
+        uni.showToast({
+          title: '订单数据不完整',
+          icon: 'none'
+        });
+        return;
+      }
+
+      // 跳转到订单删除页面，传递订单相关信息
+      uni.navigateTo({
+        url: `/pages/orderdel/orderdel?id=${this.order.id}&orderNumber=${this.order.order_number}&status=${this.order.status}`,
+        fail: (err) => {
+          console.error('跳转退款页面失败:', err);
           uni.showToast({
             title: '页面跳转失败',
             icon: 'none'
@@ -452,6 +657,24 @@ export default {
 
 .action-btn.secondary {
   background: #34c759;
+  color: #fff;
+  margin-top: 16rpx;
+}
+
+.action-btn.remind {
+  background: #ff9500;
+  color: #fff;
+  margin-top: 16rpx;
+}
+
+.action-btn.expire-remind {
+  background: #8e44ad;
+  color: #fff;
+  margin-top: 16rpx;
+}
+
+.action-btn.refund {
+  background: #ff3b30;
   color: #fff;
   margin-top: 16rpx;
 }
