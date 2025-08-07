@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,14 +12,16 @@
             padding: 20px;
             background-color: #f5f5f5;
         }
+
         .container {
             max-width: 400px;
             margin: 0 auto;
             background: white;
             border-radius: 10px;
             overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
+
         .header {
             background: #ffffff;
             padding: 15px 20px;
@@ -27,75 +30,89 @@
             justify-content: space-between;
             border-bottom: 1px solid #f0f0f0;
         }
+
         .back-btn {
             font-size: 18px;
             color: #333;
             cursor: pointer;
         }
+
         .title {
             font-size: 18px;
             font-weight: bold;
             color: #333;
         }
+
         .content-area {
             padding: 20px;
         }
+
         .point-info-section {
             background: #ffffff;
             border-radius: 15px;
             padding: 20px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
+
         .point-header {
             display: flex;
             align-items: center;
             margin-bottom: 15px;
         }
+
         .point-icon {
             font-size: 24px;
             margin-right: 10px;
             color: #007aff;
         }
+
         .point-title {
             font-size: 18px;
             font-weight: bold;
             color: #333;
         }
+
         .point-address {
             display: flex;
             align-items: flex-start;
             line-height: 1.6;
         }
+
         .address-label {
             font-size: 14px;
             color: #666;
             margin-right: 8px;
             flex-shrink: 0;
         }
+
         .address-content {
             font-size: 14px;
             color: #333;
             flex: 1;
         }
+
         .map-options {
             background: #ffffff;
             border-radius: 15px;
             padding: 20px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
+
         .options-title {
             font-size: 16px;
             font-weight: bold;
             color: #333;
             margin-bottom: 20px;
         }
+
         .options-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 15px;
         }
+
         .option-item {
             display: flex;
             flex-direction: column;
@@ -108,51 +125,61 @@
             cursor: pointer;
             transition: all 0.3s ease;
         }
+
         .option-item:hover {
             background: #e3f2fd;
             border-color: #007aff;
             transform: translateY(-2px);
         }
+
         .option-item:active {
             transform: scale(0.95);
         }
+
         .option-icon {
             font-size: 32px;
             margin-bottom: 8px;
         }
+
         .option-name {
             font-size: 13px;
             color: #333;
             font-weight: 500;
         }
+
         .location-preview {
             background: #ffffff;
             border-radius: 15px;
             padding: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
+
         .preview-header {
             font-size: 16px;
             font-weight: bold;
             color: #333;
             margin-bottom: 20px;
         }
+
         .coordinate-info {
             display: flex;
             align-items: center;
             margin-bottom: 12px;
         }
+
         .coord-label {
             font-size: 14px;
             color: #666;
             margin-right: 8px;
             min-width: 50px;
         }
+
         .coord-value {
             font-size: 14px;
             color: #333;
             font-family: monospace;
         }
+
         .location-note {
             margin-top: 15px;
             padding: 15px;
@@ -160,11 +187,13 @@
             border-radius: 8px;
             border-left: 4px solid #ffc107;
         }
+
         .location-note-text {
             font-size: 12px;
             color: #856404;
             line-height: 1.5;
         }
+
         .success-message {
             background: #d4edda;
             border: 1px solid #c3e6cb;
@@ -176,6 +205,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="success-message">
         ✅ 地图页面空白问题已修复！现在使用简洁的界面替代有问题的地图组件
@@ -188,7 +218,7 @@
             <div class="title">郑州站客存点</div>
             <div></div>
         </div>
-        
+
         <!-- 主要内容区域 -->
         <div class="content-area">
             <!-- 网点信息展示 -->
@@ -202,7 +232,7 @@
                     <span class="address-content">郑州站南广场进站口东侧</span>
                 </div>
             </div>
-            
+
             <!-- 地图选项 -->
             <div class="map-options">
                 <div class="options-title">选择地图应用查看位置</div>
@@ -225,7 +255,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- 位置预览 -->
             <div class="location-preview">
                 <div class="preview-header">位置预览</div>
@@ -327,4 +357,5 @@
         }
     </script>
 </body>
+
 </html>
