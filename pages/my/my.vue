@@ -158,9 +158,25 @@ export default {
 		// 查看全部订单
 		handleViewAllOrders() {
 			console.log('跳转到订单页面');
-			// 直接跳转到订单页面
-			uni.navigateTo({
-				url: '/pages/orders/orders'
+			
+			// 先检查页面是否在tabBar中
+			console.log('尝试使用switchTab跳转到订单页面');
+			
+			uni.switchTab({
+				url: '/pages/orders/orders',
+				success: () => {
+					console.log('switchTab跳转成功');
+				},
+				fail: (err) => {
+					console.error('switchTab跳转失败:', err);
+					
+					// 显示详细错误信息
+					uni.showModal({
+						title: '跳转失败',
+						content: `错误信息: ${err.errMsg || '未知错误'}`,
+						showCancel: false
+					});
+				}
 			});
 		},
 		
@@ -247,8 +263,23 @@ export default {
 		},
 		
 		handleOrdersClick() {
-			uni.navigateTo({
-				url: '/pages/order-detail/order-detail'
+			console.log('底部导航：跳转到订单页面');
+			
+			uni.switchTab({
+				url: '/pages/orders/orders',
+				success: () => {
+					console.log('底部导航：switchTab跳转成功');
+				},
+				fail: (err) => {
+					console.error('底部导航：切换到订单页面失败:', err);
+					
+					// 显示详细错误信息
+					uni.showModal({
+						title: '跳转失败',
+						content: `错误信息: ${err.errMsg || '未知错误'}`,
+						showCancel: false
+					});
+				}
 			});
 		},
 		

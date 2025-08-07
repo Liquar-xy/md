@@ -1,38 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="GoORMHelperCache">
-    <option name="schemaMapping">
-      <map>
-        <entry key="CabinetCell">
-          <value>
-            <set>
-              <option value="file://$PROJECT_DIR$/../ito-deposit/internal/data/cabinet_cell.go" />
-            </set>
-          </value>
-        </entry>
-      </map>
-    </option>
-    <option name="scannedPathMapping">
-      <map>
-        <entry key="file://$PROJECT_DIR$/../ito-deposit/internal/data/cabinet_cell.go">
-          <value>
-            <ScannedPath>
-              <option name="lastModified" value="1754221954365" />
-              <option name="schema">
-                <list>
-                  <option value="CabinetCell" />
-                </list>
-              </option>
-            </ScannedPath>
-          </value>
-        </entry>
-      </map>
-    </option>
-    <option name="tableStructMapping">
-      <map>
-        <entry key="cabinet_cell" value="CabinetCell" />
-      </map>
-    </option>
-    <option name="lastTimeChecked" value="1754221854592" />
+    <option name="lastTimeChecked" value="1754576449940" />
   </component>
 </project>

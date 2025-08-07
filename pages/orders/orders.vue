@@ -1,19 +1,33 @@
 <template>
   <view class="order-page-container">
-    <!-- 顶部标题栏 -->
-    <view class="header-bar">
-      <text class="header-title">我的订单</text>
-      <view class="header-icons">
-        <text class="iconfont">&#xe60b;</text>
-        <text class="iconfont">&#xe601;</text>
+    <!-- 固定顶部区域 -->
+    <view class="fixed-header">
+      <!-- 顶部标题栏 -->
+      <view class="header-bar">
+        <text class="header-title">我的订单</text>
+        <view class="header-actions">
+          <button class="create-order-btn" @click="goToCreateOrder">
+            <text class="create-btn-text">+ 创建订单</text>
+          </button>
+          <button class="create-storage-btn" @click="goToCreateStorage">
+            <text class="create-btn-text">+ 创建寄存</text>
+          </button>
+          <view class="header-icons">
+            <text class="iconfont">&#xe60b;</text>
+            <text class="iconfont">&#xe601;</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- tab 切换 -->
+      <view class="order-tabs">
+        <view :class="['tab-item', currentTab === 0 ? 'active' : '']" @click="switchTab(0)">当前订单</view>
+        <view :class="['tab-item', currentTab === 1 ? 'active' : '']" @click="switchTab(1)">历史订单</view>
       </view>
     </view>
 
-    <!-- tab 切换 -->
-    <view class="order-tabs">
-      <view :class="['tab-item', currentTab === 0 ? 'active' : '']" @click="switchTab(0)">当前订单</view>
-      <view :class="['tab-item', currentTab === 1 ? 'active' : '']" @click="switchTab(1)">历史订单</view>
-    </view>
+    <!-- 内容占位区域 -->
+    <view class="header-placeholder"></view>
 
     <!-- 订单列表 -->
     <view v-if="currentTab === 0 || currentTab === 1" class="order-list">
@@ -47,6 +61,7 @@
             <view class="order-actions">
               <button v-if="order.status === 2" class="order-btn primary">取出</button>
               <button v-if="order.status === 3" class="order-btn default">去评价</button>
+              <button v-if="order.status === 1 || order.status === 2" class="order-btn refund" @click="handleRefund(order)">退款</button>
               <!-- 右下角状态显示 -->
               <view class="order-status-badge" :class="'status-' + order.status">
                 <text class="status-text">{{ order.status === 1 ? '待支付' : order.status === 2 ? '寄存中' : order.status === 3 ? '已完成' : order.status === 4 ? '已取消' : order.status === 5 ? '超时' : order.status === 6 ? '异常' : '' }}</text>
@@ -191,15 +206,32 @@ export default {
       });
     },
     handleHomeClick() {
-      uni.showToast({ title: '首页', icon: 'none' });
+      uni.switchTab({
+        url: '/pages/index/index',
+        fail: (err) => {
+          console.error('切换到首页失败:', err);
+          uni.showToast({
+            title: '页面跳转失败',
+            icon: 'none'
+          });
+        }
+      });
     },
     handleOrdersClick() {
-      uni.showToast({ title: '订单页面', icon: 'none' });
+      // 当前已在订单页面，不需要跳转
+      console.log('当前已在订单页面');
     },
     handleMyClick() {
-     uni.navigateTo({
-     	url: '/pages/my/my'
-     });
+      uni.switchTab({
+        url: '/pages/my/my',
+        fail: (err) => {
+          console.error('切换到我的页面失败:', err);
+          uni.showToast({
+            title: '页面跳转失败',
+            icon: 'none'
+          });
+        }
+      });
     },
     // 添加分页相关方法
     onReachBottom() {
@@ -222,6 +254,41 @@ export default {
         url: `/pages/show/show?id=${orderId}`
       });
     },
+    // 跳转到创建订单页面
+    goToCreateOrder() {
+      uni.navigateTo({
+        url: '/pages/ordercreate/ordercreate'
+      });
+    },
+    // 跳转到创建寄存记录页面
+    goToCreateStorage() {
+      uni.navigateTo({
+        url: '/pages/createtimetask/createtimetask'
+      });
+    },
+    
+    // 处理退款操作
+    handleRefund(order) {
+      if (!order || !order.id) {
+        uni.showToast({
+          title: '订单信息异常',
+          icon: 'none'
+        });
+        return;
+      }
+      
+      // 跳转到订单删除页面
+      uni.navigateTo({
+        url: `/pages/orderdel/orderdel?id=${order.id}&orderNumber=${order.order_number}&status=${order.status}`,
+        fail: (err) => {
+          console.error('跳转退款页面失败:', err);
+          uni.showToast({
+            title: '页面跳转失败',
+            icon: 'none'
+          });
+        }
+      });
+    },
     // 可根据需要添加分页、筛选等方法
   }
 }
@@ -233,6 +300,20 @@ export default {
   background: #f5f6fa;
   padding-bottom: 120rpx;
 }
+
+/* 固定头部区域 */
+.fixed-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: #fff;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+  /* 适配安全区域 */
+  padding-top: env(safe-area-inset-top);
+}
+
 .header-bar {
   display: flex;
   align-items: center;
@@ -240,10 +321,59 @@ export default {
   padding: 32rpx 32rpx 0 32rpx;
   background: #fff;
 }
+
+/* 头部占位区域，防止内容被固定头部遮挡 */
+.header-placeholder {
+  height: 180rpx; /* 头部栏约80rpx + tab栏约60rpx + 边距 */
+  /* 适配安全区域 */
+  padding-top: env(safe-area-inset-top);
+}
 .header-title {
   font-size: 36rpx;
   font-weight: bold;
   color: #222;
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+}
+.create-order-btn {
+  background: #007aff;
+  color: #fff;
+  border: none;
+  border-radius: 20rpx;
+  padding: 12rpx 24rpx;
+  margin-right: 20rpx;
+  font-size: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.create-order-btn:active {
+  background: #0056cc;
+}
+.create-storage-btn {
+  background: #28a745;
+  color: #fff;
+  border: none;
+  border-radius: 20rpx;
+  padding: 12rpx 24rpx;
+  margin-right: 20rpx;
+  font-size: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.create-storage-btn:active {
+  background: #1e7e34;
+}
+.create-btn-text {
+  color: #fff;
+  font-size: 28rpx;
+}
+.header-icons {
+  display: flex;
+  align-items: center;
 }
 .header-icons .iconfont {
   font-size: 36rpx;
@@ -254,7 +384,6 @@ export default {
   display: flex;
   background: #fff;
   border-bottom: 2rpx solid #f0f0f0;
-  margin-bottom: 16rpx;
 }
 .tab-item {
   flex: 1;
@@ -280,7 +409,7 @@ export default {
   left: 0; right: 0; bottom: 0;
 }
 .order-list {
-  padding: 0 24rpx;
+  padding: 16rpx 24rpx 0 24rpx;
 }
 .order-card {
   background: #fff;
@@ -379,6 +508,11 @@ export default {
 .order-btn.default {
   background: #f0f0f0;
   color: #666;
+}
+
+.order-btn.refund {
+  background: #ff3b30;
+  color: #fff;
 }
 .order-status-badge {
   position: absolute;

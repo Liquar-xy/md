@@ -219,13 +219,14 @@ export default {
     },
     
     // 编辑网点
+
     editPoint() {
       console.log('点击编辑网点，ID:', this.pointId, '名称:', this.pointName);
       uni.navigateTo({
         url: `/pages/point-edit/point-edit?id=${this.pointId}&name=${encodeURIComponent(this.pointName)}`
       });
     },
-    
+
     // 打开百度地图
     openBaiduMap() {
       if (!this.pointDetail.address) {
