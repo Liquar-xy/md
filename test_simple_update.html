@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简单测试UpdatePoint</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background: #007aff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+    <h1>简单测试UpdatePoint API</h1>
+    
+    <div class="test-section">
+        <h3>1. 管理员登录</h3>
+        <button onclick="login()">登录</button>
+        <div id="loginResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. 测试UpdatePoint - 最小数据</h3>
+        <button onclick="testMinimal()">测试最小数据</button>
+        <div id="minimalResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>3. 测试UpdatePoint - 完整数据</h3>
+        <button onclick="testFull()">测试完整数据</button>
+        <div id="fullResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>4. 测试AddPoint</h3>
+        <button onclick="testAdd()">测试新增</button>
+        <div id="addResult" class="result"></div>
+    </div>
+
+    <script>
+        let adminToken = '';
+        
+        // 管理员登录
+        async function login() {
+            try {
+                const response = await fetch('http://localhost:8000/admin_login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: 'admin',
+                        password: '123456'
+                    })
+                });
+                
+                const data = await response.json();
+                document.getElementById('loginResult').textContent = JSON.stringify(data, null, 2);
+                
+                if (data.code === 200 && data.data && data.data.token) {
+                    adminToken = data.data.token;
+                    console.log('登录成功，获得token:', adminToken);
+                }
+            } catch (error) {
+                document.getElementById('loginResult').textContent = '登录失败: ' + error.message;
+            }
+        }
+        
+        // 测试最小数据
+        async function testMinimal() {
+            if (!adminToken) {
+                document.getElementById('minimalResult').textContent = '请先登录获取token';
+                return;
+            }
+            
+            const requestData = {
+                id: 1,
+                name: '测试网点'
+            };
+            
+            try {
+                console.log('发送最小数据请求:', requestData);
+                const response = await fetch('http://localhost:8000/admin/updatePoint', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + adminToken
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                console.log('响应状态:', response.status);
+                console.log('响应头:', response.headers);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('minimalResult').textContent = '成功: ' + JSON.stringify(data, null, 2);
+                } else {
+                    const errorText = await response.text();
+                    document.getElementById('minimalResult').textContent = 'HTTP错误 ' + response.status + ': ' + errorText;
+                }
+            } catch (error) {
+                document.getElementById('minimalResult').textContent = '请求失败: ' + error.message;
+                console.error('详细错误:', error);
+            }
+        }
+        
+        // 测试完整数据
+        async function testFull() {
+            if (!adminToken) {
+                document.getElementById('fullResult').textContent = '请先登录获取token';
+                return;
+            }
+            
+            const requestData = {
+                id: 1,
+                name: '测试网点',
+                address: '测试地址',
+                pointType: '测试类型',
+                availableLarge: 5,
+                availableMedium: 10,
+                availableSmall: 20,
+                openTime: '09:00-18:00',
+                status: 1,
+                pointImage: '',
+                photos: []
+            };
+            
+            try {
+                console.log('发送完整数据请求:', requestData);
+                const response = await fetch('http://localhost:8000/admin/updatePoint', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + adminToken
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('fullResult').textContent = '成功: ' + JSON.stringify(data, null, 2);
+                } else {
+                    const errorText = await response.text();
+                    document.getElementById('fullResult').textContent = 'HTTP错误 ' + response.status + ': ' + errorText;
+                }
+            } catch (error) {
+                document.getElementById('fullResult').textContent = '请求失败: ' + error.message;
+                console.error('详细错误:', error);
+            }
+        }
+        
+        // 测试新增
+        async function testAdd() {
+            if (!adminToken) {
+                document.getElementById('addResult').textContent = '请先登录获取token';
+                return;
+            }
+            
+            const requestData = {
+                name: '新增测试网点',
+                address: '新增测试地址',
+                pointType: '测试类型',
+                availableLarge: 5,
+                availableMedium: 10,
+                availableSmall: 20,
+                openTime: '09:00-18:00',
+                status: 1,
+                pointImage: '',
+                photos: []
+            };
+            
+            try {
+                console.log('发送新增请求:', requestData);
+                const response = await fetch('http://localhost:8000/admin/addPoint', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + adminToken
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('addResult').textContent = '成功: ' + JSON.stringify(data, null, 2);
+                } else {
+                    const errorText = await response.text();
+                    document.getElementById('addResult').textContent = 'HTTP错误 ' + response.status + ': ' + errorText;
+                }
+            } catch (error) {
+                document.getElementById('addResult').textContent = '请求失败: ' + error.message;
+                console.error('详细错误:', error);
+            }
+        }
+    </script>
+</body>
+</html> 

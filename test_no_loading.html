@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>无加载状态直接更新测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background: #007aff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .info {
+            color: #007bff;
+            font-weight: bold;
+        }
+        .loading {
+            color: #ffc107;
+            font-weight: bold;
+        }
+        .no-loading {
+            color: #28a745;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>无加载状态直接更新测试</h1>
+    
+    <div class="test-section">
+        <h3>1. 模拟编辑保存</h3>
+        <button onclick="simulateSave()">模拟保存</button>
+        <div id="saveResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. 模拟跳转到详情页面（无加载状态直接更新）</h3>
+        <button onclick="simulateNavigateToDetail()">模拟跳转到详情页面</button>
+        <div id="detailResult" class="result"></div>
+    </div>
+
+    <script>
+        // 模拟编辑保存
+        function simulateSave() {
+            const saveData = {
+                id: 1,
+                name: '测试修改后的网点名称',
+                address: '测试修改后的地址',
+                pointType: '测试类型',
+                availableLarge: 10,
+                availableMedium: 15,
+                availableSmall: 20,
+                openTime: '09:00-18:00',
+                status: 1,
+                pointImage: ''
+            };
+            
+            // 保存到本地存储（模拟uni.setStorageSync）
+            localStorage.setItem('currentPointData', JSON.stringify(saveData));
+            localStorage.setItem('dataUpdateTime', Date.now().toString());
+            
+            document.getElementById('saveResult').innerHTML = 
+                '<span class="success">✅ 保存成功！</span><br>' +
+                '网点名称: ' + saveData.name + '<br>' +
+                '网点地址: ' + saveData.address + '<br>' +
+                '时间: ' + new Date().toLocaleString() + '<br><br>' +
+                '<span class="info">📱 现在模拟跳转到详情页面...</span>';
+        }
+        
+        // 模拟跳转到详情页面
+        function simulateNavigateToDetail() {
+            const currentTime = Date.now();
+            const dataUpdateTime = localStorage.getItem('dataUpdateTime');
+            const currentPointData = localStorage.getItem('currentPointData');
+            
+            let result = '<strong>详情页面加载逻辑:</strong><br>';
+            result += '当前时间: ' + new Date(currentTime).toLocaleString() + '<br>';
+            result += '全局数据更新时间: ' + (dataUpdateTime ? new Date(parseInt(dataUpdateTime)).toLocaleString() : '无') + '<br>';
+            result += '全局数据: ' + (currentPointData ? JSON.parse(currentPointData).name : '无') + '<br><br>';
+            
+            // 模拟详情页面的逻辑
+            if (dataUpdateTime && currentPointData && (currentTime - parseInt(dataUpdateTime)) < 10000) {
+                const data = JSON.parse(currentPointData);
+                result += '<span class="no-loading">✅ 无加载状态直接更新: ' + data.name + '</span><br>';
+                result += '网点名称: ' + data.name + '<br>';
+                result += '网点地址: ' + data.address + '<br>';
+                result += '网点类型: ' + data.pointType + '<br>';
+                result += '营业时间: ' + data.openTime + '<br>';
+                result += '管理柜组: ' + data.availableLarge + '组' + data.availableMedium + '主机' + data.availableSmall + '柜门<br>';
+                result += '网点状态: ' + (data.status === 1 ? '正常' : '暂停营业') + '<br><br>';
+                result += '<span class="success">🎉 数据直接更新成功！无加载状态！</span><br>';
+                result += '<span class="no-loading">🚫 不会显示"加载中..."</span>';
+            } else {
+                result += '<span class="error">❌ 没有最新数据，需要从服务器获取</span><br>';
+                result += '<span class="loading">⏳ 此时会显示加载状态...</span><br>';
+            }
+            
+            document.getElementById('detailResult').innerHTML = result;
+        }
+    </script>
+</body>
+</html> 
