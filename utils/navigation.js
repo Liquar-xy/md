@@ -25,24 +25,24 @@ const NavigationUtils = {
 	 */
 	toLogin(force = false, clearHistory = false) {
 		const url = force ? '/pages/login/login?force=true' : '/pages/login/login';
-		
+
 		if (clearHistory) {
 			uni.reLaunch({ url });
 		} else {
 			uni.navigateTo({ url });
 		}
 	},
-	
+
 	/**
 	 * 退出登录并跳转到登录页
 	 */
 	logout() {
 		// 清除所有登录相关的本地存储
 		const storageKeys = [
-			'token', 'userData', 'adminData', 'loginTime', 
+			'token', 'userData', 'adminData', 'loginTime',
 			'userToken', 'userId', 'userInfo', 'selectedCity'
 		];
-		
+
 		storageKeys.forEach(key => {
 			try {
 				uni.removeStorageSync(key);
@@ -50,20 +50,20 @@ const NavigationUtils = {
 				console.warn(`清除存储 ${key} 失败:`, e);
 			}
 		});
-		
+
 		// 显示退出提示
 		uni.showToast({
 			title: '已退出登录',
 			icon: 'success',
 			duration: 1500
 		});
-		
+
 		// 跳转到登录页
 		setTimeout(() => {
 			this.toLogin(false, true);
 		}, 1500);
 	},
-	
+
 	/**
 	 * 检查登录状态
 	 * @returns {boolean} 是否已登录
@@ -72,10 +72,10 @@ const NavigationUtils = {
 		const token = uni.getStorageSync('token');
 		const userData = uni.getStorageSync('userData');
 		const adminData = uni.getStorageSync('adminData');
-		
+
 		return !!(token && (userData || adminData));
 	},
-	
+
 	/**
 	 * 获取当前用户信息
 	 * @returns {object|null} 用户信息
@@ -84,22 +84,22 @@ const NavigationUtils = {
 		try {
 			const userData = uni.getStorageSync('userData');
 			const adminData = uni.getStorageSync('adminData');
-			
+
 			if (userData) {
 				return typeof userData === 'string' ? JSON.parse(userData) : userData;
 			}
-			
+
 			if (adminData) {
 				return typeof adminData === 'string' ? JSON.parse(adminData) : adminData;
 			}
-			
+
 			return null;
 		} catch (e) {
 			console.error('获取用户信息失败:', e);
 			return null;
 		}
 	},
-	
+
 	/**
 	 * 显示退出登录确认对话框
 	 * @param {function} onConfirm - 确认回调
@@ -124,7 +124,7 @@ const NavigationUtils = {
 			}
 		});
 	},
-	
+
 	/**
 	 * 显示回到登录页确认对话框
 	 */

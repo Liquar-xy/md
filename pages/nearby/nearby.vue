@@ -716,16 +716,30 @@
 						delete window.initBaiduMapCallback;
 					}
 					
+					// 移除之前可能存在的脚本标签
+					const existingScript = document.querySelector('script[src*="api.map.baidu.com"]');
+					if (existingScript) {
+						existingScript.remove();
+						console.log('🧹 清理了之前的百度地图脚本');
+					}
+					
 					const script = document.createElement('script');
 					script.type = 'text/javascript';
-					script.src = `https://api.map.baidu.com/api?v=3.0&ak=${BAIDU_MAP_AK}&callback=initBaiduMapCallback`;
+					script.async = true;
+					script.defer = true;
+					// 使用HTTP协议避免HTTPS混合内容问题
+					script.src = `http://api.map.baidu.com/api?v=3.0&ak=${BAIDU_MAP_AK}&callback=initBaiduMapCallback`;
 					
 					// 设置超时
 					const timeout = setTimeout(() => {
 						console.error('❌ 百度地图API加载超时');
-						this.handleMapError('百度地图API加载超时，请检查网络连接');
+						this.handleMapError('百度地图API加载超时，请检查网络连接或API密钥');
+						script.remove();
+						if (window.initBaiduMapCallback) {
+							delete window.initBaiduMapCallback;
+						}
 						reject(new Error('百度地图API加载超时'));
-					}, 15000); // 增加超时时间到15秒
+					}, 20000); // 增加超时时间到20秒
 					
 					// 成功回调
 					window.initBaiduMapCallback = () => {
@@ -749,7 +763,11 @@
 					script.onerror = (error) => {
 						console.error('❌ 百度地图API脚本加载失败:', error);
 						clearTimeout(timeout);
-						this.handleMapError('百度地图API脚本加载失败，请检查网络连接');
+						script.remove();
+						if (window.initBaiduMapCallback) {
+							delete window.initBaiduMapCallback;
+						}
+						this.handleMapError('百度地图API脚本加载失败，请检查网络连接或API密钥是否有效');
 						reject(new Error('百度地图API脚本加载失败'));
 					};
 					
@@ -1120,11 +1138,19 @@
 					longitude: longitude.toString(),
 					latitude: latitude.toString(),
 					radius: '5',    // 5公里范围
-					limit: '20'     // 最多返回20个寄存点
+					limit: '20',    // 最多返回20个寄存点
+					city_name: this.currentCity || '郑州'  // 添加城市名称参数
 				});
 				
 				const fullUrl = `${apiUrl}?${params.toString()}`;
 				console.log('📡 请求URL:', fullUrl);
+				console.log('📡 请求参数:', {
+					longitude,
+					latitude,
+					radius: 5,
+					limit: 20,
+					city_name: this.currentCity
+				});
 				
 				uni.request({
 					url: fullUrl,
@@ -1136,10 +1162,17 @@
 					success: (res) => {
 						console.log('=== 后端附近寄存点接口响应 ===');
 						console.log('HTTP状态码:', res.statusCode);
+						console.log('响应数据类型:', typeof res.data);
 						console.log('响应数据:', res.data);
 						
-						if (res.statusCode === 200 && res.data) {
-							this.handleNearbyLockersSuccess(res.data);
+						if (res.statusCode === 200) {
+							if (res.data) {
+								console.log('✅ 接口调用成功，处理响应数据');
+								this.handleNearbyLockersSuccess(res.data);
+							} else {
+								console.warn('⚠️ 接口返回成功但数据为空');
+								this.handleNearbyLockersError('服务器返回空数据');
+							}
 						} else if (res.statusCode === 401) {
 							console.error('❌ API需要认证，后端服务可能需要重启');
 							this.handleNearbyLockersError('正在连接服务器，请稍后重试...');
@@ -1150,8 +1183,9 @@
 								duration: 2000
 							});
 						} else {
-							console.error('❌ 接口返回错误:', res.statusCode);
-							this.handleNearbyLockersError('接口返回错误: ' + res.statusCode);
+							console.error('❌ 接口返回错误状态码:', res.statusCode);
+							console.error('错误响应数据:', res.data);
+							this.handleNearbyLockersError(`接口返回错误: ${res.statusCode} - ${res.data?.message || '未知错误'}`);
 						}
 					},
 					fail: (error) => {
