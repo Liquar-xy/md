@@ -124,11 +124,24 @@ export default {
      
      // 不再使用EventBus，直接使用本地存储数据同步
      
-                       // 如果是从编辑页面跳转过来，直接从数据库获取最新数据
-       if (this.fromEdit) {
-         console.log('从编辑页面跳转过来，直接从数据库获取最新数据');
-         this.getPointDetail();
-       } else {
+                             // 如果是从编辑页面跳转过来，直接从数据库获取最新数据
+      if (this.fromEdit) {
+        console.log('从编辑页面跳转过来，直接从数据库获取最新数据');
+        // 检查ID是否有效
+        if (this.pointId === 'new' || this.pointId === 'undefined' || !this.pointId) {
+          console.log('新增网点模式，使用本地最新数据');
+          // 新增模式下，使用本地存储的最新数据
+          const latestData = uni.getStorageSync('latestPointData');
+          if (latestData) {
+            this.updatePointDetailDirectly(latestData);
+            return;
+          } else {
+            this.error = '新增网点模式，但未找到本地数据';
+            return;
+          }
+        }
+        this.getPointDetail();
+      } else {
          // 检查是否有最新的编辑数据
          const lastEditTime = uni.getStorageSync('lastEditTime');
          const latestData = uni.getStorageSync('latestPointData');
@@ -172,6 +185,19 @@ export default {
                 // 如果是从编辑页面跳转过来，直接从数据库获取最新数据
       if (this.fromEdit) {
         console.log('从编辑页面跳转过来，直接从数据库获取最新数据');
+        // 检查ID是否有效
+        if (this.pointId === 'new' || this.pointId === 'undefined' || !this.pointId) {
+          console.log('新增网点模式，使用本地最新数据');
+          // 新增模式下，使用本地存储的最新数据
+          const latestData = uni.getStorageSync('latestPointData');
+          if (latestData) {
+            this.updatePointDetailDirectly(latestData);
+            return;
+          } else {
+            this.error = '新增网点模式，但未找到本地数据';
+            return;
+          }
+        }
         // 延迟一点时间确保数据库已更新
         setTimeout(() => {
           this.getPointDetail();
@@ -262,12 +288,20 @@ export default {
       
                      
      
-     // 获取网点详情
-     getPointDetail() {
+         // 获取网点详情
+    getPointDetail() {
       this.isLoading = true;
       this.error = '';
       
       console.log('正在获取网点详情，ID:', this.pointId);
+      
+      // 如果是新增模式或无效ID，不发送请求
+      if (this.pointId === 'new' || this.pointId === 'undefined' || !this.pointId) {
+        console.log('新增网点模式或无效ID，跳过获取网点详情');
+        this.isLoading = false;
+        this.error = '无效的网点ID';
+        return;
+      }
       
       // 清空旧数据，确保显示新数据
       this.pointDetail = {
@@ -284,7 +318,7 @@ export default {
       
       // 构建请求数据
       const requestData = {
-        id: this.pointId
+        id: parseInt(this.pointId) || this.pointId
       };
       
       console.log('发送的请求数据:', requestData);
@@ -507,6 +541,13 @@ export default {
            // 强制刷新数据
       forceRefresh() {
         console.log('强制刷新数据');
+        
+        // 检查ID是否有效
+        if (this.pointId === 'new' || this.pointId === 'undefined' || !this.pointId) {
+          console.log('新增网点模式，不需要刷新详情');
+          this.error = '新增网点模式，无需刷新详情';
+          return;
+        }
         
         // 直接从数据库获取最新数据，确保数据一致性
         console.log('强制刷新 - 从数据库获取最新数据');

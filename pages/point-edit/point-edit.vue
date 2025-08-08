@@ -178,20 +178,30 @@ export default {
         console.log('编辑页面使用本地数据:', this.pointInfo);
       } else {
         // 否则从服务器获取数据
-    this.getPointInfo();
+        if (this.pointId !== 'new') {
+          this.getPointInfo();
+        } else {
+          console.log('新增网点模式，不需要获取现有数据');
+        }
       }
     }
   },
   methods: {
     // 获取网点信息
     getPointInfo() {
+      // 如果是新增模式，不需要获取网点信息
+      if (this.pointId === 'new') {
+        console.log('新增网点模式，跳过获取网点信息');
+        return;
+      }
+      
       console.log('正在获取网点信息，ID:', this.pointId);
       
       uni.request({
         url: 'http://localhost:8000/point_info',
         method: 'POST',
         data: {
-          id: this.pointId
+          id: parseInt(this.pointId) || this.pointId
         },
         header: {
           'Content-Type': 'application/json',
@@ -530,8 +540,8 @@ export default {
         success: (res) => {
           console.log('✅ 后端服务正常，可以发送修改请求');
           // 在这里重新构建requestData，确保变量已初始化
-          // 使用与ApiPost相同的格式：用point包装数据
-          const finalRequestData = {
+          // 根据ApiPost测试，新增接口不需要point包装器，修改接口需要point包装器
+          const finalRequestData = isUpdate ? {
             point: {
               id: parseInt(this.pointId),
               name: this.pointInfo.name.trim(),
@@ -542,13 +552,34 @@ export default {
               available_small: parseInt(this.pointInfo.availableSmall) || 0,
               open_time: this.pointInfo.openTime.trim(),
               status: (parseInt(this.pointInfo.status) || 1).toString(),
-              // 添加ApiPost中的其他字段
               mobile: '13800138000',
               latitude: 39.984699,
               longitude: 116.307198,
               point_image: ''
             }
+          } : {
+            // 新增接口：直接发送数据，不需要point包装器
+            name: this.pointInfo.name.trim(),
+            address: this.pointInfo.address.trim(),
+            point_type: this.pointInfo.pointType.trim(),
+            available_large: parseInt(this.pointInfo.availableLarge) || 0,
+            available_medium: parseInt(this.pointInfo.availableMedium) || 0,
+            available_small: parseInt(this.pointInfo.availableSmall) || 0,
+            open_time: this.pointInfo.openTime.trim(),
+            status: (parseInt(this.pointInfo.status) || 1).toString(),
+            mobile: '13800138000',
+            latitude: 39.984699,
+            longitude: 116.307198,
+            point_image: ''
           };
+          
+          console.log('=== 请求格式调试 ===');
+          console.log('是否修改模式:', isUpdate);
+          console.log('请求URL:', url);
+          console.log('请求数据格式:', isUpdate ? '使用point包装器' : '直接发送数据');
+          console.log('最终请求数据:', finalRequestData);
+          console.log('=== 请求格式调试结束 ===');
+          
           this.sendUpdateRequest(url, finalRequestData, adminToken, isUpdate);
         },
         fail: (err) => {
@@ -609,12 +640,18 @@ export default {
     refreshPointDetail() {
       console.log('强制刷新网点详情数据，验证数据库更新');
       
+      // 如果是新增模式，不需要刷新详情
+      if (this.pointId === 'new' || this.pointId === 'undefined' || !this.pointId) {
+        console.log('新增网点模式，跳过刷新详情');
+        return;
+      }
+      
       // 重新获取网点详情
       uni.request({
         url: 'http://localhost:8000/point_info',
         method: 'POST',
         data: {
-          id: this.pointId
+          id: parseInt(this.pointId) || this.pointId
         },
         header: {
           'Content-Type': 'application/json',
@@ -739,7 +776,8 @@ export default {
               
               // 保存完成后，立即存储最新数据到本地
               const latestData = {
-                id: this.pointId,
+                // 如果是新增，使用后端返回的ID；如果是修改，使用当前ID
+                id: isUpdate ? this.pointId : (res.data.data?.id || res.data.id),
                 name: this.pointInfo.name.trim(),
                 address: this.pointInfo.address.trim(),
                 pointType: this.pointInfo.pointType.trim(),
@@ -760,14 +798,35 @@ export default {
               
               // 立即更新网点列表中的对应项
               const pointList = uni.getStorageSync('pointList') || [];
-              const updatedIndex = pointList.findIndex(item => 
-                item.id == latestData.id || item.Id == latestData.id
-              );
               
-              if (updatedIndex !== -1) {
-                // 更新列表中的数据
-                pointList[updatedIndex] = {
-                  ...pointList[updatedIndex],
+              if (isUpdate) {
+                // 修改模式：更新现有网点
+                const updatedIndex = pointList.findIndex(item => 
+                  item.id == latestData.id || item.Id == latestData.id
+                );
+                
+                if (updatedIndex !== -1) {
+                  // 更新列表中的数据
+                  pointList[updatedIndex] = {
+                    ...pointList[updatedIndex],
+                    name: latestData.name,
+                    address: latestData.address,
+                    pointType: latestData.pointType,
+                    availableLarge: latestData.availableLarge,
+                    availableMedium: latestData.availableMedium,
+                    availableSmall: latestData.availableSmall,
+                    openTime: latestData.openTime,
+                    status: latestData.status,
+                    cabinetInfo: `${latestData.availableLarge}组${latestData.availableMedium}主机${latestData.availableSmall}柜门`
+                  };
+                  
+                  uni.setStorageSync('pointList', pointList);
+                  console.log('✅ 已更新网点列表数据');
+                }
+              } else {
+                // 新增模式：添加新网点到列表
+                const newPoint = {
+                  id: latestData.id,
                   name: latestData.name,
                   address: latestData.address,
                   pointType: latestData.pointType,
@@ -779,8 +838,9 @@ export default {
                   cabinetInfo: `${latestData.availableLarge}组${latestData.availableMedium}主机${latestData.availableSmall}柜门`
                 };
                 
+                pointList.unshift(newPoint); // 添加到列表开头
                 uni.setStorageSync('pointList', pointList);
-                console.log('✅ 已更新网点列表数据');
+                console.log('✅ 已添加新网点到列表:', newPoint);
               }
               
               // 更新全局数据
@@ -792,8 +852,12 @@ export default {
               
               // 跳转到详情页面
               setTimeout(() => {
+                // 使用后端返回的新ID，如果是新增模式
+                const detailId = isUpdate ? this.pointId : (res.data.data?.id || res.data.id);
+                console.log('跳转到详情页面，使用ID:', detailId, '是否新增模式:', !isUpdate);
+                
                 uni.navigateTo({
-                  url: `/pages/point-detail/point-detail?id=${this.pointId}&name=${encodeURIComponent(this.pointInfo.name)}&fromEdit=true`,
+                  url: `/pages/point-detail/point-detail?id=${detailId}&name=${encodeURIComponent(this.pointInfo.name)}&fromEdit=true`,
                   success: () => {
                     console.log('✅ 成功跳转到详情页面');
                   },
