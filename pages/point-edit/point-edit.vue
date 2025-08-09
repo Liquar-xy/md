@@ -64,8 +64,8 @@
       
       <view class="info-item" @click="editField('status')">
         <text class="info-label">网点状态</text>
-        <text class="info-value" :class="pointInfo.staus === 1 ? 'status-normal' : 'status-closed'">
-          {{ pointInfo.staus === 1 ? '正常' : '暂停营业' }}
+        <text class="info-value" :class="pointInfo.staus == 1 ? 'status-normal' : 'status-closed'">
+          {{ pointInfo.staus == 1 ? '正常' : '暂停营业' }}
         </text>
         <text class="arrow">></text>
       </view>
