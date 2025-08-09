@@ -57,11 +57,150 @@ export default {
   },
   onLoad() {
     this.getPointList();
+    
+    // 监听网点更新事件
+    uni.$on('updatePointList', (data) => {
+      console.log('收到网点更新事件:', data);
+      this.updatePointInList(data);
+    });
+  },
+  
+  onUnload() {
+    // 移除事件监听
+    uni.$off('updatePointList');
   },
   
   onShow() {
-    // 页面显示时刷新数据，确保新增或修改后能及时更新
-    this.getPointList();
+    console.log('列表页面显示 - 开始检查数据更新');
+    
+    // 检查全局数据更新
+    const dataUpdateTime = uni.getStorageSync('dataUpdateTime');
+    const currentPointData = uni.getStorageSync('currentPointData');
+    const currentTime = Date.now();
+    
+    console.log('列表页面 - 全局数据更新时间:', dataUpdateTime);
+    console.log('列表页面 - 全局最新数据:', currentPointData);
+    console.log('当前时间:', currentTime);
+    
+    // 优先使用全局最新数据（最近30秒内）
+    if (dataUpdateTime && currentPointData && (currentTime - dataUpdateTime) < 30000) {
+      console.log('检测到全局最新数据，立即更新列表');
+      
+      // 更新列表中的对应网点数据
+      const updatedIndex = this.pointList.findIndex(item => 
+        item.id == currentPointData.id || item.Id == currentPointData.id
+      );
+      
+      console.log('找到的网点索引:', updatedIndex);
+      console.log('当前列表数据:', this.pointList);
+      
+      if (updatedIndex !== -1) {
+        // 更新列表中的数据
+        this.pointList[updatedIndex] = {
+          ...this.pointList[updatedIndex],
+          name: currentPointData.name,
+          address: currentPointData.address,
+          pointType: currentPointData.pointType,
+          availableLarge: currentPointData.availableLarge,
+          availableMedium: currentPointData.availableMedium,
+          availableSmall: currentPointData.availableSmall,
+          openTime: currentPointData.openTime,
+          status: currentPointData.status,
+          // 添加柜组信息字段
+          cabinetInfo: `${currentPointData.availableLarge}组${currentPointData.availableMedium}主机${currentPointData.availableSmall}柜门`
+        };
+        
+        console.log('✅ 列表数据已更新:', this.pointList[updatedIndex]);
+        
+        // 强制更新视图
+        this.$forceUpdate();
+        
+        // 更新本地存储
+        uni.setStorageSync('pointList', this.pointList);
+        
+        // 显示更新提示
+        uni.showToast({
+          title: '列表数据已更新',
+          icon: 'success',
+          duration: 1500
+        });
+        
+        // 延迟清除全局数据
+        setTimeout(() => {
+          uni.removeStorageSync('currentPointData');
+          uni.removeStorageSync('dataUpdateTime');
+          console.log('列表页面已清除全局数据');
+        }, 10000);
+      } else {
+        console.log('未找到匹配的网点，重新获取列表数据');
+        this.getPointList();
+      }
+    }
+    // 检查本地编辑数据
+    else {
+      const lastEditTime = uni.getStorageSync('lastEditTime');
+      const latestData = uni.getStorageSync('latestPointData');
+      
+      console.log('检查本地编辑数据');
+      console.log('编辑时间:', lastEditTime, '当前时间:', currentTime, '时间差:', currentTime - lastEditTime);
+      console.log('本地最新数据:', latestData);
+      
+      // 如果最近30秒内有编辑操作，立即更新列表中的对应项
+      if (lastEditTime && latestData && (currentTime - lastEditTime) < 30000) {
+        console.log('检测到最新编辑数据，更新列表');
+        
+        // 更新列表中的对应网点数据
+        const updatedIndex = this.pointList.findIndex(item => 
+          item.id == latestData.id || item.Id == latestData.id
+        );
+        
+        if (updatedIndex !== -1) {
+          // 更新列表中的数据
+          this.pointList[updatedIndex] = {
+            ...this.pointList[updatedIndex],
+            name: latestData.name,
+            address: latestData.address,
+            pointType: latestData.pointType,
+            availableLarge: latestData.availableLarge,
+            availableMedium: latestData.availableMedium,
+            availableSmall: latestData.availableSmall,
+            openTime: latestData.openTime,
+            status: latestData.status,
+            // 添加柜组信息字段
+            cabinetInfo: `${latestData.availableLarge}组${latestData.availableMedium}主机${latestData.availableSmall}柜门`
+          };
+          
+          console.log('✅ 列表数据已更新:', this.pointList[updatedIndex]);
+          
+          // 强制更新视图
+          this.$forceUpdate();
+          
+          // 更新本地存储
+          uni.setStorageSync('pointList', this.pointList);
+          
+          // 显示更新提示
+          uni.showToast({
+            title: '列表数据已更新',
+            icon: 'success',
+            duration: 1500
+          });
+          
+          // 延迟清除本地数据
+          setTimeout(() => {
+            uni.removeStorageSync('latestPointData');
+            uni.removeStorageSync('lastEditTime');
+            console.log('列表页面已清除本地数据');
+          }, 3000);
+        } else {
+          console.log('未找到匹配的网点，重新获取列表数据');
+          this.getPointList();
+        }
+      } else {
+        // 否则正常刷新数据
+        console.log('没有最新数据，正常刷新网点列表');
+        this.getPointList();
+      }
+    }
   },
   methods: {
     // 返回上一页
@@ -77,6 +216,50 @@ export default {
       uni.navigateTo({
         url: '/pages/point-edit/point-edit?id=new&name=新增网点'
       });
+    },
+    
+    // 更新列表中的网点数据
+    updatePointInList(data) {
+      console.log('更新列表中的网点数据:', data);
+      
+      const updatedIndex = this.pointList.findIndex(item => 
+        item.id == data.id || item.Id == data.id
+      );
+      
+      if (updatedIndex !== -1) {
+        // 更新列表中的数据
+        this.pointList[updatedIndex] = {
+          ...this.pointList[updatedIndex],
+          name: data.name,
+          address: data.address,
+          pointType: data.pointType,
+          availableLarge: data.availableLarge,
+          availableMedium: data.availableMedium,
+          availableSmall: data.availableSmall,
+          openTime: data.openTime,
+          status: data.status,
+          // 添加柜组信息字段
+          cabinetInfo: `${data.availableLarge}组${data.availableMedium}主机${data.availableSmall}柜门`
+        };
+        
+        console.log('✅ 列表数据已实时更新:', this.pointList[updatedIndex]);
+        
+        // 强制更新视图
+        this.$forceUpdate();
+        
+        // 更新本地存储
+        uni.setStorageSync('pointList', this.pointList);
+        
+        // 显示更新提示
+        uni.showToast({
+          title: '列表数据已更新',
+          icon: 'success',
+          duration: 1500
+        });
+      } else {
+        console.log('❌ 未找到要更新的网点，重新获取列表');
+        this.getPointList();
+      }
     },
     
     getPointList() {
@@ -97,7 +280,9 @@ export default {
                 console.log('原始网点数据:', item);
                 return {
                   ...item,
-                  id: item.Id || item.id // 使用数据库中真实的ID
+                  id: item.Id || item.id, // 使用数据库中真实的ID
+                  // 添加柜组信息字段
+                  cabinetInfo: `${item.availableLarge || item.AvailableLarge || 0}组${item.availableMedium || item.AvailableMedium || 0}主机${item.availableSmall || item.AvailableSmall || 0}柜门`
                 };
               });
               console.log('网点列表数据:', this.pointList);
@@ -129,6 +314,43 @@ export default {
           this.isLoading = false;
         }
       });
+    },
+    
+    // 更新列表中的网点数据
+    updatePointInList(data) {
+      console.log('更新列表中的网点数据:', data);
+      
+      const updatedIndex = this.pointList.findIndex(item => 
+        item.id === data.id || item.Id === data.id
+      );
+      
+      if (updatedIndex !== -1) {
+        // 更新列表中的数据
+        this.pointList[updatedIndex] = {
+          ...this.pointList[updatedIndex],
+          name: data.name,
+          address: data.address,
+          pointType: data.pointType,
+          availableLarge: data.availableLarge,
+          availableMedium: data.availableMedium,
+          availableSmall: data.availableSmall,
+          openTime: data.openTime,
+          status: data.status,
+          // 添加柜组信息字段
+          cabinetInfo: `${data.availableLarge}组${data.availableMedium}主机${data.availableSmall}柜门`
+        };
+        
+        console.log('列表数据已更新:', this.pointList[updatedIndex]);
+        
+        // 更新本地存储
+        uni.setStorageSync('pointList', this.pointList);
+        
+        uni.showToast({
+          title: '列表已更新',
+          icon: 'success',
+          duration: 1000
+        });
+      }
     },
     
     // 跳转到网点详情

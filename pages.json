@@ -1,262 +1,294 @@
 {
-	"pages": [
-		{
-			"path": "pages/login/login",
-			"style": {
-				"navigationBarTitleText": "登录",
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/order-detail/order-detail",
-			"style": {
-				"navigationBarTitleText": "订单详情",
-				"navigationBarBackgroundColor": "#007aff",
-				"navigationBarTextStyle": "white"
-			}
-		},
-		{
-			"path": "pages/my/my",
-			"style": {
-				"navigationBarTitleText": "我的",
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/user-edit/user-edit",
-			"style": {
-				"navigationBarTitleText": "编辑资料",
-				"navigationBarBackgroundColor": "#ffffff",
-				"navigationBarTextStyle": "black"
-			}
-		},
-		{
-			"path": "pages/customer-service/customer-service",
-			"style": {
-				"navigationBarTitleText": "在线客服",
-				"navigationBarBackgroundColor": "#ffffff",
-				"navigationBarTextStyle": "black"
-			}
-		},
-		{
-			"path": "pages/user-guide/user-guide",
-			"style": {
-				"navigationBarTitleText": "使用指南",
-				"navigationBarBackgroundColor": "#ffffff",
-				"navigationBarTextStyle": "black"
-			}
-		},
-		{
-			"path": "pages/coupons/coupons",
-			"style": {
-				"navigationBarTitleText": "优惠卡券",
-				"navigationBarBackgroundColor": "#ffffff",
-				"navigationBarTextStyle": "black"
-			}
-		},
-		{
-			"path": "pages/user-agreement/user-agreement",
-			"style": {
-				"navigationBarTitleText": "用户协议",
-				"navigationBarBackgroundColor": "#ffffff",
-				"navigationBarTextStyle": "black"
-			}
-		},
-		{
-			"path": "pages/locker-detail/locker-detail",
-			"style": {
-				"navigationBarTitleText": "寄存点详情",
-				"navigationBarBackgroundColor": "#ffffff",
-				"navigationBarTextStyle": "black"
-			}
-		},
-		{
-			"path": "pages/city-select/city-select",
-			"style": {
-				"navigationBarTitleText": "选择城市",
-				"navigationBarBackgroundColor": "#ffffff",
-				"navigationBarTextStyle": "black"
-			}
-		},
-		{
-			"path": "pages/nearby/nearby",
-			"style": {
-				"navigationBarTitleText": "附近寄存",
-				"navigationBarBackgroundColor": "#ffffff",
-				"navigationBarTextStyle": "black"
-			}
-		},
-		{
-			"path": "pages/search/search",
-			"style": {
-				"navigationBarTitleText": "搜索寄存点",
-				"navigationBarBackgroundColor": "#ffffff",
-				"navigationBarTextStyle": "black"
-			}
-		},
-		{
-			"path": "pages/search/search-simple",
-			"style": {
-				"navigationBarTitleText": "简单搜索",
-				"navigationBarBackgroundColor": "#ffffff",
-				"navigationBarTextStyle": "black"
-			}
-		},
-		{
-			"path": "pages/locker-map/locker-map",
-			"style": {
-				"navigationBarTitleText": "寄存点分布图",
-				"navigationBarBackgroundColor": "#ffffff",
-				"navigationBarTextStyle": "black"
-			}
-		},
-		{
-			"path": "pages/admin/profile",
-			"style": {
-				"navigationBarTitleText": "个人信息",
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/order-list/order-list",
-			"style": {
-				"navigationBarTitleText": "全部订单",
-				"navigationStyle": "custom"
-			}
-		},
-      {
-        "path": "pages/admin/login",
-        "style": {
-          "navigationBarTitleText": "管理员登录",
-          "navigationStyle": "custom"
-        }
-      },
-      {
-        "path": "pages/admin/admin",
-        "style": {
-          "navigationBarTitleText": "管理员",
-          "navigationStyle": "custom"
-        }
-      },
-      {
-        "path": "pages/index/index",
-        "style": {
-          "navigationBarTitleText": "uni-app"
-        }
-      },
-      {
-        "path": "pages/orders/orders",
-        "style": {
-          "navigationBarTitleText": ""
-        }
-      },
-      {
-        "path": "pages/show/show",
-        "style": {
-          "navigationBarTitleText": ""
-        }
-      },
-      {
-        "path": "pages/point/point",
-        "style": {
-          "navigationBarTitleText": "我的网点"
-        }
-      },
-      {
-        "path": "pages/point-detail/point-detail",
-        "style": {
-          "navigationBarTitleText": "网点详情",
-          "navigationStyle": "custom"
-        }
-      },
-      {
-        "path": "pages/point-edit/point-edit",
-        "style": {
-          "navigationBarTitleText": "我的网点",
-          "navigationStyle": "custom"
-        }
-      },
-      {
-        "path": "pages/price-rule/price-rule",
-        "style": {
-          "navigationBarTitleText": "收费规则",
-          "navigationStyle": "custom"
-        }
-      },
-      {
-        "path": "pages/cabinet-group/cabinet-group",
-        "style": {
-          "navigationBarTitleText": "柜组管理",
-          "navigationStyle": "custom"
-        }
-      },
-      {
-        "path": "pages/cabinet-cell/cabinet-cell",
-        "style": {
-          "navigationBarTitleText": "柜格管理",
-          "navigationStyle": "custom"
-        }
-      },
-      {
-        "path": "pages/group-orders/group-orders",
-        "style": {
-          "navigationBarTitleText": "柜组订单",
-          "navigationStyle": "custom"
-        }
-      },
-      {
-        "path": "pages/location-select/location-select",
-        "style": {
-          "navigationBarTitleText": "选择寄存点",
-          "navigationStyle": "custom"
-        }
-      },
-      {
-        "path": "pages/group-add/group-add",
-        "style": {
-          "navigationBarTitleText": "添加柜组",
-          "navigationStyle": "custom"
-        }
-      },
-      {
-        "path": "pages/map-view/map-view",
-        "style": {
-          "navigationBarTitleText": "网点位置",
-          "navigationStyle": "custom"
-        }
+  "pages": [
+    {
+      "path": "pages/login/login",
+      "style": {
+        "navigationBarTitleText": "登录",
+        "navigationStyle": "custom"
       }
-    ],
+    },
+    {
+      "path": "pages/order-detail/order-detail",
+      "style": {
+        "navigationBarTitleText": "订单详情",
+        "navigationBarBackgroundColor": "#007aff",
+        "navigationBarTextStyle": "white"
+      }
+    },
+    {
+      "path": "pages/my/my",
+      "style": {
+        "navigationBarTitleText": "我的",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/user-edit/user-edit",
+      "style": {
+        "navigationBarTitleText": "编辑资料",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/customer-service/customer-service",
+      "style": {
+        "navigationBarTitleText": "在线客服",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/user-guide/user-guide",
+      "style": {
+        "navigationBarTitleText": "使用指南",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/coupons/coupons",
+      "style": {
+        "navigationBarTitleText": "优惠卡券",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/user-agreement/user-agreement",
+      "style": {
+        "navigationBarTitleText": "用户协议",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/locker-detail/locker-detail",
+      "style": {
+        "navigationBarTitleText": "寄存点详情",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/city-select/city-select",
+      "style": {
+        "navigationBarTitleText": "选择城市",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/nearby/nearby",
+      "style": {
+        "navigationBarTitleText": "附近寄存",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/search/search",
+      "style": {
+        "navigationBarTitleText": "搜索寄存点",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/search/search-simple",
+      "style": {
+        "navigationBarTitleText": "简单搜索",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/locker-map/locker-map",
+      "style": {
+        "navigationBarTitleText": "寄存点分布图",
+        "navigationBarBackgroundColor": "#ffffff",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/admin/profile",
+      "style": {
+        "navigationBarTitleText": "个人信息",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/order-list/order-list",
+      "style": {
+        "navigationBarTitleText": "全部订单",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/admin/login",
+      "style": {
+        "navigationBarTitleText": "管理员登录",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/admin/admin",
+      "style": {
+        "navigationBarTitleText": "管理员",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationBarTitleText": "uni-app"
+      }
+    },
+    {
+      "path": "pages/orders/orders",
+      "style": {
+        "navigationBarTitleText": ""
+      }
+    },
+    {
+      "path": "pages/show/show",
+      "style": {
+        "navigationBarTitleText": ""
+      }
+    },
+    {
+      "path": "pages/point/point",
+      "style": {
+        "navigationBarTitleText": "我的网点"
+      }
+    },
+    {
+      "path": "pages/point-detail/point-detail",
+      "style": {
+        "navigationBarTitleText": "网点详情",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/point-edit/point-edit",
+      "style": {
+        "navigationBarTitleText": "我的网点",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/price-rule/price-rule",
+      "style": {
+        "navigationBarTitleText": "收费规则",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/cabinet-group/cabinet-group",
+      "style": {
+        "navigationBarTitleText": "柜组管理",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/cabinet-cell/cabinet-cell",
+      "style": {
+        "navigationBarTitleText": "柜格管理",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/group-orders/group-orders",
+      "style": {
+        "navigationBarTitleText": "柜组订单",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/location-select/location-select",
+      "style": {
+        "navigationBarTitleText": "选择寄存点",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/group-add/group-add",
+      "style": {
+        "navigationBarTitleText": "添加柜组",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/map-view/map-view",
+      "style": {
+        "navigationBarTitleText": "网点位置",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path" : "pages/ordercreate/ordercreate",
+      "style" :
+      {
+        "navigationBarTitleText" : ""
+      }
+    },
+    {
+      "path" : "pages/createtimetask/createtimetask",
+      "style" :
+      {
+        "navigationBarTitleText" : ""
+      }
+    },
+    {
+      "path": "pages/orderdel/orderdel",
+      "style": {
+        "navigationBarTitleText": "订单退款"
+      }
+    },
+    {
+      "path": "pages/alipay/alipay",
+      "style": {
+        "navigationBarTitleText": "订单支付"
+      }
+    },
+    {
+      "path": "pages/timetasksend/timetasksend",
+      "style": {
+        "navigationBarTitleText": "提醒任务"
+      }
+    }
+  ],
   "globalStyle": {
     "navigationBarTextStyle": "black",
     "navigationBarTitleText": "uni-app",
     "navigationBarBackgroundColor": "#F8F8F8",
     "backgroundColor": "#F8F8F8"
   },
-	"tabBar": {
-		"color": "#8E8E93",
-		"selectedColor": "#007AFF",
-		"borderStyle": "white",
-		"backgroundColor": "#FFFFFF",
-		"list": [
-			{
-				"pagePath": "pages/index/index",
-				"iconPath": "static/go.png",
-				"selectedIconPath": "static/go.png",
-				"text": "首页"
-			},
-			{
-				"pagePath": "pages/order-detail/order-detail",
-				"iconPath": "static/1111.png",
-				"selectedIconPath": "static/1111.png",
-				"text": "订单"
-			},
-			{
-				"pagePath": "pages/my/my",
-				"iconPath": "static/go1.png",
-				"selectedIconPath": "static/go1.png",
-				"text": "我的"
-			}
-		]
-	},
-	"uniIdRouter": {}
+  "tabBar": {
+    "color": "#8E8E93",
+    "selectedColor": "#007AFF",
+    "borderStyle": "white",
+    "backgroundColor": "#FFFFFF",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "iconPath": "static/go.png",
+        "selectedIconPath": "static/go.png",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/orders/orders",
+        "iconPath": "static/1111.png",
+        "selectedIconPath": "static/1111.png",
+        "text": "订单"
+      },
+      {
+        "pagePath": "pages/my/my",
+        "iconPath": "static/go1.png",
+        "selectedIconPath": "static/go1.png",
+        "text": "我的"
+      }
+    ]
+  },
+  "uniIdRouter": {}
 }

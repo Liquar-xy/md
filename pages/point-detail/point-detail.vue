@@ -5,10 +5,11 @@
       <view class="back-btn" @click="goBack">
         <text class="back-icon">←</text>
       </view>
-      <view class="title">我的网点</view>
-      <view class="header-right">
-        <text class="edit-btn" @click="editPoint">编辑</text>
-      </view>
+             <view class="title">网点详情</view>
+             <view class="header-right">
+         <text class="refresh-btn" @click="forceRefresh">刷新</text>
+         <text class="edit-btn" @click="editPoint">编辑</text>
+       </view>
     </view>
 
     <!-- 网点照片 -->
@@ -61,8 +62,10 @@
       
       <view class="info-item">
         <text class="info-label">网点状态</text>
+
         <text class="info-value" :class="pointDetail.staus == 1 ? 'status-normal' : 'status-closed'">
           {{ pointDetail.staus == 1 ? '正常' : '暂停营业' }}
+
         </text>
         <text class="arrow">></text>
       </view>
@@ -102,7 +105,7 @@ export default {
         availableMedium: 0,
         availableSmall: 0,
         openTime: '',
-        staus: 1,
+        status: 1,
         pointImage: ''
       },
       isLoading: true,
@@ -110,34 +113,199 @@ export default {
       isNavigating: false
     }
   },
-  onLoad(options) {
-    this.pointId = options.id || 1;
-    this.pointName = decodeURIComponent(options.name || '');
-    console.log('网点详情页面加载 - ID:', this.pointId, '名称:', this.pointName);
-    console.log('完整options:', options);
-    
-    // 检查token
-    const token = uni.getStorageSync('adminToken');
-    console.log('当前token:', token);
-    
-    // 直接调用接口获取网点详情
-    this.getPointDetail();
-  },
+     onLoad(options) {
+     this.pointId = options.id || 1;
+     this.pointName = decodeURIComponent(options.name || '');
+     this.fromEdit = options.fromEdit === 'true';
+     console.log('网点详情页面加载 - ID:', this.pointId, '名称:', this.pointName, '来自编辑:', this.fromEdit);
+     console.log('完整options:', options);
+     
+     // 检查token
+     const token = uni.getStorageSync('adminToken');
+     console.log('当前token:', token);
+     
+     // 不再使用EventBus，直接使用本地存储数据同步
+     
+                             // 如果是从编辑页面跳转过来，直接从数据库获取最新数据
+      if (this.fromEdit) {
+        console.log('从编辑页面跳转过来，直接从数据库获取最新数据');
+        // 检查ID是否有效
+        if (this.pointId === 'new' || this.pointId === 'undefined' || !this.pointId) {
+          console.log('新增网点模式，使用本地最新数据');
+          // 新增模式下，使用本地存储的最新数据
+          const latestData = uni.getStorageSync('latestPointData');
+          if (latestData) {
+            this.updatePointDetailDirectly(latestData);
+            return;
+          } else {
+            this.error = '新增网点模式，但未找到本地数据';
+            return;
+          }
+        }
+        this.getPointDetail();
+      } else {
+         // 检查是否有最新的编辑数据
+         const lastEditTime = uni.getStorageSync('lastEditTime');
+         const latestData = uni.getStorageSync('latestPointData');
+         const currentTime = Date.now();
+         
+         // 如果最近30秒内有编辑操作且ID匹配，直接使用本地数据
+         if (lastEditTime && latestData && (currentTime - lastEditTime) < 30000 && 
+             (latestData.id == this.pointId || latestData.Id == this.pointId)) {
+           console.log('页面加载时使用本地最新数据:', latestData);
+           this.updatePointDetailDirectly(latestData);
+         } else {
+           // 直接调用接口获取网点详情
+           this.getPointDetail();
+         }
+       }
+   },
   
-  onShow() {
-    // 重置导航状态，确保可以正常点击
-    this.isNavigating = false;
-    console.log('页面显示，重置导航状态');
-  },
-  methods: {
-    // 获取网点详情
+                                                                               onShow() {
+          // 重置导航状态，确保可以正常点击
+          this.isNavigating = false;
+          console.log('页面显示，重置导航状态');
+          
+          // 检查是否有最新的编辑数据
+          const lastEditTime = uni.getStorageSync('lastEditTime');
+          const latestData = uni.getStorageSync('latestPointData');
+          const currentTime = Date.now();
+          
+          console.log('详情页面显示 - 检查编辑数据');
+          console.log('编辑时间:', lastEditTime, '当前时间:', currentTime, '时间差:', currentTime - lastEditTime);
+          console.log('最新编辑数据:', latestData);
+          console.log('当前网点ID:', this.pointId);
+          
+          // 如果最近30秒内有编辑操作且ID匹配，直接使用最新数据
+          if (lastEditTime && latestData && (currentTime - lastEditTime) < 30000 && 
+              (latestData.id == this.pointId || latestData.Id == this.pointId)) {
+            console.log('使用最新编辑数据更新详情页面');
+            this.updatePointDetailDirectly(latestData);
+            return;
+          }
+          
+                // 如果是从编辑页面跳转过来，直接从数据库获取最新数据
+      if (this.fromEdit) {
+        console.log('从编辑页面跳转过来，直接从数据库获取最新数据');
+        // 检查ID是否有效
+        if (this.pointId === 'new' || this.pointId === 'undefined' || !this.pointId) {
+          console.log('新增网点模式，使用本地最新数据');
+          // 新增模式下，使用本地存储的最新数据
+          const latestData = uni.getStorageSync('latestPointData');
+          if (latestData) {
+            this.updatePointDetailDirectly(latestData);
+            return;
+          } else {
+            this.error = '新增网点模式，但未找到本地数据';
+            return;
+          }
+        }
+        // 延迟一点时间确保数据库已更新
+        setTimeout(() => {
+          this.getPointDetail();
+        }, 500);
+        return;
+      }
+          
+          // 检查全局数据更新
+          const dataUpdateTime = uni.getStorageSync('dataUpdateTime');
+          const currentPointData = uni.getStorageSync('currentPointData');
+        
+        console.log('全局数据更新时间:', dataUpdateTime);
+        console.log('全局最新数据:', currentPointData);
+        
+        // 优先使用全局最新数据（最近30秒内）
+        if (dataUpdateTime && currentPointData && (currentTime - dataUpdateTime) < 30000 && 
+            (currentPointData.id == this.pointId || currentPointData.Id == this.pointId)) {
+          console.log('使用全局最新数据:', currentPointData);
+          
+          // 直接更新数据，不显示加载状态
+          this.updatePointDetailDirectly(currentPointData);
+          
+          // 延迟清除全局数据，确保数据已显示
+          setTimeout(() => {
+            uni.removeStorageSync('currentPointData');
+            uni.removeStorageSync('dataUpdateTime');
+            console.log('已清除全局数据');
+          }, 5000);
+        }
+        // 如果最近30秒内有编辑操作且ID匹配，直接使用本地数据
+        else if (lastEditTime && latestData && (currentTime - lastEditTime) < 30000 && 
+            (latestData.id == this.pointId || latestData.Id == this.pointId)) {
+          console.log('使用本地最新数据:', latestData);
+          
+          // 直接更新数据，不显示加载状态
+          this.updatePointDetailDirectly(latestData);
+          
+          // 延迟清除本地数据，确保数据已显示
+          setTimeout(() => {
+            uni.removeStorageSync('latestPointData');
+            uni.removeStorageSync('lastEditTime');
+            console.log('已清除本地数据');
+          }, 5000);
+        } else {
+          // 否则重新获取网点详情
+          if (this.pointId) {
+            console.log('页面显示时重新获取网点详情');
+            setTimeout(() => {
+              this.getPointDetail();
+            }, 100);
+          }
+        }
+      },
+           methods: {
+             // 直接更新网点详情数据（不显示加载状态）
+       updatePointDetailDirectly(data) {
+         console.log('直接更新网点详情数据:', data);
+         
+         // 确保不显示加载状态
+         this.isLoading = false;
+         this.error = '';
+         
+         // 直接更新数据，不显示加载状态
+         this.pointDetail = {
+           name: data.name || '',
+           address: data.address || '',
+           pointType: data.pointType || '',
+           availableLarge: parseInt(data.availableLarge) || 0,
+           availableMedium: parseInt(data.availableMedium) || 0,
+           availableSmall: parseInt(data.availableSmall) || 0,
+           openTime: data.openTime || '',
+           status: parseInt(data.status) || 1,
+           pointImage: data.pointImage || ''
+         };
+         
+         console.log('直接更新后的网点详情:', this.pointDetail);
+         
+         // 使用$set确保响应式更新
+         this.$set(this, 'pointDetail', { ...this.pointDetail });
+         
+         // 显示更新成功提示
+         uni.showToast({
+           title: '数据已更新',
+           icon: 'success',
+           duration: 1500
+         });
+       },
+      
+                     
+     
+         // 获取网点详情
     getPointDetail() {
       this.isLoading = true;
       this.error = '';
       
       console.log('正在获取网点详情，ID:', this.pointId);
       
-      // 重置数据，确保显示新数据
+      // 如果是新增模式或无效ID，不发送请求
+      if (this.pointId === 'new' || this.pointId === 'undefined' || !this.pointId) {
+        console.log('新增网点模式或无效ID，跳过获取网点详情');
+        this.isLoading = false;
+        this.error = '无效的网点ID';
+        return;
+      }
+      
+      // 清空旧数据，确保显示新数据
       this.pointDetail = {
         name: '',
         address: '',
@@ -146,21 +314,23 @@ export default {
         availableMedium: 0,
         availableSmall: 0,
         openTime: '',
-        staus: 1,
+        status: 1,
         pointImage: ''
       };
       
-      // 构建 URL 编码的表单数据
-      const formData = `id=${this.pointId}`;
+      // 构建请求数据
+      const requestData = {
+        id: parseInt(this.pointId) || this.pointId
+      };
       
-      console.log('发送的请求数据:', formData);
+      console.log('发送的请求数据:', requestData);
       
       uni.request({
         url: 'http://localhost:8000/point_info',
         method: 'POST',
-        data: formData,
+        data: requestData,
         header: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
           'Authorization': 'Bearer ' + uni.getStorageSync('adminToken')
         },
         success: (res) => {
@@ -170,21 +340,62 @@ export default {
           if (res.data && (res.data.code === 200 || res.data.code === "200")) {
             console.log('原始接口返回数据:', res.data);
             
-            // 根据你的后端接口实际返回的数据结构进行映射
+            // 获取实际的数据
             const data = res.data.data || res.data;
             console.log('后端返回的原始数据:', data);
             
-            // 直接使用后端返回的数据
-            this.pointDetail = data;
+            // 确保数据正确映射
+            this.pointDetail = {
+              name: data.name || data.Name || '',
+              address: data.address || data.Address || '',
+              pointType: data.pointType || data.PointType || data.point_type || '',
+              availableLarge: parseInt(data.availableLarge || data.AvailableLarge || data.available_large) || 0,
+              availableMedium: parseInt(data.availableMedium || data.AvailableMedium || data.available_medium) || 0,
+              availableSmall: parseInt(data.availableSmall || data.AvailableSmall || data.available_small) || 0,
+              openTime: data.openTime || data.OpenTime || data.open_time || '',
+              status: parseInt(data.status || data.Status) || 1,
+              pointImage: data.pointImage || data.PointImage || data.point_image || ''
+            };
             
             console.log('处理后的网点详情:', this.pointDetail);
             
-            // 显示成功提示
-            uni.showToast({
-              title: '数据加载成功',
-              icon: 'success',
-              duration: 1000
-            });
+                         // 更新全局存储，确保数据一致性
+             const latestData = {
+               id: this.pointId,
+               name: this.pointDetail.name,
+               address: this.pointDetail.address,
+               pointType: this.pointDetail.pointType,
+               availableLarge: this.pointDetail.availableLarge,
+               availableMedium: this.pointDetail.availableMedium,
+               availableSmall: this.pointDetail.availableSmall,
+               openTime: this.pointDetail.openTime,
+               status: this.pointDetail.status,
+               pointImage: this.pointDetail.pointImage
+             };
+             
+             uni.setStorageSync('currentPointData', latestData);
+             uni.setStorageSync('dataUpdateTime', Date.now());
+             uni.setStorageSync('latestPointData', latestData);
+             uni.setStorageSync('lastEditTime', Date.now());
+             
+             console.log('数据库数据与前端数据已同步:', latestData);
+             
+                         // 显示成功提示
+            if (this.fromEdit) {
+              uni.showToast({
+                title: '已显示最新数据',
+                icon: 'success',
+                duration: 1500
+              });
+              console.log('✅ 从编辑页面跳转，已显示数据库最新数据');
+            } else {
+              uni.showToast({
+                title: '数据加载成功',
+                icon: 'success',
+                duration: 1000
+              });
+              console.log('✅ 正常加载，数据获取成功');
+            }
           } else {
             this.error = res.data?.msg || '获取网点详情失败';
             console.error('接口返回错误:', res.data);
@@ -219,11 +430,22 @@ export default {
     },
     
     // 编辑网点
-
     editPoint() {
       console.log('点击编辑网点，ID:', this.pointId, '名称:', this.pointName);
+      
+      // 跳转到编辑页面
       uni.navigateTo({
-        url: `/pages/point-edit/point-edit?id=${this.pointId}&name=${encodeURIComponent(this.pointName)}`
+        url: `/pages/point-edit/point-edit?id=${this.pointId}&name=${encodeURIComponent(this.pointName)}`,
+        success: () => {
+          console.log('成功跳转到编辑页面');
+        },
+        fail: (err) => {
+          console.error('跳转到编辑页面失败:', err);
+          uni.showToast({
+            title: '跳转失败',
+            icon: 'none'
+          });
+        }
       });
     },
 
@@ -289,10 +511,68 @@ export default {
       });
     },
     
-    // 返回上一页
-    goBack() {
-      uni.navigateBack();
-    }
+         // 更新网点详情数据
+     updatePointDetail(data) {
+       console.log('更新网点详情数据:', data);
+       
+       // 强制更新数据
+       this.pointDetail = {
+         name: data.name || '',
+         address: data.address || '',
+         pointType: data.pointType || '',
+         availableLarge: data.availableLarge || 0,
+         availableMedium: data.availableMedium || 0,
+         availableSmall: data.availableSmall || 0,
+         openTime: data.openTime || '',
+         status: data.status || 1,
+         pointImage: data.pointImage || ''
+       };
+       
+       console.log('更新后的网点详情:', this.pointDetail);
+       
+       // 使用$set确保响应式更新
+       this.$set(this, 'pointDetail', { ...this.pointDetail });
+       
+       uni.showToast({
+         title: '数据已更新',
+         icon: 'success',
+         duration: 1000
+       });
+     },
+     
+           // 强制刷新数据
+      forceRefresh() {
+        console.log('强制刷新数据');
+        
+        // 检查ID是否有效
+        if (this.pointId === 'new' || this.pointId === 'undefined' || !this.pointId) {
+          console.log('新增网点模式，不需要刷新详情');
+          this.error = '新增网点模式，无需刷新详情';
+          return;
+        }
+        
+        // 直接从数据库获取最新数据，确保数据一致性
+        console.log('强制刷新 - 从数据库获取最新数据');
+        this.getPointDetail();
+      },
+     
+                                     // 返回我的网点列表页面
+        goBack() {
+          console.log('点击返回按钮，fromEdit:', this.fromEdit);
+          
+          // 直接跳转到我的网点列表页面，确保显示最新数据
+          uni.reLaunch({
+            url: '/pages/point/point',
+            success: () => {
+              console.log('✅ 成功跳转到我的网点页面，将显示最新数据');
+            },
+            fail: (err) => {
+              console.error('跳转到我的网点页面失败:', err);
+              // 如果跳转失败，尝试使用navigateBack
+              uni.navigateBack();
+            }
+          });
+        }
   }
 }
 </script>
@@ -333,19 +613,34 @@ export default {
   gap: 20rpx;
 }
 
-.edit-btn {
-  font-size: 28rpx;
-  color: #007aff;
-  padding: 8rpx 16rpx;
-  border: 1rpx solid #007aff;
-  border-radius: 8rpx;
-  background: transparent;
-}
+ .refresh-btn {
+   font-size: 28rpx;
+   color: #28a745;
+   padding: 8rpx 16rpx;
+   border: 1rpx solid #28a745;
+   border-radius: 8rpx;
+   background: transparent;
+   margin-right: 20rpx;
+ }
 
-.edit-btn:active {
-  background: #007aff;
-  color: #ffffff;
-}
+ .refresh-btn:active {
+   background: #28a745;
+   color: #ffffff;
+ }
+
+ .edit-btn {
+   font-size: 28rpx;
+   color: #007aff;
+   padding: 8rpx 16rpx;
+   border: 1rpx solid #007aff;
+   border-radius: 8rpx;
+   background: transparent;
+ }
+
+ .edit-btn:active {
+   background: #007aff;
+   color: #ffffff;
+ }
 
 /* 照片区域 */
 .photo-section {

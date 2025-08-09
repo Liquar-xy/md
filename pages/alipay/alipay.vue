@@ -18,9 +18,32 @@
     <view v-else class="order-summary">
       <view class="order-info">
         <text class="order-title">{{ orderData.title }}</text>
-        <text class="order-duration">寄存时长：{{ orderData.actual_duration }}小时</text>
-        <!-- <text class="hourly-rate">每小时费用：¥{{ formatAmount(orderData.hourly_rate) }}</text> -->
-        <text class="order-id">订单ID：{{ orderData.id }}</text>
+        <view class="order-details">
+          <view class="detail-row">
+            <text class="detail-label">订单号：</text>
+            <text class="detail-value">{{ orderData.order_number }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">寄存网点：</text>
+            <text class="detail-value">{{ orderData.storage_location_name }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">柜子ID：</text>
+            <text class="detail-value">{{ orderData.cabinet_id }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">寄存时长：</text>
+            <text class="detail-value">{{ orderData.actual_duration }}小时</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">订单状态：</text>
+            <text class="detail-value status" :class="'status-' + orderData.status">{{ getOrderStatusText(orderData.status) }}</text>
+          </view>
+          <view class="detail-row">
+            <text class="detail-label">押金状态：</text>
+            <text class="detail-value deposit" :class="'deposit-' + orderData.deposit_status">{{ getDepositStatusText(orderData.deposit_status) }}</text>
+          </view>
+        </view>
       </view>
       <view class="amount-info">
         <text class="amount-label">应付金额</text>
@@ -33,14 +56,18 @@
       <view class="detail-header">
         <text class="detail-title">费用明细</text>
       </view>
-      <!-- <view class="detail-item">
-        <text class="item-label">时长费用 ({{ orderData.actual_duration }}小时)</text>
-        <text class="item-value">¥{{ formatAmount(totalAmount) }}</text>
-      </view> -->
+      <view class="detail-item">
+        <text class="item-label">基础费用</text>
+        <text class="item-value">¥{{ formatAmount(orderData.price) }}</text>
+      </view>
+      <view class="detail-item" v-if="orderData.discount > 0">
+        <text class="item-label">优惠金额</text>
+        <text class="item-value discount">-¥{{ formatAmount(orderData.discount) }}</text>
+      </view>
       <view class="detail-divider"></view>
       <view class="detail-item total">
-        <text class="item-label">合计</text>
-        <text class="item-value">¥{{ formatAmount(orderData.price) }}</text>
+        <text class="item-label">实付金额</text>
+        <text class="item-value">¥{{ formatAmount(orderData.amount_paid || totalAmount) }}</text>
       </view>
     </view>
 
@@ -110,9 +137,16 @@ export default {
     }
   },
   computed: {
-    // 只用后端返回的总价
+    // 计算实际应付金额
     totalAmount() {
-      return this.orderData.price || 0;
+      // 如果有实付金额，优先使用实付金额
+      if (this.orderData.amount_paid > 0) {
+        return this.orderData.amount_paid;
+      }
+      // 否则使用基础价格减去优惠
+      const basePrice = this.orderData.price || 0;
+      const discount = this.orderData.discount || 0;
+      return Math.max(0, basePrice - discount);
     }
   },
   onLoad(options) {
@@ -173,14 +207,22 @@ export default {
             this.orderData = {
               ...this.orderData,
               id: od.id,
+              order_number: od.orderNumber,
+              storage_location_name: od.storageLocationName,
+              cabinet_id: od.cabinetId,
               actual_duration: Number(od.actualDuration || od.actual_duration) || 0,
-              status: od.status,
-              deposit_status: od.depositStatus,
+              scheduled_duration: Number(od.scheduledDuration || od.scheduled_duration) || 0,
+              status: parseInt(od.status) || 0,
+              deposit_status: parseInt(od.depositStatus) || 0,
+              price: Number(od.price) || 0,
+              discount: Number(od.discount) || 0,
+              amount_paid: Number(od.amountPaid) || 0,
               locker_type: od.cabinetId,
-              type_id: od.type_id || od.typeId || od.locker_type_id, // 柜子类型ID，兼容多种字段名
-              price: totalPrice,
+              type_id: od.type_id || od.typeId || od.locker_type_id,
               title: `订单${od.id}支付`
             };
+            
+            console.log('订单数据映射完成:', this.orderData);
           } else {
             this.showError('订单数据异常');
           }
@@ -577,6 +619,9 @@ export default {
     handlePaymentSuccess(paymentInfo) {
       uni.removeStorageSync('current_payment_info');
       
+      // 更新订单状态为已支付
+      this.orderData.status = 2; // 寄存中
+      
       uni.showToast({
         title: '支付成功',
         icon: 'success',
@@ -584,12 +629,18 @@ export default {
       });
       
       setTimeout(() => {
-        // 返回订单列表或详情页
-        uni.navigateBack({
-          delta: 1,
+        // 返回订单详情页面，显示最新状态
+        uni.navigateTo({
+          url: `/pages/show/show?id=${this.orderData.id}`,
           fail: () => {
-            uni.reLaunch({
-              url: '/pages/index/index'
+            // 如果跳转失败，返回上一页
+            uni.navigateBack({
+              delta: 1,
+              fail: () => {
+                uni.reLaunch({
+                  url: '/pages/index/index'
+                });
+              }
             });
           }
         });
@@ -652,9 +703,34 @@ export default {
       });
     },
     goToOrderList() {
-      uni.navigateTo({
-        url: '/pages/index/index'
+      uni.switchTab({
+        url: '/pages/orders/orders'
       });
+    },
+    
+    // 获取订单状态文本
+    getOrderStatusText(status) {
+      const numStatus = parseInt(status);
+      switch (numStatus) {
+        case 1: return '待支付';
+        case 2: return '寄存中';
+        case 3: return '已完成';
+        case 4: return '已取消';
+        case 5: return '超时';
+        case 6: return '异常';
+        default: return '未知状态';
+      }
+    },
+    
+    // 获取押金状态文本
+    getDepositStatusText(status) {
+      const numStatus = parseInt(status);
+      switch (numStatus) {
+        case 1: return '已支付';
+        case 2: return '已退还';
+        case 3: return '已扣除';
+        default: return '未知状态';
+      }
     }
   }
 }
@@ -737,11 +813,60 @@ export default {
   margin-bottom: 16rpx;
 }
 
-.order-duration, .hourly-rate, .order-id {
+.order-details {
+  margin-top: 16rpx;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12rpx;
+}
+
+.detail-label {
   font-size: 28rpx;
   color: #666;
-  display: block;
-  margin-bottom: 8rpx;
+  flex-shrink: 0;
+}
+
+.detail-value {
+  font-size: 28rpx;
+  color: #222;
+  text-align: right;
+  flex: 1;
+}
+
+.detail-value.status {
+  font-weight: bold;
+}
+
+.detail-value.status.status-1 {
+  color: #ff9500;
+}
+
+.detail-value.status.status-2 {
+  color: #007aff;
+}
+
+.detail-value.status.status-3 {
+  color: #34c759;
+}
+
+.detail-value.deposit {
+  font-weight: bold;
+}
+
+.detail-value.deposit.deposit-1 {
+  color: #34c759;
+}
+
+.detail-value.deposit.deposit-2 {
+  color: #007aff;
+}
+
+.detail-value.deposit.deposit-3 {
+  color: #ff3b30;
 }
 
 .amount-info {
@@ -806,6 +931,10 @@ export default {
 .item-value {
   font-size: 32rpx;
   color: #222;
+}
+
+.item-value.discount {
+  color: #34c759;
 }
 
 /* 支付方式 */

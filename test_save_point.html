@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试网点保存功能</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background: #007aff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+        input, textarea {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            width: 200px;
+        }
+        textarea {
+            width: 300px;
+            height: 60px;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .form-group {
+            margin: 10px 0;
+        }
+        label {
+            display: inline-block;
+            width: 120px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>测试网点保存功能</h1>
+    
+    <div class="info">
+        <h3>测试说明：</h3>
+        <p>1. 先登录获取管理员token</p>
+        <p>2. 测试新增网点功能</p>
+        <p>3. 测试修改网点功能</p>
+        <p>4. 验证保存后数据是否正确更新</p>
+    </div>
+    
+    <div class="test-section">
+        <h3>1. 管理员登录</h3>
+        <div class="form-group">
+            <label>用户名：</label>
+            <input type="text" id="username" value="admin">
+        </div>
+        <div class="form-group">
+            <label>密码：</label>
+            <input type="password" id="password" value="123456">
+        </div>
+        <button onclick="login()">登录</button>
+        <div id="loginResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. 新增网点</h3>
+        <div class="form-group">
+            <label>网点名称：</label>
+            <input type="text" id="newName" value="测试网点">
+        </div>
+        <div class="form-group">
+            <label>网点地址：</label>
+            <input type="text" id="newAddress" value="北京市朝阳区测试地址">
+        </div>
+        <div class="form-group">
+            <label>网点类型：</label>
+            <input type="text" id="newType" value="寄存点">
+        </div>
+        <div class="form-group">
+            <label>大柜数量：</label>
+            <input type="number" id="newLarge" value="5">
+        </div>
+        <div class="form-group">
+            <label>中柜数量：</label>
+            <input type="number" id="newMedium" value="10">
+        </div>
+        <div class="form-group">
+            <label>小柜数量：</label>
+            <input type="number" id="newSmall" value="20">
+        </div>
+        <div class="form-group">
+            <label>营业时间：</label>
+            <input type="text" id="newOpenTime" value="09:00-18:00">
+        </div>
+        <div class="form-group">
+            <label>状态：</label>
+            <select id="newStatus">
+                <option value="1">正常</option>
+                <option value="0">停用</option>
+            </select>
+        </div>
+        <button onclick="addPoint()">新增网点</button>
+        <div id="addResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>3. 修改网点</h3>
+        <div class="form-group">
+            <label>网点ID：</label>
+            <input type="number" id="updateId" placeholder="输入要修改的网点ID">
+        </div>
+        <div class="form-group">
+            <label>网点名称：</label>
+            <input type="text" id="updateName" value="修改后的网点名称">
+        </div>
+        <div class="form-group">
+            <label>网点地址：</label>
+            <input type="text" id="updateAddress" value="修改后的地址">
+        </div>
+        <div class="form-group">
+            <label>网点类型：</label>
+            <input type="text" id="updateType" value="修改后的类型">
+        </div>
+        <button onclick="updatePoint()">修改网点</button>
+        <div id="updateResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>4. 获取网点列表</h3>
+        <button onclick="getPointList()">获取网点列表</button>
+        <div id="listResult" class="result"></div>
+    </div>
+
+    <script>
+        let adminToken = '';
+        
+        // 管理员登录
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('http://localhost:8000/admin_login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
+                    })
+                });
+                
+                const data = await response.json();
+                document.getElementById('loginResult').textContent = JSON.stringify(data, null, 2);
+                
+                if (data.code === 200 && data.data && data.data.token) {
+                    adminToken = data.data.token;
+                    console.log('登录成功，获得token:', adminToken);
+                }
+            } catch (error) {
+                document.getElementById('loginResult').textContent = '登录失败: ' + error.message;
+            }
+        }
+        
+        // 新增网点
+        async function addPoint() {
+            if (!adminToken) {
+                document.getElementById('addResult').textContent = '请先登录获取token';
+                return;
+            }
+            
+            const requestData = {
+                name: document.getElementById('newName').value,
+                address: document.getElementById('newAddress').value,
+                pointType: document.getElementById('newType').value,
+                availableLarge: parseInt(document.getElementById('newLarge').value),
+                availableMedium: parseInt(document.getElementById('newMedium').value),
+                availableSmall: parseInt(document.getElementById('newSmall').value),
+                openTime: document.getElementById('newOpenTime').value,
+                status: parseInt(document.getElementById('newStatus').value),
+                pointImage: '',
+                photos: []
+            };
+            
+            try {
+                const response = await fetch('http://localhost:8000/admin/addPoint', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + adminToken
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                const data = await response.json();
+                document.getElementById('addResult').textContent = JSON.stringify(data, null, 2);
+                
+                if (data.code === 200) {
+                    console.log('新增网点成功:', data);
+                }
+            } catch (error) {
+                document.getElementById('addResult').textContent = '新增失败: ' + error.message;
+            }
+        }
+        
+        // 修改网点
+        async function updatePoint() {
+            if (!adminToken) {
+                document.getElementById('updateResult').textContent = '请先登录获取token';
+                return;
+            }
+            
+            const pointId = document.getElementById('updateId').value;
+            if (!pointId) {
+                document.getElementById('updateResult').textContent = '请输入网点ID';
+                return;
+            }
+            
+            const requestData = {
+                id: parseInt(pointId),
+                name: document.getElementById('updateName').value,
+                address: document.getElementById('updateAddress').value,
+                pointType: document.getElementById('updateType').value,
+                availableLarge: 5,
+                availableMedium: 10,
+                availableSmall: 20,
+                openTime: '09:00-18:00',
+                status: 1,
+                pointImage: '',
+                photos: []
+            };
+            
+            try {
+                const response = await fetch('http://localhost:8000/admin/updatePoint', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + adminToken
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                const data = await response.json();
+                document.getElementById('updateResult').textContent = JSON.stringify(data, null, 2);
+                
+                if (data.code === 200) {
+                    console.log('修改网点成功:', data);
+                }
+            } catch (error) {
+                document.getElementById('updateResult').textContent = '修改失败: ' + error.message;
+            }
+        }
+        
+        // 获取网点列表
+        async function getPointList() {
+            if (!adminToken) {
+                document.getElementById('listResult').textContent = '请先登录获取token';
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:8000/point_list', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + adminToken
+                    }
+                });
+                
+                const data = await response.json();
+                document.getElementById('listResult').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('listResult').textContent = '获取列表失败: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html> 

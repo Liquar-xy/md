@@ -550,8 +550,15 @@ export default {
 		
 		// 功能入口
 		goToOrders() {
-			uni.navigateTo({
-				url: '/pages/order-detail/order-detail'
+			uni.switchTab({
+				url: '/pages/orders/orders',
+				fail: (err) => {
+					console.error('切换到订单页面失败:', err);
+					uni.showToast({
+						title: '页面跳转失败',
+						icon: 'none'
+					});
+				}
 			});
 		},
 		
