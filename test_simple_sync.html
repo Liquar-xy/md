@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简单数据同步测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background: #007aff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+        input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 200px;
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>简单数据同步测试</h1>
+    
+    <div class="test-section">
+        <h3>1. 模拟编辑保存</h3>
+        <input type="text" id="newName" placeholder="新网点名称" value="测试修改后的网点名称">
+        <input type="text" id="newAddress" placeholder="新地址" value="测试修改后的地址">
+        <button onclick="simulateSave()">模拟保存</button>
+        <div id="saveResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. 模拟返回详情页面</h3>
+        <button onclick="simulateReturnToDetail()">模拟返回详情页面</button>
+        <div id="detailResult" class="result"></div>
+    </div>
+
+    <script>
+        // 模拟编辑保存
+        function simulateSave() {
+            const newName = document.getElementById('newName').value;
+            const newAddress = document.getElementById('newAddress').value;
+            
+            // 模拟保存到后端
+            const saveData = {
+                id: 1,
+                name: newName,
+                address: newAddress,
+                pointType: '测试类型',
+                availableLarge: 10,
+                availableMedium: 15,
+                availableSmall: 20,
+                openTime: '09:00-18:00',
+                status: 1,
+                pointImage: ''
+            };
+            
+            // 保存到本地存储（模拟uni.setStorageSync）
+            localStorage.setItem('currentPointData', JSON.stringify(saveData));
+            localStorage.setItem('dataUpdateTime', Date.now().toString());
+            
+            // 同时保存到latestPointData（兼容旧逻辑）
+            localStorage.setItem('latestPointData', JSON.stringify(saveData));
+            localStorage.setItem('lastEditTime', Date.now().toString());
+            
+            document.getElementById('saveResult').innerHTML = 
+                '<span class="success">✅ 保存成功！</span><br>' +
+                '网点名称: ' + saveData.name + '<br>' +
+                '网点地址: ' + saveData.address + '<br>' +
+                '时间: ' + new Date().toLocaleString();
+        }
+        
+        // 模拟返回详情页面
+        function simulateReturnToDetail() {
+            const currentTime = Date.now();
+            const dataUpdateTime = localStorage.getItem('dataUpdateTime');
+            const currentPointData = localStorage.getItem('currentPointData');
+            const lastEditTime = localStorage.getItem('lastEditTime');
+            const latestData = localStorage.getItem('latestPointData');
+            
+            let result = '<strong>详情页面显示逻辑:</strong><br>';
+            result += '当前时间: ' + new Date(currentTime).toLocaleString() + '<br>';
+            result += '全局数据更新时间: ' + (dataUpdateTime ? new Date(parseInt(dataUpdateTime)).toLocaleString() : '无') + '<br>';
+            result += '全局数据: ' + (currentPointData ? JSON.parse(currentPointData).name : '无') + '<br>';
+            result += '本地数据更新时间: ' + (lastEditTime ? new Date(parseInt(lastEditTime)).toLocaleString() : '无') + '<br>';
+            result += '本地数据: ' + (latestData ? JSON.parse(latestData).name : '无') + '<br><br>';
+            
+            // 模拟详情页面的逻辑
+            if (dataUpdateTime && currentPointData && (currentTime - parseInt(dataUpdateTime)) < 10000) {
+                const data = JSON.parse(currentPointData);
+                result += '<span class="success">✅ 使用全局最新数据: ' + data.name + '</span><br>';
+                result += '网点名称: ' + data.name + '<br>';
+                result += '网点地址: ' + data.address + '<br>';
+                result += '网点类型: ' + data.pointType + '<br>';
+                result += '营业时间: ' + data.openTime + '<br>';
+            } else if (lastEditTime && latestData && (currentTime - parseInt(lastEditTime)) < 10000) {
+                const data = JSON.parse(latestData);
+                result += '<span class="success">✅ 使用本地最新数据: ' + data.name + '</span><br>';
+                result += '网点名称: ' + data.name + '<br>';
+                result += '网点地址: ' + data.address + '<br>';
+                result += '网点类型: ' + data.pointType + '<br>';
+                result += '营业时间: ' + data.openTime + '<br>';
+            } else {
+                result += '<span class="error">❌ 没有最新数据，需要从服务器获取</span><br>';
+            }
+            
+            document.getElementById('detailResult').innerHTML = result;
+        }
+    </script>
+</body>
+</html> 

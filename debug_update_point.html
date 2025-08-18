@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>调试UpdatePoint API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background: #007aff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        input, textarea {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            width: 200px;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>调试UpdatePoint API</h1>
+    
+    <div class="info">
+        <h3>调试说明：</h3>
+        <p>1. 先测试登录获取token</p>
+        <p>2. 测试不同的API路径</p>
+        <p>3. 测试不同的请求数据格式</p>
+        <p>4. 查看详细的错误信息</p>
+    </div>
+    
+    <div class="test-section">
+        <h3>1. 管理员登录</h3>
+        <button onclick="login()">登录获取Token</button>
+        <div id="loginResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. 测试不同的API路径</h3>
+        <button onclick="testPath1()">测试 /admin/updatePoint</button>
+        <button onclick="testPath2()">测试 /UpdatePoint</button>
+        <button onclick="testPath3()">测试 /admin/updatepoint</button>
+        <div id="pathResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>3. 测试不同的请求格式</h3>
+        <button onclick="testFormat1()">测试格式1 (id)</button>
+        <button onclick="testFormat2()">测试格式2 (Id)</button>
+        <button onclick="testFormat3()">测试格式3 (简化数据)</button>
+        <div id="formatResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>4. 获取网点列表</h3>
+        <button onclick="getPointList()">获取网点列表</button>
+        <div id="listResult" class="result"></div>
+    </div>
+
+    <script>
+        let adminToken = '';
+        
+        // 管理员登录
+        async function login() {
+            try {
+                const response = await fetch('http://localhost:8000/admin_login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: 'admin',
+                        password: '123456'
+                    })
+                });
+                
+                const data = await response.json();
+                document.getElementById('loginResult').textContent = JSON.stringify(data, null, 2);
+                
+                if (data.code === 200 && data.data && data.data.token) {
+                    adminToken = data.data.token;
+                    console.log('登录成功，获得token:', adminToken);
+                }
+            } catch (error) {
+                document.getElementById('loginResult').textContent = '登录失败: ' + error.message;
+            }
+        }
+        
+        // 测试路径1: /admin/updatePoint
+        async function testPath1() {
+            if (!adminToken) {
+                document.getElementById('pathResult').textContent = '请先登录获取token';
+                return;
+            }
+            
+            const requestData = {
+                id: 1,
+                name: '测试修改网点',
+                address: '测试地址',
+                pointType: '测试类型',
+                availableLarge: 5,
+                availableMedium: 10,
+                availableSmall: 20,
+                openTime: '09:00-18:00',
+                status: 1,
+                pointImage: '',
+                photos: []
+            };
+            
+            try {
+                console.log('发送请求到 /admin/updatePoint');
+                const response = await fetch('http://localhost:8000/admin/updatePoint', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + adminToken
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                console.log('响应状态:', response.status);
+                console.log('响应头:', response.headers);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('pathResult').textContent = '成功: ' + JSON.stringify(data, null, 2);
+                } else {
+                    const errorText = await response.text();
+                    document.getElementById('pathResult').textContent = 'HTTP错误 ' + response.status + ': ' + errorText;
+                }
+            } catch (error) {
+                document.getElementById('pathResult').textContent = '请求失败: ' + error.message;
+                console.error('详细错误:', error);
+            }
+        }
+        
+        // 测试路径2: /UpdatePoint
+        async function testPath2() {
+            if (!adminToken) {
+                document.getElementById('pathResult').textContent = '请先登录获取token';
+                return;
+            }
+            
+            const requestData = {
+                Id: 1,
+                Name: '测试修改网点',
+                Address: '测试地址',
+                PointType: '测试类型',
+                AvailableLarge: 5,
+                AvailableMedium: 10,
+                AvailableSmall: 20,
+                OpenTime: '09:00-18:00',
+                Status: 1,
+                PointImage: '',
+                Photos: []
+            };
+            
+            try {
+                console.log('发送请求到 /UpdatePoint');
+                const response = await fetch('http://localhost:8000/UpdatePoint', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + adminToken
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('pathResult').textContent = '成功: ' + JSON.stringify(data, null, 2);
+                } else {
+                    const errorText = await response.text();
+                    document.getElementById('pathResult').textContent = 'HTTP错误 ' + response.status + ': ' + errorText;
+                }
+            } catch (error) {
+                document.getElementById('pathResult').textContent = '请求失败: ' + error.message;
+            }
+        }
+        
+        // 测试路径3: /admin/updatepoint
+        async function testPath3() {
+            if (!adminToken) {
+                document.getElementById('pathResult').textContent = '请先登录获取token';
+                return;
+            }
+            
+            const requestData = {
+                id: 1,
+                name: '测试修改网点',
+                address: '测试地址'
+            };
+            
+            try {
+                console.log('发送请求到 /admin/updatepoint');
+                const response = await fetch('http://localhost:8000/admin/updatepoint', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + adminToken
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('pathResult').textContent = '成功: ' + JSON.stringify(data, null, 2);
+                } else {
+                    const errorText = await response.text();
+                    document.getElementById('pathResult').textContent = 'HTTP错误 ' + response.status + ': ' + errorText;
+                }
+            } catch (error) {
+                document.getElementById('pathResult').textContent = '请求失败: ' + error.message;
+            }
+        }
+        
+        // 测试格式1: 使用小写id
+        async function testFormat1() {
+            if (!adminToken) {
+                document.getElementById('formatResult').textContent = '请先登录获取token';
+                return;
+            }
+            
+            const requestData = {
+                id: 1,
+                name: '格式1测试',
+                address: '测试地址',
+                pointType: '测试类型'
+            };
+            
+            try {
+                const response = await fetch('http://localhost:8000/admin/updatePoint', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + adminToken
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('formatResult').textContent = '格式1成功: ' + JSON.stringify(data, null, 2);
+                } else {
+                    const errorText = await response.text();
+                    document.getElementById('formatResult').textContent = '格式1HTTP错误 ' + response.status + ': ' + errorText;
+                }
+            } catch (error) {
+                document.getElementById('formatResult').textContent = '格式1请求失败: ' + error.message;
+            }
+        }
+        
+        // 测试格式2: 使用大写Id
+        async function testFormat2() {
+            if (!adminToken) {
+                document.getElementById('formatResult').textContent = '请先登录获取token';
+                return;
+            }
+            
+            const requestData = {
+                Id: 1,
+                Name: '格式2测试',
+                Address: '测试地址',
+                PointType: '测试类型'
+            };
+            
+            try {
+                const response = await fetch('http://localhost:8000/admin/updatePoint', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + adminToken
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('formatResult').textContent = '格式2成功: ' + JSON.stringify(data, null, 2);
+                } else {
+                    const errorText = await response.text();
+                    document.getElementById('formatResult').textContent = '格式2HTTP错误 ' + response.status + ': ' + errorText;
+                }
+            } catch (error) {
+                document.getElementById('formatResult').textContent = '格式2请求失败: ' + error.message;
+            }
+        }
+        
+        // 测试格式3: 简化数据
+        async function testFormat3() {
+            if (!adminToken) {
+                document.getElementById('formatResult').textContent = '请先登录获取token';
+                return;
+            }
+            
+            const requestData = {
+                id: 1,
+                name: '简化测试'
+            };
+            
+            try {
+                const response = await fetch('http://localhost:8000/admin/updatePoint', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + adminToken
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('formatResult').textContent = '简化格式成功: ' + JSON.stringify(data, null, 2);
+                } else {
+                    const errorText = await response.text();
+                    document.getElementById('formatResult').textContent = '简化格式HTTP错误 ' + response.status + ': ' + errorText;
+                }
+            } catch (error) {
+                document.getElementById('formatResult').textContent = '简化格式请求失败: ' + error.message;
+            }
+        }
+        
+        // 获取网点列表
+        async function getPointList() {
+            if (!adminToken) {
+                document.getElementById('listResult').textContent = '请先登录获取token';
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:8000/point_list', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + adminToken
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('listResult').textContent = JSON.stringify(data, null, 2);
+                } else {
+                    const errorText = await response.text();
+                    document.getElementById('listResult').textContent = '获取列表失败: ' + errorText;
+                }
+            } catch (error) {
+                document.getElementById('listResult').textContent = '获取列表失败: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html> 

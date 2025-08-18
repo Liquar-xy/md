@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试详情页数据刷新</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1rpx solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background: #007aff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .data-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .field {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .field:last-child {
+            border-bottom: none;
+        }
+        .label {
+            font-weight: bold;
+            color: #333;
+        }
+        .value {
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>测试详情页数据刷新功能</h1>
+    
+    <div class="info">
+        <h3>测试说明：</h3>
+        <p>1. 先登录获取token</p>
+        <p>2. 获取网点详情数据</p>
+        <p>3. 修改网点数据</p>
+        <p>4. 再次获取详情，验证数据是否更新</p>
+    </div>
+    
+    <div class="test-section">
+        <h3>1. 管理员登录</h3>
+        <button onclick="login()">登录</button>
+        <div id="loginResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. 获取网点详情</h3>
+        <input type="number" id="pointId" placeholder="网点ID" value="1">
+        <button onclick="getPointDetail()">获取详情</button>
+        <div id="detailResult" class="result"></div>
+        <div id="detailDisplay" class="data-display"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>3. 修改网点数据</h3>
+        <input type="text" id="newName" placeholder="新网点名称" value="测试修改后的网点">
+        <input type="text" id="newAddress" placeholder="新地址" value="测试修改后的地址">
+        <button onclick="updatePoint()">修改网点</button>
+        <div id="updateResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>4. 重新获取详情验证</h3>
+        <button onclick="refreshDetail()">重新获取详情</button>
+        <div id="refreshResult" class="result"></div>
+        <div id="refreshDisplay" class="data-display"></div>
+    </div>
+
+    <script>
+        let adminToken = '';
+        let currentPointId = 1;
+        
+        // 管理员登录
+        async function login() {
+            try {
+                const response = await fetch('http://localhost:8000/admin_login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: 'admin',
+                        password: '123456'
+                    })
+                });
+                
+                const data = await response.json();
+                document.getElementById('loginResult').textContent = JSON.stringify(data, null, 2);
+                
+                if (data.code === 200 && data.data && data.data.token) {
+                    adminToken = data.data.token;
+                    console.log('登录成功，获得token:', adminToken);
+                }
+            } catch (error) {
+                document.getElementById('loginResult').textContent = '登录失败: ' + error.message;
+            }
+        }
+        
+        // 获取网点详情
+        async function getPointDetail() {
+            if (!adminToken) {
+                document.getElementById('detailResult').textContent = '请先登录获取token';
+                return;
+            }
+            
+            const pointId = document.getElementById('pointId').value || 1;
+            currentPointId = pointId;
+            
+            try {
+                const response = await fetch('http://localhost:8000/point_info', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + adminToken
+                    },
+                    body: JSON.stringify({
+                        id: parseInt(pointId)
+                    })
+                });
+                
+                const data = await response.json();
+                document.getElementById('detailResult').textContent = JSON.stringify(data, null, 2);
+                
+                if (data.code === 200) {
+                    const pointData = data.data || data;
+                    displayPointData(pointData, 'detailDisplay');
+                }
+            } catch (error) {
+                document.getElementById('detailResult').textContent = '获取详情失败: ' + error.message;
+            }
+        }
+        
+        // 修改网点
+        async function updatePoint() {
+            if (!adminToken) {
+                document.getElementById('updateResult').textContent = '请先登录获取token';
+                return;
+            }
+            
+            const newName = document.getElementById('newName').value;
+            const newAddress = document.getElementById('newAddress').value;
+            
+            const requestData = {
+                point: {
+                    id: parseInt(currentPointId),
+                    name: newName,
+                    address: newAddress,
+                    point_type: '测试类型',
+                    available_large: 10,
+                    available_medium: 15,
+                    available_small: 20,
+                    open_time: '09:00-18:00',
+                    status: '1',
+                    point_image: '',
+                    mobile: '13800138000',
+                    latitude: 39.984699,
+                    longitude: 116.307198
+                }
+            };
+            
+            try {
+                const response = await fetch('http://localhost:8000/admin/updatePoint', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + adminToken
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                const data = await response.json();
+                document.getElementById('updateResult').textContent = JSON.stringify(data, null, 2);
+                
+                if (data.code === 200) {
+                    console.log('修改成功，等待3秒后重新获取详情...');
+                    setTimeout(() => {
+                        refreshDetail();
+                    }, 3000);
+                }
+            } catch (error) {
+                document.getElementById('updateResult').textContent = '修改失败: ' + error.message;
+            }
+        }
+        
+        // 重新获取详情
+        async function refreshDetail() {
+            if (!adminToken) {
+                document.getElementById('refreshResult').textContent = '请先登录获取token';
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:8000/point_info', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + adminToken
+                    },
+                    body: JSON.stringify({
+                        id: parseInt(currentPointId)
+                    })
+                });
+                
+                const data = await response.json();
+                document.getElementById('refreshResult').textContent = JSON.stringify(data, null, 2);
+                
+                if (data.code === 200) {
+                    const pointData = data.data || data;
+                    displayPointData(pointData, 'refreshDisplay');
+                }
+            } catch (error) {
+                document.getElementById('refreshResult').textContent = '重新获取详情失败: ' + error.message;
+            }
+        }
+        
+        // 显示网点数据
+        function displayPointData(data, elementId) {
+            const display = document.getElementById(elementId);
+            display.innerHTML = `
+                <h4>网点数据：</h4>
+                <div class="field">
+                    <span class="label">网点名称：</span>
+                    <span class="value">${data.name || data.Name || ''}</span>
+                </div>
+                <div class="field">
+                    <span class="label">网点地址：</span>
+                    <span class="value">${data.address || data.Address || ''}</span>
+                </div>
+                <div class="field">
+                    <span class="label">网点类型：</span>
+                    <span class="value">${data.pointType || data.PointType || data.point_type || ''}</span>
+                </div>
+                <div class="field">
+                    <span class="label">大柜数量：</span>
+                    <span class="value">${data.availableLarge || data.AvailableLarge || data.available_large || 0}</span>
+                </div>
+                <div class="field">
+                    <span class="label">中柜数量：</span>
+                    <span class="value">${data.availableMedium || data.AvailableMedium || data.available_medium || 0}</span>
+                </div>
+                <div class="field">
+                    <span class="label">小柜数量：</span>
+                    <span class="value">${data.availableSmall || data.AvailableSmall || data.available_small || 0}</span>
+                </div>
+                <div class="field">
+                    <span class="label">营业时间：</span>
+                    <span class="value">${data.openTime || data.OpenTime || data.open_time || ''}</span>
+                </div>
+                <div class="field">
+                    <span class="label">网点状态：</span>
+                    <span class="value">${data.status || data.Status || ''}</span>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html> 

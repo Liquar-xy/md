@@ -64,8 +64,10 @@
       
       <view class="info-item" @click="editField('status')">
         <text class="info-label">网点状态</text>
-        <text class="info-value" :class="pointInfo.staus === 1 ? 'status-normal' : 'status-closed'">
-          {{ pointInfo.staus === 1 ? '正常' : '暂停营业' }}
+
+        <text class="info-value" :class="pointInfo.staus == 1 ? 'status-normal' : 'status-closed'">
+          {{ pointInfo.staus == 1 ? '正常' : '暂停营业' }}
+
         </text>
         <text class="arrow">></text>
       </view>
@@ -94,9 +96,13 @@
 
     <!-- 保存按钮 -->
     <view class="save-section">
-      <button class="save-btn" @click="savePoint" :disabled="isSaving">
-        {{ isSaving ? '保存中...' : (pointId === 'new' ? '新增' : '保存') }}
-      </button>
+              <button class="save-btn" @click="savePoint" :disabled="isSaving">
+          {{ isSaving ? '正在保存...' : (pointId === 'new' ? '新增网点' : '保存') }}
+        </button>
+        
+
+       
+
     </view>
   </view>
 </template>
@@ -115,7 +121,7 @@ export default {
         availableMedium: 0,
         availableSmall: 0,
         openTime: '',
-        staus: 1,
+        status: 1,
         pointImage: '',
         photos: []
       },
@@ -138,25 +144,66 @@ export default {
         availableMedium: 0,
         availableSmall: 0,
         openTime: '',
-        staus: 1,
+        status: 1,
         pointImage: '',
         photos: []
       };
     } else {
       console.log('修改网点模式，ID:', this.pointId);
-      this.getPointInfo();
+      
+      // 检查是否有本地最新数据
+      const lastEditTime = uni.getStorageSync('lastEditTime');
+      const latestData = uni.getStorageSync('latestPointData');
+      const currentTime = Date.now();
+      
+      console.log('编辑页面加载 - 检查本地数据');
+      console.log('编辑时间:', lastEditTime, '当前时间:', currentTime, '时间差:', currentTime - lastEditTime);
+      console.log('本地最新数据:', latestData);
+      
+      // 如果最近10秒内有编辑操作且ID匹配，使用本地数据
+      if (lastEditTime && latestData && (currentTime - lastEditTime) < 10000 && 
+          (latestData.id == this.pointId || latestData.Id == this.pointId)) {
+        console.log('使用本地最新数据加载编辑页面');
+        this.pointInfo = {
+          name: latestData.name || '',
+          address: latestData.address || '',
+          pointType: latestData.pointType || '',
+          availableLarge: latestData.availableLarge || 0,
+          availableMedium: latestData.availableMedium || 0,
+          availableSmall: latestData.availableSmall || 0,
+          openTime: latestData.openTime || '',
+          status: latestData.status || 1,
+          pointImage: latestData.pointImage || '',
+          photos: latestData.photos || []
+        };
+        
+        console.log('编辑页面使用本地数据:', this.pointInfo);
+      } else {
+        // 否则从服务器获取数据
+        if (this.pointId !== 'new') {
+          this.getPointInfo();
+        } else {
+          console.log('新增网点模式，不需要获取现有数据');
+        }
+      }
     }
   },
   methods: {
     // 获取网点信息
     getPointInfo() {
+      // 如果是新增模式，不需要获取网点信息
+      if (this.pointId === 'new') {
+        console.log('新增网点模式，跳过获取网点信息');
+        return;
+      }
+      
       console.log('正在获取网点信息，ID:', this.pointId);
       
       uni.request({
         url: 'http://localhost:8000/point_info',
         method: 'POST',
         data: {
-          id: this.pointId
+          id: parseInt(this.pointId) || this.pointId
         },
         header: {
           'Content-Type': 'application/json',
@@ -166,19 +213,22 @@ export default {
           console.log('网点信息接口返回数据:', res);
           
           if (res.data && (res.data.code === 200 || res.data.code === "200")) {
+            // 获取实际的数据
+            const data = res.data.data || res.data;
+            console.log('后端返回的原始数据:', data);
+            
             // 确保数据正确映射，兼容不同的字段名
             this.pointInfo = {
-              name: res.data.name || res.data.Name || '',
-              address: res.data.address || res.data.Address || '',
-              pointType: res.data.pointType || res.data.PointType || '',
-              availableLarge: parseInt(res.data.availableLarge || res.data.AvailableLarge) || 0,
-              availableMedium: parseInt(res.data.availableMedium || res.data.AvailableMedium) || 0,
-              availableSmall: parseInt(res.data.availableSmall || res.data.AvailableSmall) || 0,
-              openTime: res.data.openTime || res.data.OpenTime || '',
-              staus: parseInt(res.data.staus || res.data.Status) || 1,
-              pointImage: res.data.pointImage || res.data.PointImage || '',
-      
-              photos: res.data.photos || res.data.Photos || []
+              name: data.name || data.Name || '',
+              address: data.address || data.Address || '',
+              pointType: data.pointType || data.PointType || data.point_type || '',
+              availableLarge: parseInt(data.availableLarge || data.AvailableLarge || data.available_large) || 0,
+              availableMedium: parseInt(data.availableMedium || data.AvailableMedium || data.available_medium) || 0,
+              availableSmall: parseInt(data.availableSmall || data.AvailableSmall || data.available_small) || 0,
+              openTime: data.openTime || data.OpenTime || data.open_time || '',
+              status: parseInt(data.status || data.Status) || 1,
+              pointImage: data.pointImage || data.PointImage || data.point_image || '',
+              photos: data.photos || data.Photos || []
             };
             
             console.log('处理后的网点信息:', this.pointInfo);
@@ -354,8 +404,8 @@ export default {
         itemList: statusOptions.map(item => item.text),
         success: (res) => {
           const selectedStatus = statusOptions[res.tapIndex];
-          this.pointInfo.staus = selectedStatus.value;
-          uni.showToast({
+          this.pointInfo.status = selectedStatus.value;
+      uni.showToast({
             title: `状态已设置为${selectedStatus.text}`,
             icon: 'success'
           });
@@ -438,6 +488,8 @@ export default {
     // 保存网点信息
     savePoint() {
       // 数据验证
+      console.log('开始验证编辑数据:', this.pointInfo);
+      
       if (!this.pointInfo.name || this.pointInfo.name.trim() === '') {
         uni.showToast({
           title: '请输入网点名称',
@@ -462,41 +514,535 @@ export default {
         return;
       }
       
+      console.log('✅ 数据验证通过');
+      
       this.isSaving = true;
       
-      // 直接显示保存成功，不进行网络请求
-      console.log('保存网点信息:', {
-        name: this.pointInfo.name,
-        address: this.pointInfo.address,
-        pointType: this.pointInfo.pointType,
-        availableLarge: this.pointInfo.availableLarge,
-        availableMedium: this.pointInfo.availableMedium,
-        availableSmall: this.pointInfo.availableSmall,
-        openTime: this.pointInfo.openTime,
-        status: this.pointInfo.staus,
-        pointImage: this.pointInfo.pointImage,
-        photos: this.pointInfo.photos
+      // 检查是否有管理员token
+      const adminToken = uni.getStorageSync('adminToken');
+      if (!adminToken) {
+        this.isSaving = false;
+        uni.showToast({
+          title: '请先登录管理员账号',
+          icon: 'none'
+        });
+        return;
+      }
+      
+      // 判断是新增还是修改
+      const isUpdate = this.pointId && this.pointId !== 'new';
+      const url = isUpdate ? 'http://localhost:8000/admin/updatePoint' : 'http://localhost:8000/admin/addPoint';
+      
+      // 检查后端服务是否可用
+      console.log('检查后端服务状态...');
+      uni.request({
+        url: 'http://localhost:8000/point_list',
+        method: 'GET',
+        timeout: 5000,
+        success: (res) => {
+          console.log('✅ 后端服务正常，可以发送修改请求');
+          // 在这里重新构建requestData，确保变量已初始化
+          // 根据ApiPost测试，新增接口不需要point包装器，修改接口需要point包装器
+          const finalRequestData = isUpdate ? {
+            point: {
+              id: parseInt(this.pointId),
+              name: this.pointInfo.name.trim(),
+              address: this.pointInfo.address.trim(),
+              point_type: this.pointInfo.pointType.trim(),
+              available_large: parseInt(this.pointInfo.availableLarge) || 0,
+              available_medium: parseInt(this.pointInfo.availableMedium) || 0,
+              available_small: parseInt(this.pointInfo.availableSmall) || 0,
+              open_time: this.pointInfo.openTime.trim(),
+              status: (parseInt(this.pointInfo.status) || 1).toString(),
+              mobile: '13800138000',
+              latitude: 39.984699,
+              longitude: 116.307198,
+              point_image: ''
+            }
+          } : {
+            // 新增接口：直接发送数据，不需要point包装器
+            name: this.pointInfo.name.trim(),
+            address: this.pointInfo.address.trim(),
+            point_type: this.pointInfo.pointType.trim(),
+            available_large: parseInt(this.pointInfo.availableLarge) || 0,
+            available_medium: parseInt(this.pointInfo.availableMedium) || 0,
+            available_small: parseInt(this.pointInfo.availableSmall) || 0,
+            open_time: this.pointInfo.openTime.trim(),
+            status: (parseInt(this.pointInfo.status) || 1).toString(),
+            mobile: '13800138000',
+            latitude: 39.984699,
+            longitude: 116.307198,
+            point_image: ''
+          };
+          
+          console.log('=== 请求格式调试 ===');
+          console.log('是否修改模式:', isUpdate);
+          console.log('请求URL:', url);
+          console.log('请求数据格式:', isUpdate ? '使用point包装器' : '直接发送数据');
+          console.log('最终请求数据:', finalRequestData);
+          console.log('=== 请求格式调试结束 ===');
+          
+          this.sendUpdateRequest(url, finalRequestData, adminToken, isUpdate);
+        },
+        fail: (err) => {
+          console.error('❌ 后端服务不可用:', err);
+          uni.showToast({
+            title: '后端服务不可用，请检查服务状态',
+            icon: 'none',
+            duration: 3000
+          });
+        }
       });
       
-      // 模拟保存成功
-      setTimeout(() => {
-        this.isSaving = false;
-        
-        const isUpdate = this.pointId && this.pointId !== 'new';
-        uni.showToast({
-          title: isUpdate ? '修改成功' : '新增成功',
-          icon: 'success',
-          duration: 3000
-        });
-        
-        // 不返回上一页，直接停留在当前页面
-        console.log('保存完成，停留在当前页面');
-      }, 500);
+      return; // 先检查服务状态，不直接发送请求
     },
+    
+    // 刷新网点列表数据
+    refreshPointList() {
+      console.log('强制刷新网点列表数据');
+      
+      // 重新获取网点列表
+      uni.request({
+        url: 'http://localhost:8000/point_list',
+        method: 'GET',
+        header: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + uni.getStorageSync('adminToken')
+        },
+        success: (res) => {
+          console.log('刷新网点列表成功:', res);
+          if (res.data && (res.data.code === 200 || res.data.code === "200")) {
+            const listData = res.data.list || res.data.data || [];
+            
+            // 更新本地存储的网点列表
+            const updatedList = listData.map(item => ({
+              id: item.Id || item.id,
+              name: item.name || item.Name,
+              address: item.address || item.Address,
+              pointType: item.pointType || item.PointType,
+              availableLarge: item.availableLarge || item.AvailableLarge,
+              availableMedium: item.availableMedium || item.AvailableMedium,
+              availableSmall: item.availableSmall || item.AvailableSmall,
+              openTime: item.openTime || item.OpenTime,
+              status: item.status || item.Status,
+              cabinetInfo: `${item.availableLarge || item.AvailableLarge}组${item.availableMedium || item.AvailableMedium}主机${item.availableSmall || item.AvailableSmall}柜门`
+            }));
+            
+            uni.setStorageSync('pointList', updatedList);
+            console.log('网点列表已更新:', updatedList);
+          }
+        },
+        fail: (err) => {
+          console.error('刷新网点列表失败:', err);
+        }
+      });
+    },
+    
+    // 刷新网点详情数据
+    refreshPointDetail() {
+      console.log('强制刷新网点详情数据，验证数据库更新');
+      
+      // 如果是新增模式，不需要刷新详情
+      if (this.pointId === 'new' || this.pointId === 'undefined' || !this.pointId) {
+        console.log('新增网点模式，跳过刷新详情');
+        return;
+      }
+      
+      // 重新获取网点详情
+      uni.request({
+        url: 'http://localhost:8000/point_info',
+        method: 'POST',
+        data: {
+          id: parseInt(this.pointId) || this.pointId
+        },
+        header: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + uni.getStorageSync('adminToken')
+        },
+        success: (res) => {
+          console.log('验证数据库更新成功:', res);
+          if (res.data && (res.data.code === 200 || res.data.code === "200")) {
+            const data = res.data.data || res.data;
+            
+            // 更新全局存储，确保详情页面显示最新数据
+            const latestData = {
+              id: this.pointId,
+              name: data.name || data.Name || '',
+              address: data.address || data.Address || '',
+              pointType: data.pointType || data.PointType || data.point_type || '',
+              availableLarge: parseInt(data.availableLarge || data.AvailableLarge || data.available_large) || 0,
+              availableMedium: parseInt(data.availableMedium || data.AvailableMedium || data.available_medium) || 0,
+              availableSmall: parseInt(data.availableSmall || data.AvailableSmall || data.available_small) || 0,
+              openTime: data.openTime || data.OpenTime || data.open_time || '',
+              status: parseInt(data.status || data.Status) || 1,
+              pointImage: data.pointImage || data.PointImage || data.point_image || ''
+            };
+            
+            // 更新全局存储
+            uni.setStorageSync('currentPointData', latestData);
+            uni.setStorageSync('dataUpdateTime', Date.now());
+            uni.setStorageSync('latestPointData', latestData);
+            uni.setStorageSync('lastEditTime', Date.now());
+            
+            console.log('数据库验证成功，最新数据:', latestData);
+            console.log('数据库数据与前端数据已完全同步');
+            
+            // 显示验证成功提示
+            uni.showToast({
+              title: '数据库更新验证成功',
+              icon: 'success',
+              duration: 1500
+            });
+          } else {
+            console.error('数据库验证失败:', res.data);
+            uni.showToast({
+              title: '数据库验证失败',
+              icon: 'none',
+              duration: 1500
+            });
+          }
+        },
+        fail: (err) => {
+          console.error('数据库验证请求失败:', err);
+          uni.showToast({
+            title: '数据库验证失败',
+            icon: 'none',
+            duration: 1500
+          });
+        }
+      });
+    },
+    
+    
+    
+
+    
+
     
     // 返回上一页
     goBack() {
       uni.navigateBack();
+    },
+    
+    // 发送修改请求
+    sendUpdateRequest(url, finalRequestData, adminToken, isUpdate) {
+      console.log('开始发送修改请求...');
+      console.log('发送的数据:', finalRequestData);
+      console.log('使用的Token:', adminToken);
+      console.log('请求URL:', url);
+      
+      // 检查Token格式
+      if (!adminToken || adminToken === 'undefined' || adminToken === 'null') {
+        console.error('❌ Token无效:', adminToken);
+        uni.showToast({
+          title: '请重新登录管理员账号',
+          icon: 'none',
+          duration: 3000
+        });
+        return;
+      }
+      
+      uni.request({
+        url: url,
+        method: 'POST',
+        data: finalRequestData,
+        header: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + adminToken
+        },
+        timeout: 30000, // 增加超时时间到30秒
+        dataType: 'json',
+        responseType: 'text',
+        success: (res) => {
+          console.log('=== 修改响应详情 ===');
+          console.log('完整响应对象:', res);
+          console.log('响应状态码:', res.statusCode);
+          console.log('响应数据:', res.data);
+          console.log('=== 响应详情结束 ===');
+          
+          if (res.statusCode === 200 && res.data) {
+            console.log('HTTP请求成功，检查业务状态码');
+            console.log('业务状态码:', res.data.code);
+            console.log('响应消息:', res.data.msg);
+            
+            if (res.data.code === 200 || res.data.code === "200") {
+              // 修改成功
+              console.log('✅ 数据库修改成功，响应数据:', res.data);
+              
+              // 显示修改成功提示
+              uni.showToast({
+                title: isUpdate ? '网点数据修改成功' : '新增成功',
+                icon: 'success',
+                duration: 2000
+              });
+              
+              // 保存完成后，立即存储最新数据到本地
+              const latestData = {
+                // 如果是新增，使用后端返回的ID；如果是修改，使用当前ID
+                id: isUpdate ? this.pointId : (res.data.data?.id || res.data.id),
+                name: this.pointInfo.name.trim(),
+                address: this.pointInfo.address.trim(),
+                pointType: this.pointInfo.pointType.trim(),
+                availableLarge: parseInt(this.pointInfo.availableLarge) || 0,
+                availableMedium: parseInt(this.pointInfo.availableMedium) || 0,
+                availableSmall: parseInt(this.pointInfo.availableSmall) || 0,
+                openTime: this.pointInfo.openTime.trim(),
+                status: parseInt(this.pointInfo.status) || 1,
+                pointImage: this.pointInfo.pointImage || ''
+              };
+              
+              console.log('✅ 数据已成功修改到数据库');
+              console.log('修改的数据:', latestData);
+              
+              // 立即存储最新数据到本地
+              uni.setStorageSync('latestPointData', latestData);
+              uni.setStorageSync('lastEditTime', Date.now());
+              
+              // 立即更新网点列表中的对应项
+              const pointList = uni.getStorageSync('pointList') || [];
+              
+              if (isUpdate) {
+                // 修改模式：更新现有网点
+                const updatedIndex = pointList.findIndex(item => 
+                  item.id == latestData.id || item.Id == latestData.id
+                );
+                
+                if (updatedIndex !== -1) {
+                  // 更新列表中的数据
+                  pointList[updatedIndex] = {
+                    ...pointList[updatedIndex],
+                    name: latestData.name,
+                    address: latestData.address,
+                    pointType: latestData.pointType,
+                    availableLarge: latestData.availableLarge,
+                    availableMedium: latestData.availableMedium,
+                    availableSmall: latestData.availableSmall,
+                    openTime: latestData.openTime,
+                    status: latestData.status,
+                    cabinetInfo: `${latestData.availableLarge}组${latestData.availableMedium}主机${latestData.availableSmall}柜门`
+                  };
+                  
+                  uni.setStorageSync('pointList', pointList);
+                  console.log('✅ 已更新网点列表数据');
+                }
+              } else {
+                // 新增模式：添加新网点到列表
+                const newPoint = {
+                  id: latestData.id,
+                  name: latestData.name,
+                  address: latestData.address,
+                  pointType: latestData.pointType,
+                  availableLarge: latestData.availableLarge,
+                  availableMedium: latestData.availableMedium,
+                  availableSmall: latestData.availableSmall,
+                  openTime: latestData.openTime,
+                  status: latestData.status,
+                  cabinetInfo: `${latestData.availableLarge}组${latestData.availableMedium}主机${latestData.availableSmall}柜门`
+                };
+                
+                pointList.unshift(newPoint); // 添加到列表开头
+                uni.setStorageSync('pointList', pointList);
+                console.log('✅ 已添加新网点到列表:', newPoint);
+              }
+              
+              // 更新全局数据
+              uni.setStorageSync('currentPointData', latestData);
+              uni.setStorageSync('dataUpdateTime', Date.now());
+              
+              // 发送事件通知列表页面更新
+              uni.$emit('updatePointList', latestData);
+              
+              // 跳转到详情页面
+              setTimeout(() => {
+                // 使用后端返回的新ID，如果是新增模式
+                const detailId = isUpdate ? this.pointId : (res.data.data?.id || res.data.id);
+                console.log('跳转到详情页面，使用ID:', detailId, '是否新增模式:', !isUpdate);
+                
+                uni.navigateTo({
+                  url: `/pages/point-detail/point-detail?id=${detailId}&name=${encodeURIComponent(this.pointInfo.name)}&fromEdit=true`,
+                  success: () => {
+                    console.log('✅ 成功跳转到详情页面');
+                  },
+                  fail: (err) => {
+                    console.error('跳转到详情页面失败:', err);
+                    uni.navigateBack();
+                  }
+                });
+              }, 1000);
+            } else {
+              // 业务错误
+              console.error('❌ 业务错误:', res.data);
+              uni.showToast({
+                title: res.data.msg || '修改失败',
+                icon: 'none',
+                duration: 3000
+              });
+            }
+          } else {
+            // HTTP错误
+            console.error('HTTP错误:', res.statusCode, res.data);
+            uni.showToast({
+              title: `HTTP错误: ${res.statusCode}`,
+              icon: 'none'
+            });
+          }
+        },
+        fail: (err) => {
+          console.error('❌ 修改请求失败:', err);
+          console.error('错误详情:', {
+            errMsg: err.errMsg,
+            statusCode: err.statusCode,
+            data: err.data
+          });
+          
+          // 添加更详细的调试信息
+          console.log('=== 请求调试信息 ===');
+          console.log('请求URL:', url);
+          console.log('请求数据:', finalRequestData);
+          console.log('请求头:', {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + adminToken
+          });
+          console.log('Token长度:', adminToken ? adminToken.length : 0);
+          console.log('=== 调试信息结束 ===');
+          
+          let errorMsg = '网络连接失败';
+          let shouldShowRestartDialog = false;
+          let shouldCheckToken = false;
+          
+          if (err.errMsg && err.errMsg.includes('ERR_EMPTY_RESPONSE')) {
+                      // 现在使用与ApiPost相同的格式，如果仍然失败，说明是其他问题
+          errorMsg = '请求格式已修正，请重试';
+          console.error('已使用与ApiPost相同的请求格式，如果仍然失败，可能是：');
+          console.error('1. 后端服务问题');
+          console.error('2. 网络连接问题');
+          console.error('3. 其他环境问题');
+          } else if (err.errMsg && err.errMsg.includes('timeout')) {
+            errorMsg = '请求超时，请重试';
+          } else if (err.errMsg && err.errMsg.includes('fail')) {
+            errorMsg = '服务器连接失败，请检查后端服务';
+            shouldShowRestartDialog = true;
+          } else if (err.errMsg && err.errMsg.includes('abort')) {
+            errorMsg = '请求被中断';
+          }
+          
+          console.error('显示错误消息:', errorMsg);
+          uni.showToast({
+            title: errorMsg,
+            icon: 'none',
+            duration: 3000
+          });
+          
+          // 如果是Token问题，提示重新登录
+          if (shouldCheckToken) {
+            setTimeout(() => {
+              uni.showModal({
+                title: 'Token问题',
+                content: '检测到Token问题，请重新登录管理员账号',
+                confirmText: '去登录',
+                cancelText: '取消',
+                success: (res) => {
+                  if (res.confirm) {
+                    uni.removeStorageSync('adminToken');
+                    uni.navigateTo({
+                      url: '/pages/admin/login'
+                    });
+                  }
+                }
+              });
+            }, 2000);
+          }
+          // 如果是后端服务问题，显示重启提示
+          else if (shouldShowRestartDialog) {
+            setTimeout(() => {
+              uni.showModal({
+                title: '后端服务问题',
+                content: '检测到后端服务问题，请检查服务状态',
+                showCancel: false,
+                confirmText: '知道了'
+              });
+            }, 2000);
+          }
+        },
+        complete: () => {
+          this.isSaving = false;
+        }
+      });
+    },
+    
+    // 调试请求格式
+    debugRequest() {
+      console.log('=== 调试请求格式 ===');
+      
+      const adminToken = uni.getStorageSync('adminToken');
+      console.log('Token:', adminToken);
+      
+      // 构建请求数据
+      const debugData = {
+        id: parseInt(this.pointId),
+        name: this.pointInfo.name.trim(),
+        address: this.pointInfo.address.trim(),
+        point_type: this.pointInfo.pointType.trim(),
+        available_large: parseInt(this.pointInfo.availableLarge) || 0,
+        available_medium: parseInt(this.pointInfo.availableMedium) || 0,
+        available_small: parseInt(this.pointInfo.availableSmall) || 0,
+        open_time: this.pointInfo.openTime.trim(),
+        status: (parseInt(this.pointInfo.status) || 1).toString(),
+        mobile: '',
+        latitude: 0,
+        longitude: 0
+      };
+      
+      console.log('请求数据:', debugData);
+      console.log('请求URL:', 'http://localhost:8000/admin/updatePoint');
+      console.log('请求方法:', 'POST');
+      console.log('请求头:', {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + adminToken
+      });
+      
+      // 尝试发送一个简单的测试请求
+      uni.request({
+        url: 'http://localhost:8000/admin/updatePoint',
+        method: 'POST',
+        data: debugData,
+        header: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + adminToken
+        },
+        timeout: 10000,
+        success: (res) => {
+          console.log('✅ 调试请求成功:', res);
+          uni.showToast({
+            title: '请求格式正确',
+            icon: 'success',
+            duration: 2000
+          });
+        },
+        fail: (err) => {
+          console.error('❌ 调试请求失败:', err);
+          console.error('错误详情:', {
+            errMsg: err.errMsg,
+            statusCode: err.statusCode,
+            data: err.data
+          });
+          
+          let errorMsg = '请求失败';
+          if (err.errMsg && err.errMsg.includes('ERR_EMPTY_RESPONSE')) {
+            errorMsg = '后端返回空响应，可能是数据格式问题';
+          } else if (err.errMsg && err.errMsg.includes('timeout')) {
+            errorMsg = '请求超时';
+          } else if (err.errMsg && err.errMsg.includes('fail')) {
+            errorMsg = '请求失败';
+          }
+          
+          uni.showToast({
+            title: errorMsg,
+            icon: 'none',
+            duration: 3000
+          });
+        }
+      });
     }
   }
 }
