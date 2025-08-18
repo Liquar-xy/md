@@ -25,7 +25,7 @@
 		<view class="location-section">
 			<view class="city-selector" @click="selectCity">
 				<text class="location-icon">📍</text>
-				<text class="city-name">{{currentCity}}</text>
+				<text class="city-name">{{ currentCity }}</text>
 				<text class="dropdown-icon">▼</text>
 			</view>
 			<view class="nearby-btn" @click="findNearby">
@@ -47,7 +47,7 @@
 		<!-- 热门地点 -->
 		<view class="hotspots-section">
 			<view class="hotspot-item" v-for="(item, index) in hotspots" :key="index" @click="selectHotspot(item)">
-				<text class="hotspot-text">{{item}}</text>
+				<text class="hotspot-text">{{ item }}</text>
 			</view>
 		</view>
 
@@ -75,7 +75,7 @@
 				<text class="feature-text coupons-text">优惠卡券</text>
 			</view>
 		</view>
-		
+
 
 
 		<!-- 交易保障 -->
@@ -103,31 +103,28 @@
 			<view class="locker-item" v-if="nearestLocker" @click="selectLocker(nearestLocker)">
 				<image class="locker-image" src="/static/locker-image.jpg" mode="aspectFill"></image>
 				<view class="locker-info">
-					<text class="locker-name">{{nearestLocker.name}}</text>
-					<text class="locker-capacity">可用柜口：大{{nearestLocker.large}} | 中{{nearestLocker.medium}} | 小{{nearestLocker.small}}</text>
+					<text class="locker-name">{{ nearestLocker.name }}</text>
+					<text class="locker-capacity">可用柜口：大{{ nearestLocker.large }} | 中{{ nearestLocker.medium }} |
+						小{{ nearestLocker.small }}</text>
 					<view class="locker-location">
 						<text class="location-icon">📍</text>
-						<text class="location-text">{{nearestLocker.address}}</text>
-						<text class="distance" v-if="nearestLocker.distance">{{nearestLocker.distance}}</text>
+						<text class="location-text">{{ nearestLocker.address }}</text>
+						<text class="distance" v-if="nearestLocker.distance">{{ nearestLocker.distance }}</text>
 					</view>
 				</view>
 			</view>
 
 			<!-- 其他附近寄存点（最多显示2个） -->
-			<view
-				class="locker-item"
-				v-for="(locker, index) in nearbyLockers.slice(1, 3)"
-				:key="locker.id"
-				@click="selectLocker(locker)"
-			>
+			<view class="locker-item" v-for="(locker, index) in nearbyLockers.slice(1, 3)" :key="locker.id"
+				@click="selectLocker(locker)">
 				<image class="locker-image" src="/static/locker-image.jpg" mode="aspectFill"></image>
 				<view class="locker-info">
-					<text class="locker-name">{{locker.name}}</text>
-					<text class="locker-capacity">可用柜口：大{{locker.large}} | 中{{locker.medium}} | 小{{locker.small}}</text>
+					<text class="locker-name">{{ locker.name }}</text>
+					<text class="locker-capacity">可用柜口：大{{ locker.large }} | 中{{ locker.medium }} | 小{{ locker.small }}</text>
 					<view class="locker-location">
 						<text class="location-icon">📍</text>
-						<text class="location-text">{{locker.address}}</text>
-						<text class="distance" v-if="locker.distance">{{locker.distance}}</text>
+						<text class="location-text">{{ locker.address }}</text>
+						<text class="distance" v-if="locker.distance">{{ locker.distance }}</text>
 					</view>
 				</view>
 			</view>
@@ -135,7 +132,7 @@
 			<!-- 无寄存点提示 -->
 			<view class="no-locker" v-if="!nearestLocker && nearbyLockers.length === 0">
 				<view class="no-locker-icon">📍</view>
-				<text class="no-locker-text">{{noLockerMessage}}</text>
+				<text class="no-locker-text">{{ noLockerMessage }}</text>
 
 				<!-- 加载动画 -->
 				<view class="loading-spinner" v-if="isLoadingNearby"></view>
@@ -178,7 +175,7 @@ export default {
 				'开封市': ['开封站', '开封北站', '清明上河园', '大相国寺'],
 				'安阳': ['安阳站', '安阳东站', '殷墟', '红旗渠'],
 				'安阳市': ['安阳站', '安阳东站', '殷墟', '红旗渠'],
-				
+
 				// 直辖市
 				'北京': ['北京站', '北京西站', '天安门', '故宫'],
 				'北京市': ['北京站', '北京西站', '天安门', '故宫'],
@@ -188,7 +185,7 @@ export default {
 				'天津市': ['天津站', '天津西站', '天津之眼', '古文化街'],
 				'重庆': ['重庆站', '重庆北站', '解放碑', '洪崖洞'],
 				'重庆市': ['重庆站', '重庆北站', '解放碑', '洪崖洞'],
-				
+
 				// 广东省
 				'广州': ['广州站', '广州南站', '珠江新城', '天河城'],
 				'广州市': ['广州站', '广州南站', '珠江新城', '天河城'],
@@ -200,7 +197,7 @@ export default {
 				'佛山市': ['佛山站', '佛山西站', '祖庙', '岭南天地'],
 				'东莞': ['东莞站', '东莞东站', '可园', '松山湖'],
 				'东莞市': ['东莞站', '东莞东站', '可园', '松山湖'],
-				
+
 				// 四川省
 				'成都': ['成都站', '成都东站', '春熙路', '宽窄巷子'],
 				'成都市': ['成都站', '成都东站', '春熙路', '宽窄巷子'],
@@ -208,7 +205,7 @@ export default {
 				'四川省': ['成都站', '成都东站', '春熙路', '宽窄巷子'],
 				'绵阳': ['绵阳站', '绵阳机场', '科技城', '越王楼'],
 				'绵阳市': ['绵阳站', '绵阳机场', '科技城', '越王楼'],
-				
+
 				// 江苏省
 				'南京': ['南京站', '南京南站', '夫子庙', '中山陵'],
 				'南京市': ['南京站', '南京南站', '夫子庙', '中山陵'],
@@ -218,7 +215,7 @@ export default {
 				'无锡市': ['无锡站', '无锡东站', '太湖', '鼋头渚'],
 				'常州': ['常州站', '常州北站', '中华恐龙园', '天宁寺'],
 				'常州市': ['常州站', '常州北站', '中华恐龙园', '天宁寺'],
-				
+
 				// 浙江省
 				'杭州': ['杭州站', '杭州东站', '西湖', '灵隐寺'],
 				'杭州市': ['杭州站', '杭州东站', '西湖', '灵隐寺'],
@@ -226,25 +223,25 @@ export default {
 				'宁波市': ['宁波站', '宁波东站', '天一阁', '东钱湖'],
 				'温州': ['温州站', '温州南站', '雁荡山', '楠溪江'],
 				'温州市': ['温州站', '温州南站', '雁荡山', '楠溪江'],
-				
+
 				// 湖北省
 				'武汉': ['武汉站', '汉口站', '黄鹤楼', '东湖'],
 				'武汉市': ['武汉站', '汉口站', '黄鹤楼', '东湖'],
 				'宜昌': ['宜昌站', '宜昌东站', '三峡大坝', '葛洲坝'],
 				'宜昌市': ['宜昌站', '宜昌东站', '三峡大坝', '葛洲坝'],
-				
+
 				// 湖南省
 				'长沙': ['长沙站', '长沙南站', '橘子洲', '岳麓山'],
 				'长沙市': ['长沙站', '长沙南站', '橘子洲', '岳麓山'],
 				'张家界': ['张家界站', '张家界机场', '天门山', '黄龙洞'],
 				'张家界市': ['张家界站', '张家界机场', '天门山', '黄龙洞'],
-				
+
 				// 陕西省
 				'西安': ['西安站', '西安北站', '兵马俑', '大雁塔'],
 				'西安市': ['西安站', '西安北站', '兵马俑', '大雁塔'],
 				'宝鸡': ['宝鸡站', '宝鸡南站', '法门寺', '太白山'],
 				'宝鸡市': ['宝鸡站', '宝鸡南站', '法门寺', '太白山'],
-				
+
 				// 山东省
 				'济南': ['济南站', '济南西站', '趵突泉', '大明湖'],
 				'济南市': ['济南站', '济南西站', '趵突泉', '大明湖'],
@@ -252,7 +249,7 @@ export default {
 				'青岛市': ['青岛站', '青岛北站', '栈桥', '八大关'],
 				'烟台': ['烟台站', '烟台南站', '蓬莱阁', '金沙滩'],
 				'烟台市': ['烟台站', '烟台南站', '蓬莱阁', '金沙滩'],
-				
+
 				// 辽宁省
 				'沈阳': ['沈阳站', '沈阳北站', '故宫', '北陵公园'],
 				'沈阳市': ['沈阳站', '沈阳北站', '故宫', '北陵公园'],
@@ -260,119 +257,119 @@ export default {
 				'大连市': ['大连站', '大连北站', '星海广场', '老虎滩'],
 				'锦州': ['锦州站', '锦州南站', '笔架山', '医巫闾山'],
 				'锦州市': ['锦州站', '锦州南站', '笔架山', '医巫闾山'],
-				
+
 				// 吉林省
 				'长春': ['长春站', '长春西站', '净月潭', '伪满皇宫'],
 				'长春市': ['长春站', '长春西站', '净月潭', '伪满皇宫'],
 				'吉林': ['吉林站', '吉林西站', '松花江', '北山公园'],
 				'吉林市': ['吉林站', '吉林西站', '松花江', '北山公园'],
-				
+
 				// 黑龙江省
 				'哈尔滨': ['哈尔滨站', '哈尔滨西站', '中央大街', '太阳岛'],
 				'哈尔滨市': ['哈尔滨站', '哈尔滨西站', '中央大街', '太阳岛'],
 				'大庆': ['大庆站', '大庆西站', '铁人纪念馆', '龙凤湿地'],
 				'大庆市': ['大庆站', '大庆西站', '铁人纪念馆', '龙凤湿地'],
-				
+
 				// 安徽省
 				'合肥': ['合肥站', '合肥南站', '包公园', '三河古镇'],
 				'合肥市': ['合肥站', '合肥南站', '包公园', '三河古镇'],
 				'芜湖': ['芜湖站', '芜湖北站', '方特欢乐世界', '鸠兹古镇'],
 				'芜湖市': ['芜湖站', '芜湖北站', '方特欢乐世界', '鸠兹古镇'],
-				
+
 				// 江西省
 				'南昌': ['南昌站', '南昌西站', '滕王阁', '八一广场'],
 				'南昌市': ['南昌站', '南昌西站', '滕王阁', '八一广场'],
 				'九江': ['九江站', '九江西站', '庐山', '浔阳楼'],
 				'九江市': ['九江站', '九江西站', '庐山', '浔阳楼'],
-				
+
 				// 福建省
 				'福州': ['福州站', '福州南站', '三坊七巷', '鼓山'],
 				'福州市': ['福州站', '福州南站', '三坊七巷', '鼓山'],
 				'厦门': ['厦门站', '厦门北站', '鼓浪屿', '中山路'],
 				'厦门市': ['厦门站', '厦门北站', '鼓浪屿', '中山路'],
-				
+
 				// 云南省
 				'昆明': ['昆明站', '昆明南站', '滇池', '石林'],
 				'昆明市': ['昆明站', '昆明南站', '滇池', '石林'],
 				'大理': ['大理站', '大理机场', '洱海', '古城'],
 				'大理市': ['大理站', '大理机场', '洱海', '古城'],
-				
+
 				// 贵州省
 				'贵阳': ['贵阳站', '贵阳北站', '黔灵山', '甲秀楼'],
 				'贵阳市': ['贵阳站', '贵阳北站', '黔灵山', '甲秀楼'],
-				
+
 				// 广西省
 				'南宁': ['南宁站', '南宁东站', '青秀山', '民族大道'],
 				'南宁市': ['南宁站', '南宁东站', '青秀山', '民族大道'],
 				'桂林': ['桂林站', '桂林北站', '漓江', '象鼻山'],
 				'桂林市': ['桂林站', '桂林北站', '漓江', '象鼻山'],
-				
+
 				// 海南省
 				'海口': ['海口站', '海口东站', '骑楼老街', '万绿园'],
 				'海口市': ['海口站', '海口东站', '骑楼老街', '万绿园'],
 				'三亚': ['三亚站', '三亚机场', '天涯海角', '亚龙湾'],
 				'三亚市': ['三亚站', '三亚机场', '天涯海角', '亚龙湾'],
-				
+
 				// 山西省
 				'太原': ['太原站', '太原南站', '晋祠', '双塔寺'],
 				'太原市': ['太原站', '太原南站', '晋祠', '双塔寺'],
 				'大同': ['大同站', '大同南站', '云冈石窟', '华严寺'],
 				'大同市': ['大同站', '大同南站', '云冈石窟', '华严寺'],
-				
+
 				// 河北省
 				'石家庄': ['石家庄站', '石家庄东站', '赵州桥', '正定古城'],
 				'石家庄市': ['石家庄站', '石家庄东站', '赵州桥', '正定古城'],
 				'唐山': ['唐山站', '唐山北站', '南湖公园', '清东陵'],
 				'唐山市': ['唐山站', '唐山北站', '南湖公园', '清东陵'],
-				
+
 				// 内蒙古
 				'呼和浩特': ['呼和浩特站', '呼和浩特东站', '大召寺', '内蒙古博物院'],
 				'呼和浩特市': ['呼和浩特站', '呼和浩特东站', '大召寺', '内蒙古博物院'],
 				'包头': ['包头站', '包头东站', '五当召', '赛汗塔拉'],
 				'包头市': ['包头站', '包头东站', '五当召', '赛汗塔拉'],
-				
+
 				// 新疆
 				'乌鲁木齐': ['乌鲁木齐站', '乌鲁木齐南站', '天山大峡谷', '红山公园'],
 				'乌鲁木齐市': ['乌鲁木齐站', '乌鲁木齐南站', '天山大峡谷', '红山公园'],
-				
+
 				// 西藏
 				'拉萨': ['拉萨站', '拉萨机场', '布达拉宫', '大昭寺'],
 				'拉萨市': ['拉萨站', '拉萨机场', '布达拉宫', '大昭寺'],
-				
+
 				// 青海
 				'西宁': ['西宁站', '西宁机场', '塔尔寺', '青海湖'],
 				'西宁市': ['西宁站', '西宁机场', '塔尔寺', '青海湖'],
-				
+
 				// 宁夏
 				'银川': ['银川站', '银川河东机场', '西夏王陵', '沙湖'],
 				'银川市': ['银川站', '银川河东机场', '西夏王陵', '沙湖'],
-				
+
 				// 甘肃
 				'兰州': ['兰州站', '兰州西站', '黄河铁桥', '白塔山'],
 				'兰州市': ['兰州站', '兰州西站', '黄河铁桥', '白塔山']
 			}
 		}
 	},
-	
+
 	onLoad() {
 		console.log('🚀 首页加载');
-		
+
 		// 获取当前选择的城市
 		const selectedCity = uni.getStorageSync('selectedCity');
 		if (selectedCity && selectedCity.name) {
 			this.currentCity = selectedCity.name;
 		}
-		
+
 		// 强制更新热门地点，确保显示正确
 		this.updateHotspots();
-		
+
 		// 初始化首页数据
 		this.initializeHomePage();
 	},
-	
+
 	onShow() {
 		console.log('🔄 首页onShow触发');
-		
+
 		// 页面显示时检查城市是否变化
 		const selectedCity = uni.getStorageSync('selectedCity');
 		if (selectedCity && selectedCity.name && selectedCity.name !== this.currentCity) {
@@ -381,28 +378,28 @@ export default {
 			this.initializeHomePage();
 		}
 	},
-	
+
 	onUnload() {
 		// 清理定时器
 		if (this.updateTimer) {
 			clearInterval(this.updateTimer);
 		}
 	},
-	
+
 	methods: {
 		// 初始化首页数据
 		initializeHomePage() {
 			console.log('🔄 初始化首页数据');
-			
+
 			try {
 				// 先使用本地数据，确保页面能正常显示
 				this.updateHotspots();
-				
+
 				// 然后尝试加载后端数据（非阻塞）
 				this.loadHotspots();
 				this.loadNearbyLockers();
 				this.loadHotCities();
-				
+
 				console.log('✅ 首页数据初始化完成');
 			} catch (error) {
 				console.error('❌ 首页数据初始化失败:', error);
@@ -410,14 +407,14 @@ export default {
 				this.updateHotspots();
 			}
 		},
-		
+
 		// 加载热门地点（暂时禁用API，直接使用本地数据）
 		loadHotspots() {
 			console.log('📡 加载热门地点（使用本地配置）');
-			
+
 			// 暂时禁用API调用，直接使用本地配置的热门地点
 			this.updateHotspots();
-			
+
 			// TODO: 等后端API修复后再启用
 			/*
 			try {
@@ -451,11 +448,11 @@ export default {
 			}
 			*/
 		},
-		
+
 		// 加载热门城市（暂时禁用）
 		loadHotCities() {
 			console.log('📡 加载热门城市（已禁用）');
-			
+
 			// 暂时禁用这个API调用，避免不必要的网络请求
 			// TODO: 等后端API稳定后再启用
 			/*
@@ -485,17 +482,17 @@ export default {
 			}
 			*/
 		},
-		
+
 		// 更新热门地点
 		updateHotspots() {
 			console.log('🔄 更新热门地点，当前城市:', this.currentCity);
-			
+
 			// 获取城市的核心名称（去掉"市"、"省"等后缀）
 			const cleanCityName = this.getCleanCityName(this.currentCity);
-			
+
 			// 根据当前城市获取对应的热门地点
 			let cityHotspots = this.cityHotspots[this.currentCity] || this.cityHotspots[cleanCityName];
-			
+
 			if (cityHotspots && cityHotspots.length > 0) {
 				this.hotspots = [...cityHotspots];
 				console.log('✅ 热门地点已更新:', this.hotspots);
@@ -505,34 +502,104 @@ export default {
 				console.log('⚠️ 未找到匹配城市，使用默认热门地点:', this.hotspots);
 			}
 		},
-		
+
 		// 获取清理后的城市名称
 		getCleanCityName(cityName) {
 			if (!cityName) return '';
 			return cityName.replace(/[市省区县]/g, '');
 		},
-		
+
+		// 获取城市坐标
+		getCityCoordinates(cityName) {
+			// 主要城市坐标配置
+			const cityCoordinates = {
+				// 直辖市
+				'北京': { longitude: 116.4074, latitude: 39.9042 },
+				'上海': { longitude: 121.4737, latitude: 31.2304 },
+				'天津': { longitude: 117.1901, latitude: 39.1084 },
+				'重庆': { longitude: 106.5516, latitude: 29.5630 },
+
+				// 省会城市
+				'郑州': { longitude: 113.6253, latitude: 34.7466 },
+				'广州': { longitude: 113.2644, latitude: 23.1291 },
+				'深圳': { longitude: 114.0579, latitude: 22.5431 },
+				'成都': { longitude: 104.0665, latitude: 30.5728 },
+				'杭州': { longitude: 120.1551, latitude: 30.2741 },
+				'南京': { longitude: 118.7969, latitude: 32.0603 },
+				'武汉': { longitude: 114.3054, latitude: 30.5931 },
+				'西安': { longitude: 108.9402, latitude: 34.3416 },
+				'长沙': { longitude: 112.9388, latitude: 28.2282 },
+				'沈阳': { longitude: 123.4315, latitude: 41.8057 },
+				'哈尔滨': { longitude: 126.5358, latitude: 45.8023 },
+				'昆明': { longitude: 102.8329, latitude: 24.8801 },
+				'南宁': { longitude: 108.3669, latitude: 22.8170 },
+				'乌鲁木齐': { longitude: 87.6177, latitude: 43.7928 },
+				'拉萨': { longitude: 91.1409, latitude: 29.6456 },
+				'银川': { longitude: 106.2309, latitude: 38.4872 },
+				'西宁': { longitude: 101.7782, latitude: 36.6171 },
+				'呼和浩特': { longitude: 111.7519, latitude: 40.8414 },
+				'太原': { longitude: 112.5489, latitude: 37.8706 },
+				'石家庄': { longitude: 114.5149, latitude: 38.0428 },
+				'济南': { longitude: 117.1205, latitude: 36.6519 },
+				'合肥': { longitude: 117.2272, latitude: 31.8206 },
+				'南昌': { longitude: 115.8921, latitude: 28.6765 },
+				'福州': { longitude: 119.3063, latitude: 26.0745 },
+				'海口': { longitude: 110.3312, latitude: 20.0311 },
+				'贵阳': { longitude: 106.7135, latitude: 26.5783 },
+				'兰州': { longitude: 103.8236, latitude: 36.0581 },
+
+				// 其他重要城市
+				'苏州': { longitude: 120.6519, latitude: 31.3989 },
+				'无锡': { longitude: 120.3019, latitude: 31.5747 },
+				'宁波': { longitude: 121.5440, latitude: 29.8683 },
+				'温州': { longitude: 120.6994, latitude: 27.9944 },
+				'佛山': { longitude: 113.1220, latitude: 23.0288 },
+				'东莞': { longitude: 113.7518, latitude: 23.0489 },
+				'珠海': { longitude: 113.5767, latitude: 22.2707 },
+				'厦门': { longitude: 118.0894, latitude: 24.4798 },
+				'青岛': { longitude: 120.3826, latitude: 36.0671 },
+				'大连': { longitude: 121.6147, latitude: 38.9140 },
+				'宁波': { longitude: 121.5440, latitude: 29.8683 }
+			};
+
+			// 获取城市坐标，如果没找到则使用郑州作为默认
+			return cityCoordinates[cityName] || cityCoordinates['郑州'];
+		},
+
 		// 选择城市
 		selectCity() {
 			uni.navigateTo({
 				url: '/pages/city-select/city-select?from=index'
 			});
 		},
-		
+
 		// 找附近
 		findNearby() {
+			// 确保当前城市信息已保存到本地存储
+			const selectedCity = uni.getStorageSync('selectedCity');
+			if (!selectedCity || selectedCity.name !== this.currentCity) {
+				// 如果本地存储的城市与当前显示的城市不一致，更新本地存储
+				const cityInfo = {
+					name: this.currentCity,
+					coordinates: this.getCityCoordinates(this.currentCity)
+				};
+				uni.setStorageSync('selectedCity', cityInfo);
+				console.log('🏙️ 更新本地存储城市信息:', cityInfo);
+			}
+
+			// 跳转到附近页面，并传递城市参数
 			uni.navigateTo({
-				url: '/pages/nearby/nearby'
+				url: `/pages/nearby/nearby?city=${encodeURIComponent(this.currentCity)}`
 			});
 		},
-		
+
 		// 打开搜索
 		openSearch() {
 			uni.navigateTo({
 				url: '/pages/search/search'
 			});
 		},
-		
+
 		// 选择热门地点
 		selectHotspot(hotspot) {
 			console.log('选择热门地点:', hotspot);
@@ -540,14 +607,14 @@ export default {
 				url: `/pages/search/search?keyword=${encodeURIComponent(hotspot)}`
 			});
 		},
-		
+
 		// 查询寄存点
 		queryLockers() {
 			uni.navigateTo({
 				url: '/pages/locker-map/locker-map'
 			});
 		},
-		
+
 		// 功能入口
 		goToOrders() {
 			uni.switchTab({
@@ -561,37 +628,37 @@ export default {
 				}
 			});
 		},
-		
+
 		goToService() {
 			uni.navigateTo({
 				url: '/pages/customer-service/customer-service'
 			});
 		},
-		
+
 		goToGuide() {
 			uni.navigateTo({
 				url: '/pages/user-guide/user-guide'
 			});
 		},
-		
+
 		goToCoupons() {
 			uni.navigateTo({
 				url: '/pages/coupons/coupons'
 			});
 		},
-		
 
-		
+
+
 		// 显示退出登录确认
 		showLogoutConfirm() {
 			NavigationUtils.showLogoutConfirm();
 		},
-		
+
 		// 回到登录页面（不退出登录）
 		backToLogin() {
 			NavigationUtils.showBackToLoginConfirm();
 		},
-		
+
 		// 退出登录
 		logout() {
 			// 清除本地存储的用户信息
@@ -601,14 +668,14 @@ export default {
 			uni.removeStorageSync('selectedCity');
 			uni.removeStorageSync('token');
 			uni.removeStorageSync('userData');
-			
+
 			// 显示退出成功提示
 			uni.showToast({
 				title: '已退出登录',
 				icon: 'success',
 				duration: 1500
 			});
-			
+
 			// 延迟跳转到登录页面
 			setTimeout(() => {
 				uni.reLaunch({
@@ -616,14 +683,14 @@ export default {
 				});
 			}, 1500);
 		},
-		
+
 		// 查看全部附近寄存点
 		viewAllNearby() {
 			uni.navigateTo({
 				url: '/pages/nearby/nearby'
 			});
 		},
-		
+
 		// 选择寄存点
 		selectLocker(locker) {
 			console.log('选择寄存点:', locker);
@@ -631,36 +698,36 @@ export default {
 				url: `/pages/locker-detail/locker-detail?id=${locker.id}&name=${encodeURIComponent(locker.name)}&address=${encodeURIComponent(locker.address)}`
 			});
 		},
-		
+
 		// 加载附近寄存点
 		loadNearbyLockers() {
 			console.log('🔄 开始加载附近寄存点');
 			this.isLoadingNearby = true;
 			this.noLockerMessage = '正在获取附近寄存点...';
-			
+
 			// 直接使用模拟数据，避免位置权限问题
 			setTimeout(() => {
 				this.useMockNearbyData(34.7466, 113.6253);
 			}, 500);
-			
+
 			// 位置获取功能已禁用，直接使用模拟数据
 			console.log('📍 使用模拟数据，跳过位置获取');
 		},
-		
+
 		// 获取附近寄存点数据（暂时禁用API）
 		fetchNearbyLockers(latitude, longitude) {
 			console.log('📡 请求附近寄存点数据（使用模拟数据）:', { latitude, longitude, city: this.currentCity });
-			
+
 			// 如果已经有数据了，就不再重复生成
 			if (this.nearbyLockers.length > 0) {
 				console.log('✅ 已有附近寄存点数据，跳过重复生成');
 				return;
 			}
-			
+
 			// 暂时禁用API调用，直接使用模拟数据
 			console.log('🎭 使用模拟数据替代API调用');
 			// 不调用API，保持现有的模拟数据
-			
+
 			// TODO: 等后端API修复后再启用
 			/*
 			try {
@@ -690,11 +757,11 @@ export default {
 			}
 			*/
 		},
-		
+
 		// 使用模拟附近寄存点数据
 		useMockNearbyData(latitude, longitude) {
 			console.log('🎭 使用模拟附近寄存点数据');
-			
+
 			const mockData = {
 				items: [
 					{
@@ -723,19 +790,19 @@ export default {
 					}
 				]
 			};
-			
+
 			setTimeout(() => {
 				this.handleNearbyLockersSuccess(mockData);
 			}, 1000);
 		},
-		
+
 		// 处理获取附近寄存点成功
 		handleNearbyLockersSuccess(data) {
 			this.isLoadingNearby = false;
-			
+
 			try {
 				let lockers = [];
-				
+
 				// 处理后端返回的数据格式
 				if (data.items && Array.isArray(data.items)) {
 					lockers = data.items.map(item => ({
@@ -751,7 +818,7 @@ export default {
 						status: 'available'
 					}));
 				}
-				
+
 				if (lockers.length > 0) {
 					// 按距离排序
 					lockers.sort((a, b) => {
@@ -759,11 +826,11 @@ export default {
 						const distanceB = parseFloat(b.distance) || 0;
 						return distanceA - distanceB;
 					});
-					
+
 					this.nearestLocker = lockers[0];
 					this.nearbyLockers = lockers;
 					this.noLockerMessage = '';
-					
+
 					console.log('✅ 附近寄存点数据处理完成:', {
 						nearest: this.nearestLocker.name,
 						total: this.nearbyLockers.length
@@ -776,7 +843,7 @@ export default {
 				this.handleNearbyLockersError('数据处理失败');
 			}
 		},
-		
+
 		// 处理获取附近寄存点失败
 		handleNearbyLockersError(message) {
 			console.log('⚠️ 处理附近寄存点错误:', message);
@@ -785,26 +852,26 @@ export default {
 			this.nearbyLockers = [];
 			this.noLockerMessage = message || '暂无附近寄存点，试试扩大搜索范围';
 		},
-		
+
 		// 重新搜索
 		refreshNearbyLockers() {
 			this.loadNearbyLockers();
 		},
-		
+
 		// 扩大搜索范围
 		expandSearchRadius() {
 			console.log('🔍 扩大搜索范围');
 			this.isLoadingNearby = true;
 			this.noLockerMessage = '正在扩大范围搜索...';
-			
+
 			// 位置获取功能已禁用，直接使用默认坐标
 			this.fetchNearbyLockersWithRadius(34.7466, 113.6253, 50);
 		},
-		
+
 		// 使用指定半径获取寄存点（暂时禁用API）
 		fetchNearbyLockersWithRadius(latitude, longitude, radius) {
 			console.log('🔍 扩大搜索范围（使用模拟数据）');
-			
+
 			// 暂时禁用API调用，使用扩展的模拟数据
 			const expandedMockData = {
 				items: [
@@ -850,11 +917,11 @@ export default {
 					}
 				]
 			};
-			
+
 			setTimeout(() => {
 				this.handleNearbyLockersSuccess(expandedMockData);
 			}, 800);
-			
+
 			// TODO: 等后端API修复后再启用
 			/*
 			const API_BASE_URL = 'http://localhost:8000';
@@ -893,10 +960,10 @@ export default {
 	left: 0;
 	width: 100%;
 	height: 100%;
-	background: linear-gradient(135deg, 
-		rgba(102, 126, 234, 0.1) 0%, 
-		rgba(118, 75, 162, 0.05) 50%, 
-		rgba(240, 147, 251, 0.1) 100%);
+	background: linear-gradient(135deg,
+			rgba(102, 126, 234, 0.1) 0%,
+			rgba(118, 75, 162, 0.05) 50%,
+			rgba(240, 147, 251, 0.1) 100%);
 	backdrop-filter: blur(100rpx);
 	z-index: -1;
 }
@@ -911,7 +978,8 @@ export default {
 	gap: 20rpx;
 }
 
-.back-to-login-btn, .logout-btn {
+.back-to-login-btn,
+.logout-btn {
 	display: flex;
 	align-items: center;
 	padding: 15rpx 20rpx;
@@ -921,13 +989,15 @@ export default {
 	backdrop-filter: blur(10rpx);
 }
 
-.back-icon, .logout-icon {
+.back-icon,
+.logout-icon {
 	font-size: 24rpx;
 	margin-right: 8rpx;
 	color: #007aff;
 }
 
-.back-text, .logout-text {
+.back-text,
+.logout-text {
 	font-size: 24rpx;
 	color: #007aff;
 	font-weight: 500;
@@ -980,9 +1050,9 @@ export default {
 	justify-content: space-between;
 	align-items: center;
 	padding: 30rpx;
-	background: linear-gradient(135deg, 
-		rgba(255, 255, 255, 0.95) 0%, 
-		rgba(255, 255, 255, 0.85) 100%);
+	background: linear-gradient(135deg,
+			rgba(255, 255, 255, 0.95) 0%,
+			rgba(255, 255, 255, 0.85) 100%);
 	backdrop-filter: blur(20rpx);
 	border-bottom: 1rpx solid rgba(255, 255, 255, 0.2);
 }
@@ -1038,9 +1108,9 @@ export default {
 /* 搜索框 */
 .search-section {
 	padding: 30rpx;
-	background: linear-gradient(135deg, 
-		rgba(255, 255, 255, 0.95) 0%, 
-		rgba(255, 255, 255, 0.85) 100%);
+	background: linear-gradient(135deg,
+			rgba(255, 255, 255, 0.95) 0%,
+			rgba(255, 255, 255, 0.85) 100%);
 	backdrop-filter: blur(20rpx);
 }
 
@@ -1048,9 +1118,9 @@ export default {
 	display: flex;
 	align-items: center;
 	padding: 25rpx 30rpx;
-	background: linear-gradient(135deg, 
-		rgba(255, 255, 255, 0.9) 0%, 
-		rgba(255, 255, 255, 0.7) 100%);
+	background: linear-gradient(135deg,
+			rgba(255, 255, 255, 0.9) 0%,
+			rgba(255, 255, 255, 0.7) 100%);
 	border-radius: 30rpx;
 	border: 2rpx solid rgba(102, 126, 234, 0.2);
 	box-shadow: 0 8rpx 25rpx rgba(0, 0, 0, 0.1);
@@ -1078,18 +1148,18 @@ export default {
 	display: flex;
 	flex-wrap: wrap;
 	padding: 20rpx 30rpx;
-	background: linear-gradient(135deg, 
-		rgba(255, 255, 255, 0.95) 0%, 
-		rgba(255, 255, 255, 0.85) 100%);
+	background: linear-gradient(135deg,
+			rgba(255, 255, 255, 0.95) 0%,
+			rgba(255, 255, 255, 0.85) 100%);
 	backdrop-filter: blur(20rpx);
 }
 
 .hotspot-item {
 	margin: 10rpx;
 	padding: 15rpx 25rpx;
-	background: linear-gradient(135deg, 
-		rgba(102, 126, 234, 0.1) 0%, 
-		rgba(118, 75, 162, 0.1) 100%);
+	background: linear-gradient(135deg,
+			rgba(102, 126, 234, 0.1) 0%,
+			rgba(118, 75, 162, 0.1) 100%);
 	border-radius: 25rpx;
 	border: 1rpx solid rgba(102, 126, 234, 0.2);
 }
@@ -1103,9 +1173,9 @@ export default {
 /* 查询按钮 */
 .query-section {
 	padding: 30rpx;
-	background: linear-gradient(135deg, 
-		rgba(255, 255, 255, 0.95) 0%, 
-		rgba(255, 255, 255, 0.85) 100%);
+	background: linear-gradient(135deg,
+			rgba(255, 255, 255, 0.95) 0%,
+			rgba(255, 255, 255, 0.85) 100%);
 	backdrop-filter: blur(20rpx);
 }
 
@@ -1126,9 +1196,9 @@ export default {
 	display: flex;
 	justify-content: space-around;
 	padding: 40rpx 30rpx;
-	background: linear-gradient(135deg, 
-		rgba(255, 255, 255, 0.95) 0%, 
-		rgba(255, 255, 255, 0.85) 100%);
+	background: linear-gradient(135deg,
+			rgba(255, 255, 255, 0.95) 0%,
+			rgba(255, 255, 255, 0.85) 100%);
 	backdrop-filter: blur(20rpx);
 	margin-top: 20rpx;
 }
@@ -1164,9 +1234,9 @@ export default {
 	align-items: center;
 	justify-content: center;
 	padding: 30rpx;
-	background: linear-gradient(135deg, 
-		rgba(255, 255, 255, 0.95) 0%, 
-		rgba(255, 255, 255, 0.85) 100%);
+	background: linear-gradient(135deg,
+			rgba(255, 255, 255, 0.95) 0%,
+			rgba(255, 255, 255, 0.85) 100%);
 	backdrop-filter: blur(20rpx);
 	margin-top: 20rpx;
 }
@@ -1207,9 +1277,9 @@ export default {
 
 /* 附近寄存点 */
 .nearby-lockers-section {
-	background: linear-gradient(135deg, 
-		rgba(255, 255, 255, 0.95) 0%, 
-		rgba(255, 255, 255, 0.85) 100%);
+	background: linear-gradient(135deg,
+			rgba(255, 255, 255, 0.95) 0%,
+			rgba(255, 255, 255, 0.85) 100%);
 	backdrop-filter: blur(20rpx);
 	margin: 20rpx 30rpx;
 	padding: 30rpx;
@@ -1315,8 +1385,13 @@ export default {
 }
 
 @keyframes spin {
-	0% { transform: rotate(0deg); }
-	100% { transform: rotate(360deg); }
+	0% {
+		transform: rotate(0deg);
+	}
+
+	100% {
+		transform: rotate(360deg);
+	}
 }
 
 .no-locker-actions {
@@ -1325,7 +1400,8 @@ export default {
 	gap: 20rpx;
 }
 
-.retry-btn, .expand-btn {
+.retry-btn,
+.expand-btn {
 	padding: 20rpx 30rpx;
 	border-radius: 25rpx;
 	font-size: 26rpx;
@@ -1341,6 +1417,4 @@ export default {
 	background: #f093fb;
 	color: #ffffff;
 }
-
-
 </style>
