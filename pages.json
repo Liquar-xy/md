@@ -219,6 +219,13 @@
       }
     },
     {
+      "path": "pages/group-edit/group-edit",
+      "style": {
+        "navigationBarTitleText": "修改柜组",
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/map-view/map-view",
       "style": {
         "navigationBarTitleText": "网点位置",

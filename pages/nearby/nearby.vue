@@ -167,14 +167,34 @@
 			}
 		},
 		
-		onLoad() {
+		onLoad(options) {
 			console.log('=== 实时定位地图页面加载 ===');
 			console.log('百度地图API密钥:', BAIDU_MAP_AK);
+			console.log('页面参数:', options);
+			
+			// 处理从首页传递的城市参数
+			if (options.city) {
+				const cityName = decodeURIComponent(options.city);
+				console.log('🏙️ 从首页接收到城市参数:', cityName);
+				this.currentCity = cityName;
+				
+				// 确保本地存储也更新
+				const cityInfo = {
+					name: cityName,
+					coordinates: this.getCityCoordinates(cityName)
+				};
+				uni.setStorageSync('selectedCity', cityInfo);
+				console.log('🏙️ 更新本地存储城市信息:', cityInfo);
+			}
 		},
 		
 		onReady() {
 			console.log('=== 页面渲染完成，开始初始化 ===');
-			this.startInitialization();
+			
+			// 延迟一点时间确保页面完全渲染
+			setTimeout(() => {
+				this.startInitialization();
+			}, 100);
 		},
 		
 		onUnload() {
@@ -195,17 +215,20 @@
 			
 			// 检查城市是否发生变化
 			const selectedCity = uni.getStorageSync('selectedCity');
-			if (selectedCity) {
-				if (selectedCity.name !== this.currentCity) {
+			if (selectedCity && selectedCity.name) {
+				if (selectedCity.name !== this.currentCity || this.currentCity === '定位中...') {
 					console.log('🏙️ 检测到城市变化:', this.currentCity, '->', selectedCity.name);
+					const oldCity = this.currentCity;
 					this.currentCity = selectedCity.name;
 					
-					// 显示城市切换提示
-					uni.showToast({
-						title: `已切换到${selectedCity.name}`,
-						icon: 'success',
-						duration: 2000
-					});
+					// 只有在真正发生变化时才显示提示（避免初始化时的提示）
+					if (oldCity !== '定位中...' && oldCity !== selectedCity.name) {
+						uni.showToast({
+							title: `已切换到${selectedCity.name}`,
+							icon: 'success',
+							duration: 2000
+						});
+					}
 					
 					// 如果地图已经初始化，重新设置城市位置
 					if (this.mapInstance) {
@@ -218,29 +241,35 @@
 					console.log('🏙️ 城市未变化，保持当前状态:', this.currentCity);
 				}
 			} else {
-				console.log('⚠️ 未找到选择的城市，使用默认城市');
-				// 如果没有选择城市，设置默认城市
-				const defaultCity = {
-					name: '郑州',
-					coordinates: {
-						longitude: 113.6253,
-						latitude: 34.7466
-					}
-				};
-				uni.setStorageSync('selectedCity', defaultCity);
-				this.currentCity = defaultCity.name;
+				console.log('⚠️ 未找到选择的城市，使用当前城市或默认城市');
 				
-				if (this.mapInstance) {
-					this.setCityLocation(defaultCity);
+				// 如果当前城市不是默认状态，保持当前城市
+				if (this.currentCity && this.currentCity !== '定位中...') {
+					const cityInfo = {
+						name: this.currentCity,
+						coordinates: this.getCityCoordinates(this.currentCity)
+					};
+					uni.setStorageSync('selectedCity', cityInfo);
+					console.log('🏙️ 保存当前城市到本地存储:', cityInfo);
 				} else {
-					this.startInitialization();
+					// 使用默认城市
+					const defaultCity = {
+						name: '郑州',
+						coordinates: {
+							longitude: 113.6253,
+							latitude: 34.7466
+						}
+					};
+					uni.setStorageSync('selectedCity', defaultCity);
+					this.currentCity = defaultCity.name;
+					
+					if (this.mapInstance) {
+						this.setCityLocation(defaultCity);
+					} else {
+						this.startInitialization();
+					}
 				}
 			}
-			
-			// 页面重新显示时可以重新启动位置监听（已废弃的GPS功能）
-			// if (this.currentLocation && !this.watchId) {
-			//     this.startBaiduLocationWatch();
-			// }
 		},
 		
 		methods: {
@@ -252,16 +281,91 @@
 				});
 			},
 			
+			// 获取城市坐标
+			getCityCoordinates(cityName) {
+				// 主要城市坐标配置
+				const cityCoordinates = {
+					// 直辖市
+					'北京': { longitude: 116.4074, latitude: 39.9042 },
+					'上海': { longitude: 121.4737, latitude: 31.2304 },
+					'天津': { longitude: 117.1901, latitude: 39.1084 },
+					'重庆': { longitude: 106.5516, latitude: 29.5630 },
+					
+					// 省会城市
+					'郑州': { longitude: 113.6253, latitude: 34.7466 },
+					'广州': { longitude: 113.2644, latitude: 23.1291 },
+					'深圳': { longitude: 114.0579, latitude: 22.5431 },
+					'成都': { longitude: 104.0665, latitude: 30.5728 },
+					'杭州': { longitude: 120.1551, latitude: 30.2741 },
+					'南京': { longitude: 118.7969, latitude: 32.0603 },
+					'武汉': { longitude: 114.3054, latitude: 30.5931 },
+					'西安': { longitude: 108.9402, latitude: 34.3416 },
+					'长沙': { longitude: 112.9388, latitude: 28.2282 },
+					'沈阳': { longitude: 123.4315, latitude: 41.8057 },
+					'哈尔滨': { longitude: 126.5358, latitude: 45.8023 },
+					'昆明': { longitude: 102.8329, latitude: 24.8801 },
+					'南宁': { longitude: 108.3669, latitude: 22.8170 },
+					'乌鲁木齐': { longitude: 87.6177, latitude: 43.7928 },
+					'拉萨': { longitude: 91.1409, latitude: 29.6456 },
+					'银川': { longitude: 106.2309, latitude: 38.4872 },
+					'西宁': { longitude: 101.7782, latitude: 36.6171 },
+					'呼和浩特': { longitude: 111.7519, latitude: 40.8414 },
+					'太原': { longitude: 112.5489, latitude: 37.8706 },
+					'石家庄': { longitude: 114.5149, latitude: 38.0428 },
+					'济南': { longitude: 117.1205, latitude: 36.6519 },
+					'合肥': { longitude: 117.2272, latitude: 31.8206 },
+					'南昌': { longitude: 115.8921, latitude: 28.6765 },
+					'福州': { longitude: 119.3063, latitude: 26.0745 },
+					'海口': { longitude: 110.3312, latitude: 20.0311 },
+					'贵阳': { longitude: 106.7135, latitude: 26.5783 },
+					'兰州': { longitude: 103.8236, latitude: 36.0581 },
+					
+					// 其他重要城市
+					'苏州': { longitude: 120.6519, latitude: 31.3989 },
+					'无锡': { longitude: 120.3019, latitude: 31.5747 },
+					'宁波': { longitude: 121.5440, latitude: 29.8683 },
+					'温州': { longitude: 120.6994, latitude: 27.9944 },
+					'佛山': { longitude: 113.1220, latitude: 23.0288 },
+					'东莞': { longitude: 113.7518, latitude: 23.0489 },
+					'珠海': { longitude: 113.5767, latitude: 22.2707 },
+					'厦门': { longitude: 118.0894, latitude: 24.4798 },
+					'青岛': { longitude: 120.3826, latitude: 36.0671 },
+					'大连': { longitude: 121.6147, latitude: 38.9140 }
+				};
+				
+				// 获取城市坐标，如果没找到则使用郑州作为默认
+				return cityCoordinates[cityName] || cityCoordinates['郑州'];
+			},
+			
+			// 打开搜索页面
+			openSearch() {
+				console.log('打开搜索页面');
+				uni.navigateTo({
+					url: '/pages/search/search'
+				});
+			},
+			
 			// 开始初始化
 			startInitialization() {
 				console.log('🚀 开始初始化');
 				this.loadingText = '正在初始化地图...';
 				this.mapStatus = '初始化中';
 				
-				// 获取用户选择的城市
+				// 优先使用当前页面的城市信息（从首页传递或onShow中更新）
+				if (this.currentCity && this.currentCity !== '定位中...') {
+					console.log('📍 使用当前页面城市:', this.currentCity);
+					const cityInfo = {
+						name: this.currentCity,
+						coordinates: this.getCityCoordinates(this.currentCity)
+					};
+					this.initMapWithCity(cityInfo);
+					return;
+				}
+				
+				// 其次使用本地存储的城市
 				const selectedCity = uni.getStorageSync('selectedCity');
 				if (selectedCity && selectedCity.coordinates) {
-					console.log('📍 使用选择的城市:', selectedCity.name);
+					console.log('📍 使用本地存储的城市:', selectedCity.name);
 					this.currentCity = selectedCity.name;
 					this.initMapWithCity(selectedCity);
 				} else {
@@ -1634,6 +1738,14 @@
 				console.log('🔄 重试加载地图');
 				this.mapError = false;
 				this.mapErrorMessage = '';
+				
+				// 确保使用正确的城市信息
+				const selectedCity = uni.getStorageSync('selectedCity');
+				if (selectedCity && selectedCity.name) {
+					this.currentCity = selectedCity.name;
+					console.log('🏙️ 重试时使用城市:', this.currentCity);
+				}
+				
 				this.startInitialization();
 			},
 			

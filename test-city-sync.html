@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>城市同步测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-case { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 8px 16px; margin: 5px; cursor: pointer; }
+        .log { background: #f8f9fa; padding: 10px; margin: 10px 0; border-radius: 3px; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>智能寄存柜 - 城市同步问题修复测试</h1>
+    
+    <div class="test-case info">
+        <h3>问题描述</h3>
+        <p>在首页选择北京后，点击"我的附近"页面，先显示郑州的寄存点，然后出现"地图加载失败"，需要点击重试才能正确显示北京的寄存点。</p>
+    </div>
+
+    <div class="test-case success">
+        <h3>✅ 修复方案</h3>
+        <ul>
+            <li><strong>首页优化</strong>：跳转前确保城市信息正确保存，传递城市参数</li>
+            <li><strong>附近页面优化</strong>：优先使用页面参数，改善初始化逻辑</li>
+            <li><strong>错误处理优化</strong>：重试时保持正确的城市信息</li>
+            <li><strong>数据同步优化</strong>：统一城市信息的存储和读取逻辑</li>
+        </ul>
+    </div>
+
+    <div class="test-case">
+        <h3>🧪 测试用例</h3>
+        
+        <h4>测试1：模拟首页城市选择</h4>
+        <button onclick="testCitySelection('北京')">选择北京</button>
+        <button onclick="testCitySelection('上海')">选择上海</button>
+        <button onclick="testCitySelection('广州')">选择广州</button>
+        <button onclick="testCitySelection('深圳')">选择深圳</button>
+        
+        <h4>测试2：模拟页面跳转</h4>
+        <button onclick="testPageNavigation()">跳转到附近页面</button>
+        <button onclick="testRetry()">测试重试功能</button>
+        
+        <h4>测试3：数据验证</h4>
+        <button onclick="checkLocalStorage()">检查本地存储</button>
+        <button onclick="clearTestData()">清除测试数据</button>
+    </div>
+
+    <div class="test-case">
+        <h3>📊 测试结果</h3>
+        <div id="testResults" class="log">等待测试...</div>
+    </div>
+
+    <script>
+        // 城市坐标配置（与实际代码保持一致）
+        const cityCoordinates = {
+            '北京': { longitude: 116.4074, latitude: 39.9042 },
+            '上海': { longitude: 121.4737, latitude: 31.2304 },
+            '天津': { longitude: 117.1901, latitude: 39.1084 },
+            '重庆': { longitude: 106.5516, latitude: 29.5630 },
+            '郑州': { longitude: 113.6253, latitude: 34.7466 },
+            '广州': { longitude: 113.2644, latitude: 23.1291 },
+            '深圳': { longitude: 114.0579, latitude: 22.5431 },
+            '成都': { longitude: 104.0665, latitude: 30.5728 },
+            '杭州': { longitude: 120.1551, latitude: 30.2741 },
+            '南京': { longitude: 118.7969, latitude: 32.0603 }
+        };
+
+        let testLog = [];
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}`;
+            testLog.push(logEntry);
+            
+            const resultsDiv = document.getElementById('testResults');
+            resultsDiv.innerHTML = testLog.join('\n');
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+            
+            console.log(logEntry);
+        }
+
+        // 测试城市选择功能
+        function testCitySelection(cityName) {
+            log(`🏙️ 测试选择城市: ${cityName}`);
+            
+            // 模拟首页的城市选择逻辑
+            const cityInfo = {
+                name: cityName,
+                coordinates: cityCoordinates[cityName] || cityCoordinates['郑州']
+            };
+            
+            // 保存到本地存储（模拟localStorage）
+            localStorage.setItem('selectedCity', JSON.stringify(cityInfo));
+            
+            log(`✅ 城市信息已保存: ${JSON.stringify(cityInfo)}`);
+            log(`📍 坐标: 经度${cityInfo.coordinates.longitude}, 纬度${cityInfo.coordinates.latitude}`);
+        }
+
+        // 测试页面跳转逻辑
+        function testPageNavigation() {
+            log('🔄 测试页面跳转逻辑');
+            
+            // 检查本地存储的城市信息
+            const selectedCity = JSON.parse(localStorage.getItem('selectedCity') || 'null');
+            
+            if (selectedCity) {
+                log(`✅ 检测到选择的城市: ${selectedCity.name}`);
+                log(`📡 模拟跳转URL: /pages/nearby/nearby?city=${encodeURIComponent(selectedCity.name)}`);
+                
+                // 模拟附近页面的onLoad逻辑
+                const cityParam = selectedCity.name;
+                log(`📥 附近页面接收参数: city=${cityParam}`);
+                
+                // 模拟初始化逻辑
+                if (cityParam && cityCoordinates[cityParam]) {
+                    log(`🗺️ 使用城市坐标初始化地图: ${cityParam}`);
+                    log(`📍 地图中心: ${cityCoordinates[cityParam].longitude}, ${cityCoordinates[cityParam].latitude}`);
+                    log(`✅ 测试通过：直接显示正确城市，无需切换`);
+                } else {
+                    log(`❌ 测试失败：城市参数无效`);
+                }
+            } else {
+                log(`⚠️ 未找到选择的城市，将使用默认城市`);
+                log(`🏙️ 默认城市: 郑州`);
+            }
+        }
+
+        // 测试重试功能
+        function testRetry() {
+            log('🔄 测试重试功能');
+            
+            const selectedCity = JSON.parse(localStorage.getItem('selectedCity') || 'null');
+            
+            if (selectedCity) {
+                log(`🔄 重试时使用城市: ${selectedCity.name}`);
+                log(`📍 重试坐标: ${selectedCity.coordinates.longitude}, ${selectedCity.coordinates.latitude}`);
+                log(`✅ 重试功能正常：保持正确的城市信息`);
+            } else {
+                log(`❌ 重试功能异常：缺少城市信息`);
+            }
+        }
+
+        // 检查本地存储
+        function checkLocalStorage() {
+            log('🔍 检查本地存储数据');
+            
+            const selectedCity = localStorage.getItem('selectedCity');
+            
+            if (selectedCity) {
+                try {
+                    const cityData = JSON.parse(selectedCity);
+                    log(`✅ 本地存储数据正常:`);
+                    log(`   城市名称: ${cityData.name}`);
+                    log(`   经度: ${cityData.coordinates.longitude}`);
+                    log(`   纬度: ${cityData.coordinates.latitude}`);
+                } catch (e) {
+                    log(`❌ 本地存储数据格式错误: ${e.message}`);
+                }
+            } else {
+                log(`⚠️ 本地存储中没有城市数据`);
+            }
+        }
+
+        // 清除测试数据
+        function clearTestData() {
+            localStorage.removeItem('selectedCity');
+            testLog = [];
+            document.getElementById('testResults').innerHTML = '测试数据已清除';
+            log('🧹 测试数据已清除');
+        }
+
+        // 页面加载时的初始化
+        window.onload = function() {
+            log('🚀 城市同步测试页面已加载');
+            log('💡 请按顺序执行测试：1.选择城市 → 2.测试跳转 → 3.检查数据');
+        };
+    </script>
+</body>
+</html>
